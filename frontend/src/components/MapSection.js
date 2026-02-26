@@ -107,8 +107,8 @@ const MapSection = ({ mapData, loading }) => {
       const markers = document.querySelectorAll('.map-marker');
       markers.forEach(m => m.parentElement?.remove());
 
-      mapData.cities.forEach((city) => {
-        const maplibregl = require('maplibre-gl').default;
+      mapData.cities.forEach(async (city) => {
+        const maplibregl = (await import('maplibre-gl')).default;
         const el = document.createElement('div');
         el.className = 'map-marker';
         el.style.cssText = `
