@@ -102,40 +102,49 @@ const MapSection = ({ mapData, loading }) => {
 
   // Update markers when mapData changes
   useEffect(() => {
-    if (mapRef.current && mapData?.cities && mapLoaded) {
-      // Clear existing markers and add new ones
-      const markers = document.querySelectorAll('.map-marker');
-      markers.forEach(m => m.parentElement?.remove());
+    const addMarkers = async () => {
+      if (mapRef.current && mapData?.cities && mapLoaded) {
+        // Clear existing markers and add new ones
+        const markers = document.querySelectorAll('.map-marker');
+        markers.forEach(m => m.parentElement?.remove());
 
-      mapData.cities.forEach(async (city) => {
-        const maplibregl = (await import('maplibre-gl')).default;
-        const el = document.createElement('div');
-        el.className = 'map-marker';
-        el.style.cssText = `
-          width: 12px;
-          height: 12px;
-          background: ${city.type === 'capital' ? '#22C55E' : city.type === 'strategic' ? '#F59E0B' : '#3B82F6'};
-          border-radius: 50%;
-          border: 2px solid rgba(255,255,255,0.5);
-          cursor: pointer;
-          box-shadow: 0 0 10px ${city.type === 'capital' ? '#22C55E' : city.type === 'strategic' ? '#F59E0B' : '#3B82F6'};
-        `;
+        try {
+          const maplibregl = (await import('maplibre-gl')).default;
 
-        const popup = new maplibregl.Popup({ offset: 15 })
-          .setHTML(`
-            <div style="background: #0F172A; color: #F8FAFC; padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; border: 1px solid #22C55E;">
-              <strong style="color: #22C55E;">${city.name}</strong><br/>
-              <span style="color: #94A3B8;">Population: ${city.population}</span><br/>
-              <span style="color: #94A3B8; text-transform: uppercase; font-size: 10px;">${city.type}</span>
-            </div>
-          `);
+          mapData.cities.forEach((city) => {
+            const el = document.createElement('div');
+            el.className = 'map-marker';
+            el.style.cssText = `
+              width: 12px;
+              height: 12px;
+              background: ${city.type === 'capital' ? '#22C55E' : city.type === 'strategic' ? '#F59E0B' : '#3B82F6'};
+              border-radius: 50%;
+              border: 2px solid rgba(255,255,255,0.5);
+              cursor: pointer;
+              box-shadow: 0 0 10px ${city.type === 'capital' ? '#22C55E' : city.type === 'strategic' ? '#F59E0B' : '#3B82F6'};
+            `;
 
-        new maplibregl.Marker({ element: el })
-          .setLngLat([city.lon, city.lat])
-          .setPopup(popup)
-          .addTo(mapRef.current);
-      });
-    }
+            const popup = new maplibregl.Popup({ offset: 15 })
+              .setHTML(`
+                <div style="background: #0F172A; color: #F8FAFC; padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; border: 1px solid #22C55E;">
+                  <strong style="color: #22C55E;">${city.name}</strong><br/>
+                  <span style="color: #94A3B8;">Population: ${city.population}</span><br/>
+                  <span style="color: #94A3B8; text-transform: uppercase; font-size: 10px;">${city.type}</span>
+                </div>
+              `);
+
+            new maplibregl.Marker({ element: el })
+              .setLngLat([city.lon, city.lat])
+              .setPopup(popup)
+              .addTo(mapRef.current);
+          });
+        } catch (error) {
+          console.error('Error adding map markers:', error);
+        }
+      }
+    };
+
+    addMarkers();
   }, [mapData, mapLoaded]);
 
   return (
