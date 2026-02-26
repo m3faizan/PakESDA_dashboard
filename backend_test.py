@@ -8,7 +8,7 @@ import json
 from datetime import datetime
 
 class PakistanIntelAPITester:
-    def __init__(self, base_url="https://3e0ad2bf-d6f2-4eb3-86f4-98fd4acf3c2e.preview.emergentagent.com"):
+    def __init__(self, base_url="http://localhost:8001"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
