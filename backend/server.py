@@ -31,10 +31,20 @@ weather_collection = db["weather_data"]
 
 # Flight data cache (refreshes every 6 hours)
 flight_cache = {
-    "lahore_departures": {"count": 0, "updated": None}
+    "lahore": {"departures": 0, "arrivals": 0, "updated": None},
+    "islamabad": {"departures": 0, "arrivals": 0, "updated": None},
+    "karachi": {"departures": 0, "arrivals": 0, "updated": None},
+    "multan": {"departures": 0, "arrivals": 0, "updated": None}
 }
 
-LAHORE_FLIGHTS_URL = "https://www.flightstats.com/v2/flight-tracker/departures/LHE"
+AIRPORTS = {
+    "lahore": {"code": "LHE", "name": "Lahore"},
+    "islamabad": {"code": "ISB", "name": "Islamabad"},
+    "karachi": {"code": "KHI", "name": "Karachi"},
+    "multan": {"code": "MUX", "name": "Multan"}
+}
+
+FLIGHTSTATS_BASE = "https://www.flightstats.com/v2/flight-tracker"
 
 # Data cache with timestamps
 data_cache = {
