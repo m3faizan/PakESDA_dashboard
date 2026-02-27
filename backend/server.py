@@ -38,9 +38,10 @@ flight_cache = {
 }
 
 AIRPORTS = {
-    "lahore": {"code": "LHE", "name": "Lahore"},
     "islamabad": {"code": "ISB", "name": "Islamabad"},
     "karachi": {"code": "KHI", "name": "Karachi"},
+    "lahore": {"code": "LHE", "name": "Lahore"},
+    "peshawar": {"code": "PEW", "name": "Peshawar"},
     "multan": {"code": "MUX", "name": "Multan"}
 }
 
