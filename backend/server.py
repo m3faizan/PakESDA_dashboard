@@ -354,7 +354,7 @@ async def health_check():
 
 @app.get("/api/news")
 async def get_news():
-    """Get latest Pakistan news"""
+    """Get latest Pakistan news (last 24 hours only)"""
     # Refresh news if older than 5 minutes
     if data_cache["news"]["updated"]:
         age = (datetime.now(timezone.utc) - data_cache["news"]["updated"]).total_seconds()
@@ -368,7 +368,29 @@ async def get_news():
     return {
         "news": data_cache["news"]["data"],
         "updated": data_cache["news"]["updated"].isoformat() if data_cache["news"]["updated"] else None,
-        "count": len(data_cache["news"]["data"])
+        "count": len(data_cache["news"]["data"]),
+        "filter": "last_24_hours"
+    }
+
+@app.get("/api/energy")
+async def get_energy_news():
+    """Get energy sector news from Energy Update Pakistan (last 24 hours)"""
+    # Refresh if older than 5 minutes
+    if data_cache["energy"]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache["energy"]["updated"]).total_seconds()
+        if age > 300:
+            data_cache["energy"]["data"] = await fetch_energy_news()
+            data_cache["energy"]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache["energy"]["data"] = await fetch_energy_news()
+        data_cache["energy"]["updated"] = datetime.now(timezone.utc)
+    
+    return {
+        "news": data_cache["energy"]["data"],
+        "updated": data_cache["energy"]["updated"].isoformat() if data_cache["energy"]["updated"] else None,
+        "count": len(data_cache["energy"]["data"]),
+        "source": "Energy Update Pakistan",
+        "filter": "last_24_hours"
     }
 
 @app.get("/api/economic")
