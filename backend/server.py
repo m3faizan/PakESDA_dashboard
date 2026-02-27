@@ -544,6 +544,14 @@ async def get_regional_relations():
 @app.get("/api/infrastructure")
 async def get_infrastructure_status():
     """Get infrastructure monitoring data"""
+    # Check if flight data needs refresh (every 6 hours)
+    if flight_cache["lahore_departures"]["updated"]:
+        age = (datetime.now(timezone.utc) - flight_cache["lahore_departures"]["updated"]).total_seconds()
+        if age > 21600:  # 6 hours
+            await fetch_lahore_flights()
+    else:
+        await fetch_lahore_flights()
+    
     infrastructure = {
         "power": {
             "national_grid_status": "Stable",
@@ -564,7 +572,11 @@ async def get_infrastructure_status():
         "transport": {
             "airports": {
                 "karachi": "Operational",
-                "lahore": "Operational",
+                "lahore": {
+                    "status": "Operational",
+                    "departures_today": flight_cache["lahore_departures"].get("count", 0),
+                    "departures_url": LAHORE_FLIGHTS_URL
+                },
                 "islamabad": "Operational"
             },
             "railways": "Normal Operations",
