@@ -43,13 +43,15 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] `/api/regional` - Regional relations data (India, China, Afghanistan, Iran, Saudi Arabia, USA)
 - [x] `/api/infrastructure` - Real scraped data for 5 airports (ISB, KHI, LHE, MUX, PEW) and 3 ports (Karachi, Port Qasim, Gwadar)
 - [x] `/api/map-data` - Map markers for Pakistani cities and CPEC routes
+- [x] `/api/remittances` - **LIVE** Workers' remittances data from State Bank of Pakistan API with full historical data
 
 ### Frontend (React)
 - [x] Header with logo, live indicator, **Pakistan time (PKT/UTC+5)**, refresh button
 - [x] News ticker (scrolling headlines)
 - [x] Bento grid layout with responsive panels
 - [x] NewsPanel - Displays latest news with category tabs (All, General, Energy, Business, International, Tech, Regional) and infinite scroll
-- [x] EconomicPanel - Shows PKR rates, KSE-100, inflation
+- [x] EconomicPanel - Shows PKR rates, KSE-100, inflation, **LIVE remittances from SBP API with clickable chart modal**
+- [x] **RemittancesModal** - Interactive chart modal with time range selectors (YTD, 6M, 1Y, 5Y, 10Y, ALL)
 - [x] SecurityPanel - Shows security/political alerts with severity indicators
 - [x] WeatherPanel - Shows weather for major cities
 - [x] RegionalPanel - Shows diplomatic relations status
