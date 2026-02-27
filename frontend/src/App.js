@@ -26,6 +26,7 @@ const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 
 function App() {
   const [news, setNews] = useState([]);
+  const [energy, setEnergy] = useState([]);
   const [economic, setEconomic] = useState(null);
   const [security, setSecurity] = useState([]);
   const [weather, setWeather] = useState([]);
