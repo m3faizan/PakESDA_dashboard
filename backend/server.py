@@ -69,8 +69,13 @@ data_cache = {
     "energy": {"data": [], "updated": None},
     "economic": {"data": {}, "updated": None},
     "weather": {"data": [], "updated": None},
-    "security": {"data": [], "updated": None}
+    "security": {"data": [], "updated": None},
+    "remittances": {"data": {}, "updated": None}
 }
+
+# SBP API for remittances
+SBP_API_KEY = "69C3217DDBE2E78290E66D79E07CCFE19EFB1134"
+SBP_REMITTANCES_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BOP_WR_M.WR0340/data"
 
 # RSS feeds for Pakistan news - comprehensive list
 PAKISTAN_NEWS_FEEDS = [
