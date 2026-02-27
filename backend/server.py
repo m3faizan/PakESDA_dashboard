@@ -46,6 +46,21 @@ AIRPORTS = {
 
 FLIGHTSTATS_BASE = "https://www.flightstats.com/v2/flight-tracker"
 
+# Port data cache (refreshes every 6 hours)
+port_cache = {
+    "karachi": {"in_port": 0, "arrivals": 0, "departures": 0, "expected": 0, "updated": None},
+    "qasim": {"in_port": 0, "arrivals": 0, "departures": 0, "expected": 0, "updated": None},
+    "gwadar": {"in_port": 0, "arrivals": 0, "departures": 0, "expected": 0, "updated": None}
+}
+
+PORTS = {
+    "karachi": {"id": 236, "name": "Karachi", "code": "PKKHI"},
+    "qasim": {"id": 343, "name": "Port Qasim", "code": "PKBQM"},
+    "gwadar": {"id": 3609, "name": "Gwadar", "code": "PKGWD"}
+}
+
+MYSHIPTRACKING_BASE = "https://www.myshiptracking.com/ports"
+
 # Data cache with timestamps
 data_cache = {
     "news": {"data": [], "updated": None},
