@@ -32,6 +32,7 @@ weather_collection = db["weather_data"]
 # Data cache with timestamps
 data_cache = {
     "news": {"data": [], "updated": None},
+    "energy": {"data": [], "updated": None},
     "economic": {"data": {}, "updated": None},
     "weather": {"data": [], "updated": None},
     "security": {"data": [], "updated": None}
