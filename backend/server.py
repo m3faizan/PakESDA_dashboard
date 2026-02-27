@@ -640,6 +640,26 @@ async def get_security_alerts():
         "count": len(data_cache["security"]["data"])
     }
 
+
+@app.get("/api/remittances")
+async def get_remittances():
+    """Get workers' remittances data from State Bank of Pakistan"""
+    # Refresh if older than 1 hour (data updates monthly, so no need for frequent refresh)
+    if data_cache["remittances"]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache["remittances"]["updated"]).total_seconds()
+        if age > 3600:  # 1 hour
+            data_cache["remittances"]["data"] = await fetch_remittances_data()
+            data_cache["remittances"]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache["remittances"]["data"] = await fetch_remittances_data()
+        data_cache["remittances"]["updated"] = datetime.now(timezone.utc)
+    
+    return {
+        "data": data_cache["remittances"]["data"],
+        "updated": data_cache["remittances"]["updated"].isoformat() if data_cache["remittances"]["updated"] else None
+    }
+
+
 @app.get("/api/regional")
 async def get_regional_relations():
     """Get regional relations data"""
