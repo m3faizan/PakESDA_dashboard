@@ -80,25 +80,62 @@ class PakistanIntelAPITester:
         return self.test_endpoint("health", ["status", "timestamp", "version"])
 
     def test_news(self):
-        """Test news endpoint"""
+        """Test news endpoint with enhanced validation for 100+ items and categories"""
         success = self.test_endpoint("news", ["news", "updated", "count"])
         if success:
-            # Additional validation for news structure
+            # Additional validation for news structure and enhanced features
             url = f"{self.base_url}/api/news"
             try:
                 response = requests.get(url, timeout=10)
                 data = response.json()
-                if data.get("news") and len(data["news"]) > 0:
-                    news_item = data["news"][0]
-                    required_fields = ["title", "link", "source", "category"]
-                    missing_fields = [field for field in required_fields if field not in news_item]
-                    if missing_fields:
-                        return self.log_result("News Item Structure", False, 
-                                            error=f"Missing fields in news items: {missing_fields}")
-                    else:
-                        return self.log_result("News Item Structure", True)
-                else:
+                news_items = data.get("news", [])
+                
+                # Test 1: Check if news items exist
+                if not news_items:
                     return self.log_result("News Data", False, error="No news items returned")
+                
+                # Test 2: Check if we have significant number of news items (should be up to 100)
+                news_count = len(news_items)
+                if news_count < 20:
+                    self.log_result("News Count Check", False, 
+                                 error=f"Only {news_count} news items returned, expected more from 20 RSS sources")
+                else:
+                    self.log_result("News Count Check", True, 
+                                 response_data=f"Returned {news_count} news items")
+                
+                # Test 3: Check news item structure
+                news_item = news_items[0]
+                required_fields = ["title", "link", "source", "category"]
+                missing_fields = [field for field in required_fields if field not in news_item]
+                if missing_fields:
+                    return self.log_result("News Item Structure", False, 
+                                        error=f"Missing fields in news items: {missing_fields}")
+                else:
+                    self.log_result("News Item Structure", True)
+                
+                # Test 4: Check category diversity (should have multiple categories)
+                categories = set(item.get("category", "") for item in news_items if item.get("category"))
+                expected_categories = ["general", "business", "regional", "tech", "sports", "international"]
+                found_categories = [cat for cat in expected_categories if cat in categories]
+                
+                if len(found_categories) < 3:
+                    self.log_result("News Categories Diversity", False, 
+                                 error=f"Only {len(found_categories)} categories found: {found_categories}. Expected more diversity from multiple source categories")
+                else:
+                    self.log_result("News Categories Diversity", True, 
+                                 response_data=f"Found {len(found_categories)} categories: {found_categories}")
+                
+                # Test 5: Check RSS source diversity (should have multiple sources from the 20 feeds)
+                sources = set(item.get("source", "") for item in news_items if item.get("source"))
+                if len(sources) < 5:
+                    self.log_result("News Sources Diversity", False, 
+                                 error=f"Only {len(sources)} sources found. Expected more from 20 RSS feeds")
+                else:
+                    self.log_result("News Sources Diversity", True, 
+                                 response_data=f"Found {len(sources)} different news sources")
+                
+                return True
+                
             except Exception as e:
                 return self.log_result("News Validation", False, error=str(e))
         return success
