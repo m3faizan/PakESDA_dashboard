@@ -639,19 +639,34 @@ async def get_regional_relations():
 async def get_infrastructure_status():
     """Get infrastructure monitoring data"""
     # Check if flight data needs refresh (every 6 hours)
-    needs_refresh = False
+    needs_airport_refresh = False
     for airport_key in AIRPORTS.keys():
         if flight_cache[airport_key]["updated"]:
             age = (datetime.now(timezone.utc) - flight_cache[airport_key]["updated"]).total_seconds()
             if age > 21600:  # 6 hours
-                needs_refresh = True
+                needs_airport_refresh = True
                 break
         else:
-            needs_refresh = True
+            needs_airport_refresh = True
             break
     
-    if needs_refresh:
+    if needs_airport_refresh:
         await fetch_all_airports()
+    
+    # Check if port data needs refresh (every 6 hours)
+    needs_port_refresh = False
+    for port_key in PORTS.keys():
+        if port_cache[port_key]["updated"]:
+            age = (datetime.now(timezone.utc) - port_cache[port_key]["updated"]).total_seconds()
+            if age > 21600:  # 6 hours
+                needs_port_refresh = True
+                break
+        else:
+            needs_port_refresh = True
+            break
+    
+    if needs_port_refresh:
+        await fetch_all_ports()
     
     # Build airports data
     airports_data = {}
@@ -663,6 +678,19 @@ async def get_infrastructure_status():
             "arrivals": flight_cache[key].get("arrivals", 0),
             "departures_url": f"{FLIGHTSTATS_BASE}/departures/{info['code']}",
             "arrivals_url": f"{FLIGHTSTATS_BASE}/arrivals/{info['code']}"
+        }
+    
+    # Build ports data
+    ports_data = {}
+    for key, info in PORTS.items():
+        ports_data[key] = {
+            "code": info["code"],
+            "name": info["name"],
+            "in_port": port_cache[key].get("in_port", 0),
+            "arrivals": port_cache[key].get("arrivals", 0),
+            "departures": port_cache[key].get("departures", 0),
+            "expected": port_cache[key].get("expected", 0),
+            "url": f"https://www.myshiptracking.com/ports/port-of-{info['name'].lower().replace(' ', '-')}-in-pk-pakistan-id-{info['id']}"
         }
     
     infrastructure = {
@@ -682,9 +710,13 @@ async def get_infrastructure_status():
             "outage_reports": 3,
             "affected_regions": ["Parts of Balochistan"]
         },
-        "air_transport": {
+        "airport_status": {
             "airports": airports_data,
-            "note": "Flights in last 24 hours"
+            "note": "24 hours"
+        },
+        "port_status": {
+            "ports": ports_data,
+            "note": "24 hours"
         },
         "updated": datetime.now(timezone.utc).isoformat()
     }
