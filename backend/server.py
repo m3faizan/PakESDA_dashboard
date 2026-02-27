@@ -206,6 +206,68 @@ async def fetch_energy_news():
     recent_articles.sort(key=lambda x: x.get("published", ""), reverse=True)
     return recent_articles
 
+async def fetch_remittances_data():
+    """Fetch remittances data from State Bank of Pakistan API"""
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            # Fetch last 15 years of data for the chart
+            response = await client.get(
+                SBP_REMITTANCES_URL,
+                params={
+                    "api_key": SBP_API_KEY,
+                    "start_date": "2010-01-01",
+                    "end_date": datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                }
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                rows = data.get("rows", [])
+                
+                if len(rows) >= 2:
+                    # Data is sorted newest first
+                    # Each row: [Dataset Name, Series Key, Series Name, Date, Value, Unit, Status, Comments]
+                    history = []
+                    for row in rows:
+                        history.append({
+                            "date": row[3],  # Observation Date
+                            "value": float(row[4]),  # Observation Value in Million USD
+                            "unit": row[5]  # Unit
+                        })
+                    
+                    # Latest and previous month
+                    latest = history[0]
+                    previous = history[1]
+                    
+                    # Calculate MoM change
+                    mom_change = ((latest["value"] - previous["value"]) / previous["value"]) * 100
+                    
+                    # Parse month from date
+                    latest_date = datetime.strptime(latest["date"], "%Y-%m-%d")
+                    month_name = latest_date.strftime("%B %Y")
+                    
+                    return {
+                        "latest": {
+                            "value": round(latest["value"], 2),
+                            "month": month_name,
+                            "date": latest["date"],
+                            "unit": "Million USD"
+                        },
+                        "previous": {
+                            "value": round(previous["value"], 2),
+                            "date": previous["date"]
+                        },
+                        "mom_change": round(mom_change, 2),
+                        "history": history,  # Full history for chart
+                        "source": "State Bank of Pakistan",
+                        "updated": datetime.now(timezone.utc).isoformat()
+                    }
+    except Exception as e:
+        print(f"Error fetching remittances data: {e}")
+    
+    # Return None if failed
+    return None
+
 async def fetch_economic_data():
     """Fetch economic data - using mock data for now"""
     # In production, this would call real APIs like Alpha Vantage, Open Exchange Rates, etc.
