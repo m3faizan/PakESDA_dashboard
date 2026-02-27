@@ -77,11 +77,14 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 
 ### P0 (Critical) - COMPLETED
 - [x] Basic dashboard layout
-- [x] News feed integration
+- [x] News feed integration with category filtering
 - [x] Map display
 - [x] All panels rendering
+- [x] Infrastructure panel with real scraped airport & port data
+- [x] Pakistan local time display (PKT/UTC+5) in header
 
 ### P1 (High Priority)
+- [ ] Real-time data for Security & Politics panel (GDELT, ACLED, or RSS feeds)
 - [ ] Real economic data API (Alpha Vantage, Open Exchange Rates)
 - [ ] Real weather API integration (OpenWeatherMap)
 - [ ] WebSocket for real-time updates
