@@ -31,9 +31,10 @@ weather_collection = db["weather_data"]
 
 # Flight data cache (refreshes every 6 hours)
 flight_cache = {
-    "lahore": {"departures": 0, "arrivals": 0, "updated": None},
     "islamabad": {"departures": 0, "arrivals": 0, "updated": None},
     "karachi": {"departures": 0, "arrivals": 0, "updated": None},
+    "lahore": {"departures": 0, "arrivals": 0, "updated": None},
+    "peshawar": {"departures": 0, "arrivals": 0, "updated": None},
     "multan": {"departures": 0, "arrivals": 0, "updated": None}
 }
 

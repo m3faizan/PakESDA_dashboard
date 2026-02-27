@@ -91,7 +91,9 @@ const InfrastructurePanel = ({ data, loading }) => {
           {Object.entries(airports).map(([key, airport]) => (
             <div key={key} className="infra-status" style={{ marginTop: '0.35rem' }}>
               <span className="infra-indicator good"></span>
-              <span className="infra-label" style={{ minWidth: '40px' }}>{airport.code}</span>
+              <span className="infra-label" style={{ minWidth: '90px' }}>
+                {airport.name} ({airport.code})
+              </span>
               <span className="infra-value" style={{ display: 'flex', gap: '0.5rem', fontSize: '0.65rem' }}>
                 <a 
                   href={airport.departures_url}
