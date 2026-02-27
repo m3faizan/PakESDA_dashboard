@@ -57,7 +57,7 @@ const NewsTicker = ({ news }) => {
         className="ticker-content"
         style={{
           display: 'flex',
-          animation: isPaused ? 'none' : 'ticker 120s linear infinite',
+          animation: isPaused ? 'none' : 'ticker 40s linear infinite',
           whiteSpace: 'nowrap',
           paddingLeft: '120px'
         }}
