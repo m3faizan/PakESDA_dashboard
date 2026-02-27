@@ -85,6 +85,7 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] All panels rendering
 - [x] Infrastructure panel with real scraped airport & port data
 - [x] Pakistan local time display (PKT/UTC+5) in header
+- [x] **LIVE remittances data from SBP API with interactive chart modal (YTD, 6M, 1Y, 5Y, 10Y, ALL)**
 
 ### P1 (High Priority)
 - [ ] Real-time data for Security & Politics panel (GDELT, ACLED, or RSS feeds)
