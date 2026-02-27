@@ -1,5 +1,5 @@
 import React from 'react';
-import { Zap, Wifi, Plane, PlaneLanding, PlaneTakeoff } from 'lucide-react';
+import { Zap, Wifi, Plane, PlaneLanding, PlaneTakeoff, Anchor, Ship } from 'lucide-react';
 
 const InfrastructurePanel = ({ data, loading }) => {
   if (loading || !data) {
@@ -30,7 +30,8 @@ const InfrastructurePanel = ({ data, loading }) => {
     return 'good';
   };
 
-  const airports = data.air_transport?.airports || {};
+  const airports = data.airport_status?.airports || {};
+  const ports = data.port_status?.ports || {};
 
   return (
     <div className="panel" data-testid="infrastructure-panel">
@@ -40,7 +41,7 @@ const InfrastructurePanel = ({ data, loading }) => {
           Infrastructure
         </div>
       </div>
-      <div className="panel-content">
+      <div className="panel-content" style={{ maxHeight: '450px', overflowY: 'auto' }}>
         {/* Power Section */}
         <div className="infra-section">
           <div className="infra-title">
@@ -54,7 +55,7 @@ const InfrastructurePanel = ({ data, loading }) => {
           </div>
           <div className="infra-status" style={{ marginTop: '0.25rem' }}>
             <span className="infra-indicator warning"></span>
-            <span className="infra-label">Load Shedding (Urban)</span>
+            <span className="infra-label">Load Shedding</span>
             <span className="infra-value">{data.power?.load_shedding?.urban}</span>
           </div>
         </div>
@@ -72,26 +73,26 @@ const InfrastructurePanel = ({ data, loading }) => {
           </div>
         </div>
 
-        {/* Air Transport Section */}
+        {/* Airport Status Section */}
         <div className="infra-section">
           <div className="infra-title">
             <Plane size={12} style={{ marginRight: '0.25rem' }} />
-            Air Transport
+            Airport Status
             <span style={{ 
               fontSize: '0.5rem', 
               color: 'var(--color-muted)', 
               marginLeft: '0.5rem',
               fontWeight: 'normal'
             }}>
-              (last 24 hours)
+              ({data.airport_status?.note || '24 hours'})
             </span>
           </div>
           
           {Object.entries(airports).map(([key, airport]) => (
-            <div key={key} className="infra-status" style={{ marginTop: '0.5rem' }}>
+            <div key={key} className="infra-status" style={{ marginTop: '0.35rem' }}>
               <span className="infra-indicator good"></span>
-              <span className="infra-label" style={{ minWidth: '50px' }}>{airport.code}</span>
-              <span className="infra-value" style={{ display: 'flex', gap: '0.75rem', fontSize: '0.7rem' }}>
+              <span className="infra-label" style={{ minWidth: '40px' }}>{airport.code}</span>
+              <span className="infra-value" style={{ display: 'flex', gap: '0.5rem', fontSize: '0.65rem' }}>
                 <a 
                   href={airport.departures_url}
                   target="_blank"
@@ -101,11 +102,11 @@ const InfrastructurePanel = ({ data, loading }) => {
                     textDecoration: 'none',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.2rem'
+                    gap: '0.15rem'
                   }}
-                  data-testid={`${key}-departures-link`}
+                  title="Departures"
                 >
-                  <PlaneTakeoff size={10} />
+                  <PlaneTakeoff size={9} />
                   {airport.departures}
                 </a>
                 <a 
@@ -117,14 +118,77 @@ const InfrastructurePanel = ({ data, loading }) => {
                     textDecoration: 'none',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.2rem'
+                    gap: '0.15rem'
                   }}
-                  data-testid={`${key}-arrivals-link`}
+                  title="Arrivals"
                 >
-                  <PlaneLanding size={10} />
+                  <PlaneLanding size={9} />
                   {airport.arrivals}
                 </a>
               </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Port Status Section */}
+        <div className="infra-section">
+          <div className="infra-title">
+            <Anchor size={12} style={{ marginRight: '0.25rem' }} />
+            Port Status
+            <span style={{ 
+              fontSize: '0.5rem', 
+              color: 'var(--color-muted)', 
+              marginLeft: '0.5rem',
+              fontWeight: 'normal'
+            }}>
+              ({data.port_status?.note || '24 hours'})
+            </span>
+          </div>
+          
+          {Object.entries(ports).map(([key, port]) => (
+            <div key={key} style={{ marginTop: '0.5rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--color-border)' }}>
+              <a 
+                href={port.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ 
+                  color: 'var(--color-text)', 
+                  textDecoration: 'none',
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem'
+                }}
+                data-testid={`${key}-port-link`}
+              >
+                <Ship size={10} color="var(--color-primary)" />
+                {port.name}
+              </a>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(4, 1fr)', 
+                gap: '0.25rem', 
+                marginTop: '0.25rem',
+                fontSize: '0.6rem'
+              }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ color: 'var(--color-muted)' }}>In Port</div>
+                  <div style={{ color: 'var(--color-primary)', fontWeight: 600 }}>{port.in_port}</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ color: 'var(--color-muted)' }}>Arrivals</div>
+                  <div style={{ color: '#3B82F6', fontWeight: 600 }}>{port.arrivals}</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ color: 'var(--color-muted)' }}>Departures</div>
+                  <div style={{ color: '#F59E0B', fontWeight: 600 }}>{port.departures}</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ color: 'var(--color-muted)' }}>Expected</div>
+                  <div style={{ color: '#8B5CF6', fontWeight: 600 }}>{port.expected}</div>
+                </div>
+              </div>
             </div>
           ))}
         </div>
