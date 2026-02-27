@@ -141,16 +141,6 @@ const NewsPanel = ({ news, loading }) => {
                     <ExternalLink size={10} style={{ marginLeft: '0.25rem', opacity: 0.5 }} />
                   </a>
                 </div>
-                {item.summary && (
-                  <div style={{ 
-                    fontSize: '0.75rem', 
-                    color: 'var(--color-muted)', 
-                    marginTop: '0.25rem',
-                    lineHeight: 1.4
-                  }}>
-                    {item.summary.substring(0, 150)}...
-                  </div>
-                )}
                 <div className="news-time">{formatTime(item.published)}</div>
               </div>
             ))}
