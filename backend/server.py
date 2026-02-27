@@ -37,14 +37,38 @@ data_cache = {
     "security": {"data": [], "updated": None}
 }
 
-# RSS feeds for Pakistan news
+# RSS feeds for Pakistan news - comprehensive list
 PAKISTAN_NEWS_FEEDS = [
+    # Major News Outlets
     {"name": "Dawn News", "url": "https://www.dawn.com/feed", "category": "general"},
     {"name": "Geo News", "url": "https://www.geo.tv/rss/1/0", "category": "general"},
     {"name": "The News International", "url": "https://www.thenews.com.pk/rss/1/1", "category": "general"},
     {"name": "Express Tribune", "url": "https://tribune.com.pk/feed/home", "category": "general"},
     {"name": "ARY News", "url": "https://arynews.tv/feed/", "category": "general"},
+    {"name": "Dunya News", "url": "https://dunyanews.tv/feed", "category": "general"},
+    {"name": "Samaa TV", "url": "https://www.samaaenglish.tv/feed/", "category": "general"},
+    {"name": "Pakistan Today", "url": "https://www.pakistantoday.com.pk/feed/", "category": "general"},
+    {"name": "The Nation", "url": "https://www.nation.com.pk/rss/headlines", "category": "general"},
+    {"name": "Daily Times", "url": "https://dailytimes.com.pk/feed/", "category": "general"},
+    
+    # Business & Finance
     {"name": "Business Recorder", "url": "https://www.brecorder.com/feeds/latest-news", "category": "business"},
+    {"name": "Profit Pakistan", "url": "https://profit.pakistantoday.com.pk/feed/", "category": "business"},
+    
+    # Regional News
+    {"name": "Frontier Post", "url": "https://thefrontierpost.com/feed/", "category": "regional"},
+    {"name": "Balochistan Times", "url": "https://balochistantimes.com/feed/", "category": "regional"},
+    
+    # International Coverage of Pakistan
+    {"name": "Al Jazeera Pakistan", "url": "https://www.aljazeera.com/xml/rss/all.xml", "category": "international"},
+    {"name": "Reuters Pakistan", "url": "https://www.reutersagency.com/feed/", "category": "international"},
+    
+    # Tech & Science
+    {"name": "ProPakistani", "url": "https://propakistani.pk/feed/", "category": "tech"},
+    {"name": "TechJuice", "url": "https://www.techjuice.pk/feed/", "category": "tech"},
+    
+    # Sports
+    {"name": "Cricbuzz Pakistan", "url": "https://www.cricbuzz.com/rss/cb_rss_headlines.xml", "category": "sports"},
 ]
 
 async def fetch_rss_feed(feed_info: dict) -> list:
