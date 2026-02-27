@@ -71,6 +71,52 @@ PAKISTAN_NEWS_FEEDS = [
     {"name": "Cricbuzz Pakistan", "url": "https://www.cricbuzz.com/rss/cb_rss_headlines.xml", "category": "sports"},
 ]
 
+# Energy specific RSS feed
+ENERGY_NEWS_FEED = {"name": "Energy Update", "url": "https://www.energyupdate.com.pk/feed/", "category": "energy"}
+
+def parse_date(date_string):
+    """Parse various date formats and return datetime object"""
+    if not date_string:
+        return None
+    
+    from email.utils import parsedate_to_datetime
+    try:
+        # Try RFC 2822 format (common in RSS)
+        return parsedate_to_datetime(date_string)
+    except:
+        pass
+    
+    # Try common formats
+    formats = [
+        "%Y-%m-%dT%H:%M:%S%z",
+        "%Y-%m-%dT%H:%M:%SZ",
+        "%Y-%m-%d %H:%M:%S",
+        "%a, %d %b %Y %H:%M:%S %z",
+        "%a, %d %b %Y %H:%M:%S %Z",
+    ]
+    
+    for fmt in formats:
+        try:
+            return datetime.strptime(date_string, fmt)
+        except:
+            continue
+    
+    return None
+
+def is_within_24_hours(date_string):
+    """Check if the article is within last 24 hours"""
+    parsed_date = parse_date(date_string)
+    if not parsed_date:
+        return True  # Include if we can't parse the date
+    
+    now = datetime.now(timezone.utc)
+    # Make parsed_date timezone aware if it isn't
+    if parsed_date.tzinfo is None:
+        parsed_date = parsed_date.replace(tzinfo=timezone.utc)
+    
+    time_diff = now - parsed_date
+    return time_diff.total_seconds() <= 86400  # 24 hours in seconds
+
 async def fetch_rss_feed(feed_info: dict) -> list:
     """Fetch and parse RSS feed"""
     try:
