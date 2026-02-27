@@ -39,9 +39,10 @@ function App() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [newsRes, economicRes, securityRes, weatherRes, regionalRes, infraRes, mapRes] = 
+      const [newsRes, energyRes, economicRes, securityRes, weatherRes, regionalRes, infraRes, mapRes] = 
         await Promise.allSettled([
           axios.get(`${API_BASE}/api/news`),
+          axios.get(`${API_BASE}/api/energy`),
           axios.get(`${API_BASE}/api/economic`),
           axios.get(`${API_BASE}/api/security`),
           axios.get(`${API_BASE}/api/weather`),
@@ -51,6 +52,7 @@ function App() {
         ]);
 
       if (newsRes.status === 'fulfilled') setNews(newsRes.value.data.news || []);
+      if (energyRes.status === 'fulfilled') setEnergy(energyRes.value.data.news || []);
       if (economicRes.status === 'fulfilled') setEconomic(economicRes.value.data.data);
       if (securityRes.status === 'fulfilled') setSecurity(securityRes.value.data.alerts || []);
       if (weatherRes.status === 'fulfilled') setWeather(weatherRes.value.data.cities || []);
