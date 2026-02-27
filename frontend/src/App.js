@@ -154,8 +154,9 @@ function App() {
           </div>
 
           {/* Bottom Panels */}
-          <div className="bottom-panels">
+          <div className="bottom-panels" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
             <EconomicPanel data={economic} loading={loading} />
+            <EnergyPanel news={energy} loading={loading} />
             <WeatherPanel cities={weather} loading={loading} />
             <RegionalPanel relations={regional} loading={loading} />
             <InfrastructurePanel data={infrastructure} loading={loading} />
