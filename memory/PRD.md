@@ -69,11 +69,12 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 
 ## Data Sources
 - **News**: Real RSS feeds from Pakistani news outlets
-- **Economic**: MOCKED (ready for API integration)
+- **Remittances**: **LIVE** - State Bank of Pakistan EasyData API (15+ years of historical data)
+- **Economic**: MOCKED (ready for API integration) - except remittances which is live
 - **Weather**: MOCKED (ready for OpenWeatherMap integration)
 - **Security**: MOCKED (ready for API integration)
 - **Regional**: MOCKED (ready for API integration)
-- **Infrastructure**: MOCKED (ready for API integration)
+- **Infrastructure**: **LIVE** - Scraped from FlightStats (airports) and MyShipTracking (ports)
 
 ## Prioritized Backlog
 
