@@ -275,6 +275,8 @@ async def lifespan(app: FastAPI):
     try:
         data_cache["news"]["data"] = await fetch_all_news()
         data_cache["news"]["updated"] = datetime.now(timezone.utc)
+        data_cache["energy"]["data"] = await fetch_energy_news()
+        data_cache["energy"]["updated"] = datetime.now(timezone.utc)
         data_cache["economic"]["data"] = await fetch_economic_data()
         data_cache["economic"]["updated"] = datetime.now(timezone.utc)
         data_cache["weather"]["data"] = await fetch_weather_data()
