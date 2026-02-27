@@ -102,7 +102,7 @@ const EconomicPanel = ({ data, loading }) => {
     { 
       label: 'Remittances', 
       value: formatRemittanceValue(),
-      subLabel: remittancesData?.latest?.month ? `(${remittancesData.latest.month})` : '',
+      subLabel: remittancesData?.latest?.month || '',
       change: getRemittanceChange(),
       prefix: '',
       clickable: true,
