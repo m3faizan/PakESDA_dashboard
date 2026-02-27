@@ -104,7 +104,7 @@ async def fetch_all_news():
         all_news.extend(articles)
     # Sort by published date if available
     all_news.sort(key=lambda x: x.get("published", ""), reverse=True)
-    return all_news[:50]
+    return all_news[:100]  # Return more news items
 
 async def fetch_economic_data():
     """Fetch economic data - using mock data for now"""
