@@ -92,6 +92,28 @@ const InfrastructurePanel = ({ data, loading }) => {
             <span className="infra-value">{data.transport?.airports?.islamabad}</span>
           </div>
           <div className="infra-status" style={{ marginTop: '0.25rem' }}>
+            <span className="infra-indicator good"></span>
+            <span className="infra-label">LHE Airport</span>
+            <span className="infra-value">
+              <a 
+                href={data.transport?.airports?.lahore?.departures_url || "https://www.flightstats.com/v2/flight-tracker/departures/LHE"}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ 
+                  color: 'var(--color-primary)', 
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem'
+                }}
+                data-testid="lahore-flights-link"
+              >
+                {data.transport?.airports?.lahore?.departures_today || 0} departures
+                <Plane size={10} />
+              </a>
+            </span>
+          </div>
+          <div className="infra-status" style={{ marginTop: '0.25rem' }}>
             <span className={`infra-indicator ${getIndicatorClass(data.transport?.railways)}`}></span>
             <span className="infra-label">Railways</span>
             <span className="infra-value">{data.transport?.railways}</span>
