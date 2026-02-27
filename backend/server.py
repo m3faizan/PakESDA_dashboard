@@ -143,19 +143,21 @@ async def fetch_rss_feed(feed_info: dict) -> list:
     return []
 
 async def fetch_all_news():
-    """Fetch news from all RSS feeds - only last 24 hours"""
-    tasks = [fetch_rss_feed(feed) for feed in PAKISTAN_NEWS_FEEDS]
+    """Fetch news from all RSS feeds including energy - only last 48 hours"""
+    # Include energy feed in main news feeds
+    all_feeds = PAKISTAN_NEWS_FEEDS + [ENERGY_NEWS_FEED]
+    tasks = [fetch_rss_feed(feed) for feed in all_feeds]
     results = await asyncio.gather(*tasks)
     all_news = []
     for articles in results:
         all_news.extend(articles)
     
-    # Filter to only include news from last 24 hours
+    # Filter to only include news from last 48 hours
     recent_news = [article for article in all_news if is_within_24_hours(article.get("published", ""))]
     
     # Sort by published date if available
     recent_news.sort(key=lambda x: x.get("published", ""), reverse=True)
-    return recent_news[:100]  # Return up to 100 recent news items
+    return recent_news[:150]  # Return up to 150 recent news items
 
 async def fetch_energy_news():
     """Fetch energy news from Energy Update Pakistan"""
