@@ -32,28 +32,28 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 9. Dark theme with Pakistan green accents
 10. Responsive design
 
-## What's Been Implemented (Feb 26, 2026)
+## What's Been Implemented (Feb 27, 2026)
 
 ### Backend (FastAPI)
 - [x] `/api/health` - Health check endpoint
-- [x] `/api/news` - RSS feed aggregation from Pakistani news sources (Dawn, Geo, The News, Express Tribune, ARY, Business Recorder)
+- [x] `/api/news` - RSS feed aggregation from 12+ Pakistani news sources with category filtering
 - [x] `/api/economic` - Economic indicators (PKR/USD, PKR/EUR, KSE-100, inflation, forex reserves, remittances)
 - [x] `/api/weather` - Weather data for major cities (Karachi, Lahore, Islamabad, Peshawar, Quetta, Multan)
 - [x] `/api/security` - Security and political alerts
 - [x] `/api/regional` - Regional relations data (India, China, Afghanistan, Iran, Saudi Arabia, USA)
-- [x] `/api/infrastructure` - Infrastructure status (power grid, internet, transport)
+- [x] `/api/infrastructure` - Real scraped data for 5 airports (ISB, KHI, LHE, MUX, PEW) and 3 ports (Karachi, Port Qasim, Gwadar)
 - [x] `/api/map-data` - Map markers for Pakistani cities and CPEC routes
 
 ### Frontend (React)
-- [x] Header with logo, live indicator, clock, refresh button
+- [x] Header with logo, live indicator, **Pakistan time (PKT/UTC+5)**, refresh button
 - [x] News ticker (scrolling headlines)
 - [x] Bento grid layout with responsive panels
-- [x] NewsPanel - Displays latest news from RSS feeds
+- [x] NewsPanel - Displays latest news with category tabs (All, General, Energy, Business, International, Tech, Regional) and infinite scroll
 - [x] EconomicPanel - Shows PKR rates, KSE-100, inflation
 - [x] SecurityPanel - Shows security/political alerts with severity indicators
 - [x] WeatherPanel - Shows weather for major cities
 - [x] RegionalPanel - Shows diplomatic relations status
-- [x] InfrastructurePanel - Shows power, internet, transport status
+- [x] InfrastructurePanel - Airport status (5 airports with full names) and Port status (3 ports with vessel counts)
 - [x] MapSection - Interactive map with Pakistan focus, city markers, legend
 
 ### Design
