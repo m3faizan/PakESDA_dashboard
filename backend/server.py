@@ -105,7 +105,7 @@ def parse_date(date_string):
     return None
 
 def is_within_24_hours(date_string):
-    """Check if the article is within last 24 hours"""
+    """Check if the article is within last 48 hours (to account for timezone differences)"""
     parsed_date = parse_date(date_string)
     if not parsed_date:
         return True  # Include if we can't parse the date
@@ -116,7 +116,7 @@ def is_within_24_hours(date_string):
         parsed_date = parsed_date.replace(tzinfo=timezone.utc)
     
     time_diff = now - parsed_date
-    return time_diff.total_seconds() <= 86400  # 24 hours in seconds
+    return time_diff.total_seconds() <= 172800  # 48 hours in seconds for better coverage
 
 async def fetch_rss_feed(feed_info: dict) -> list:
     """Fetch and parse RSS feed"""
