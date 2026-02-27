@@ -576,12 +576,31 @@ async def get_regional_relations():
 async def get_infrastructure_status():
     """Get infrastructure monitoring data"""
     # Check if flight data needs refresh (every 6 hours)
-    if flight_cache["lahore_departures"]["updated"]:
-        age = (datetime.now(timezone.utc) - flight_cache["lahore_departures"]["updated"]).total_seconds()
-        if age > 21600:  # 6 hours
-            await fetch_lahore_flights()
-    else:
-        await fetch_lahore_flights()
+    needs_refresh = False
+    for airport_key in AIRPORTS.keys():
+        if flight_cache[airport_key]["updated"]:
+            age = (datetime.now(timezone.utc) - flight_cache[airport_key]["updated"]).total_seconds()
+            if age > 21600:  # 6 hours
+                needs_refresh = True
+                break
+        else:
+            needs_refresh = True
+            break
+    
+    if needs_refresh:
+        await fetch_all_airports()
+    
+    # Build airports data
+    airports_data = {}
+    for key, info in AIRPORTS.items():
+        airports_data[key] = {
+            "code": info["code"],
+            "name": info["name"],
+            "departures": flight_cache[key].get("departures", 0),
+            "arrivals": flight_cache[key].get("arrivals", 0),
+            "departures_url": f"{FLIGHTSTATS_BASE}/departures/{info['code']}",
+            "arrivals_url": f"{FLIGHTSTATS_BASE}/arrivals/{info['code']}"
+        }
     
     infrastructure = {
         "power": {
@@ -600,18 +619,9 @@ async def get_infrastructure_status():
             "outage_reports": 3,
             "affected_regions": ["Parts of Balochistan"]
         },
-        "transport": {
-            "airports": {
-                "karachi": "Operational",
-                "lahore": {
-                    "status": "Operational",
-                    "departures_today": flight_cache["lahore_departures"].get("count", 0),
-                    "departures_url": LAHORE_FLIGHTS_URL
-                },
-                "islamabad": "Operational"
-            },
-            "railways": "Normal Operations",
-            "highways": "Clear"
+        "air_transport": {
+            "airports": airports_data,
+            "note": "Flights in last 24 hours"
         },
         "updated": datetime.now(timezone.utc).isoformat()
     }
