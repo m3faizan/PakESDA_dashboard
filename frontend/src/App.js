@@ -122,8 +122,10 @@ function App() {
         </div>
         <div className="header-right">
           <div className="header-time" data-testid="header-time">
-            <Clock size={14} style={{ marginRight: '0.5rem', display: 'inline' }} />
-            {formatDate(currentTime)} | {formatTime(currentTime)} PKT
+            <MapPin size={14} style={{ marginRight: '0.25rem', display: 'inline' }} />
+            <span style={{ fontWeight: '600', color: 'var(--color-primary)' }}>Pakistan</span>
+            <Clock size={14} style={{ marginLeft: '0.75rem', marginRight: '0.25rem', display: 'inline' }} />
+            {formatPakistanDate(currentTime)} | {formatPakistanTime(currentTime)} PKT
           </div>
           <button 
             onClick={fetchData} 
