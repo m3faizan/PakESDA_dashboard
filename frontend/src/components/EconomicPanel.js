@@ -133,7 +133,7 @@ const EconomicPanel = ({ data, loading }) => {
               className={`economic-item ${item.clickable ? 'clickable' : ''}`} 
               data-testid={`economic-item-${index}`}
               onClick={() => handleItemClick(item)}
-              style={item.clickable ? { cursor: 'pointer' } : {}}
+              style={item.clickable ? { cursor: 'pointer', position: 'relative' } : {}}
             >
               <div className="economic-label">
                 {item.label}
@@ -153,19 +153,21 @@ const EconomicPanel = ({ data, loading }) => {
                 )}
               </div>
               <div className="economic-value">{item.prefix}{item.value}</div>
-              {item.subLabel && (
-                <div className="economic-sublabel" style={{ 
-                  fontSize: '0.65rem', 
-                  color: 'var(--color-muted)',
-                  marginTop: '-2px'
-                }}>
-                  {item.subLabel}
-                </div>
-              )}
               {item.change !== null && (
                 <div className={`economic-change ${item.change >= 0 ? 'positive' : 'negative'}`}>
                   {item.change >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                   {Math.abs(item.change).toFixed(2)}%
+                </div>
+              )}
+              {item.subLabel && (
+                <div className="economic-sublabel" style={{ 
+                  position: 'absolute',
+                  bottom: '0.5rem',
+                  right: '0.5rem',
+                  fontSize: '0.6rem', 
+                  color: 'var(--color-muted)',
+                }}>
+                  {item.subLabel}
                 </div>
               )}
             </div>
