@@ -345,6 +345,54 @@ async def fetch_all_airports():
     tasks = [fetch_airport_flights(key) for key in AIRPORTS.keys()]
     await asyncio.gather(*tasks)
 
+async def fetch_port_data(port_key: str):
+    """Fetch port vessel data from MyShipTracking"""
+    import re
+    port = PORTS.get(port_key)
+    if not port:
+        return
+    
+    port_id = port["id"]
+    url = f"https://www.myshiptracking.com/ports/port-id-{port_id}"
+    
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(
+                f"https://www.myshiptracking.com/ports/port-of-{port['name'].lower().replace(' ', '-')}-in-pk-pakistan-id-{port_id}",
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            )
+            if response.status_code == 200:
+                text = response.text
+                
+                # Extract Vessels In Port
+                match = re.search(r'Vessels In Port.*?(\d+)', text, re.DOTALL)
+                if match:
+                    port_cache[port_key]["in_port"] = int(match.group(1))
+                
+                # Extract Arrivals (24h)
+                match = re.search(r'Arrivals \(24h\).*?(\d+)', text, re.DOTALL)
+                if match:
+                    port_cache[port_key]["arrivals"] = int(match.group(1))
+                
+                # Extract Departures (24h)
+                match = re.search(r'Departures \(24h\).*?(\d+)', text, re.DOTALL)
+                if match:
+                    port_cache[port_key]["departures"] = int(match.group(1))
+                
+                # Extract Expected Arrivals
+                match = re.search(r'Expected Arrivals.*?(\d+)', text, re.DOTALL)
+                if match:
+                    port_cache[port_key]["expected"] = int(match.group(1))
+                
+                port_cache[port_key]["updated"] = datetime.now(timezone.utc)
+    except Exception as e:
+        print(f"Error fetching {port_key} port data: {e}")
+
+async def fetch_all_ports():
+    """Fetch data for all ports"""
+    tasks = [fetch_port_data(key) for key in PORTS.keys()]
+    await asyncio.gather(*tasks)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Initialize data
