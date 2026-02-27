@@ -200,11 +200,17 @@ h1, h2, h3, h4, h5, h6 {
 .bottom-panels {
   grid-column: span 12;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 1rem;
 }
 
 /* Responsive */
+@media (max-width: 1400px) {
+  .bottom-panels {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 @media (max-width: 1200px) {
   .map-section {
     grid-column: span 12;
