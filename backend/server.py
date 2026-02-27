@@ -29,6 +29,13 @@ economic_collection = db["economic_data"]
 security_collection = db["security_alerts"]
 weather_collection = db["weather_data"]
 
+# Flight data cache (refreshes every 6 hours)
+flight_cache = {
+    "lahore_departures": {"count": 0, "updated": None}
+}
+
+LAHORE_FLIGHTS_URL = "https://www.flightstats.com/v2/flight-tracker/departures/LHE"
+
 # Data cache with timestamps
 data_cache = {
     "news": {"data": [], "updated": None},
