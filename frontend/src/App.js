@@ -75,21 +75,32 @@ function App() {
     return () => clearInterval(timer);
   }, []);
 
+  const formatPakistanTime = (date) => {
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit',
+      hour12: false,
+      timeZone: 'Asia/Karachi'
+    });
+  };
+
+  const formatPakistanDate = (date) => {
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'short',
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric',
+      timeZone: 'Asia/Karachi'
+    });
+  };
+
   const formatTime = (date) => {
     return date.toLocaleTimeString('en-US', { 
       hour: '2-digit', 
       minute: '2-digit', 
       second: '2-digit',
       hour12: false 
-    });
-  };
-
-  const formatDate = (date) => {
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'short',
-      day: '2-digit', 
-      month: 'short', 
-      year: 'numeric'
     });
   };
 
