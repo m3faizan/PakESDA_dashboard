@@ -18,7 +18,6 @@ import SecurityPanel from './components/SecurityPanel';
 import WeatherPanel from './components/WeatherPanel';
 import RegionalPanel from './components/RegionalPanel';
 import InfrastructurePanel from './components/InfrastructurePanel';
-import EnergyPanel from './components/EnergyPanel';
 import MapSection from './components/MapSection';
 import NewsTicker from './components/NewsTicker';
 
