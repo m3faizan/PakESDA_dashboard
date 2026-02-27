@@ -287,27 +287,48 @@ async def fetch_security_data():
     ]
     return alerts
 
-async def fetch_lahore_flights():
-    """Fetch Lahore Airport departure count from FlightStats"""
-    try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.get(LAHORE_FLIGHTS_URL, headers={
+async def fetch_airport_flights(airport_key: str):
+    """Fetch airport departure and arrival counts from FlightStats"""
+    import re
+    airport = AIRPORTS.get(airport_key)
+    if not airport:
+        return
+    
+    code = airport["code"]
+    
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        # Fetch departures
+        try:
+            dep_url = f"{FLIGHTSTATS_BASE}/departures/{code}"
+            response = await client.get(dep_url, headers={
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
             })
             if response.status_code == 200:
-                # Parse the page to find flight count
-                import re
-                text = response.text
-                # Look for "X results" pattern
-                match = re.search(r'(\d+)\s*results', text)
+                match = re.search(r'(\d+)\s*results', response.text)
                 if match:
-                    count = int(match.group(1))
-                    flight_cache["lahore_departures"]["count"] = count
-                    flight_cache["lahore_departures"]["updated"] = datetime.now(timezone.utc)
-                    return count
-    except Exception as e:
-        print(f"Error fetching Lahore flights: {e}")
-    return flight_cache["lahore_departures"].get("count", 0)
+                    flight_cache[airport_key]["departures"] = int(match.group(1))
+        except Exception as e:
+            print(f"Error fetching {airport_key} departures: {e}")
+        
+        # Fetch arrivals
+        try:
+            arr_url = f"{FLIGHTSTATS_BASE}/arrivals/{code}"
+            response = await client.get(arr_url, headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            })
+            if response.status_code == 200:
+                match = re.search(r'(\d+)\s*results', response.text)
+                if match:
+                    flight_cache[airport_key]["arrivals"] = int(match.group(1))
+        except Exception as e:
+            print(f"Error fetching {airport_key} arrivals: {e}")
+    
+    flight_cache[airport_key]["updated"] = datetime.now(timezone.utc)
+
+async def fetch_all_airports():
+    """Fetch flight data for all airports"""
+    tasks = [fetch_airport_flights(key) for key in AIRPORTS.keys()]
+    await asyncio.gather(*tasks)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
