@@ -169,7 +169,7 @@ const RemittancesModal = ({ isOpen, onClose, data }) => {
                 tick={{ fill: '#64748b', fontSize: 11 }}
                 axisLine={{ stroke: '#1e293b' }}
                 tickLine={{ stroke: '#1e293b' }}
-                domain={[minValue, maxValue]}
+                domain={[0, 'auto']}
                 width={60}
               />
               <Tooltip content={<CustomTooltip />} />
