@@ -277,6 +277,28 @@ async def fetch_security_data():
     ]
     return alerts
 
+async def fetch_lahore_flights():
+    """Fetch Lahore Airport departure count from FlightStats"""
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(LAHORE_FLIGHTS_URL, headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            })
+            if response.status_code == 200:
+                # Parse the page to find flight count
+                import re
+                text = response.text
+                # Look for "X results" pattern
+                match = re.search(r'(\d+)\s*results', text)
+                if match:
+                    count = int(match.group(1))
+                    flight_cache["lahore_departures"]["count"] = count
+                    flight_cache["lahore_departures"]["updated"] = datetime.now(timezone.utc)
+                    return count
+    except Exception as e:
+        print(f"Error fetching Lahore flights: {e}")
+    return flight_cache["lahore_departures"].get("count", 0)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Initialize data
