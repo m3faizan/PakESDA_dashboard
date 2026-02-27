@@ -210,12 +210,12 @@ async def fetch_remittances_data():
     """Fetch remittances data from State Bank of Pakistan API"""
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            # Fetch last 15 years of data for the chart
+            # Fetch all available data from 1972 onwards
             response = await client.get(
                 SBP_REMITTANCES_URL,
                 params={
                     "api_key": SBP_API_KEY,
-                    "start_date": "2010-01-01",
+                    "start_date": "1972-01-01",
                     "end_date": datetime.now(timezone.utc).strftime("%Y-%m-%d")
                 }
             )
