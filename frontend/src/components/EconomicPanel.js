@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, DollarSign, ExternalLink, Coins, ArrowLeftRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, ExternalLink, Coins, ArrowLeftRight, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 import axios from 'axios';
 import SBPDataModal from './SBPDataModal';
 
@@ -10,6 +10,8 @@ const EconomicPanel = ({ data, loading }) => {
   const [goldData, setGoldData] = useState(null);
   const [forexData, setForexData] = useState(null);
   const [currentAccountData, setCurrentAccountData] = useState(null);
+  const [importsData, setImportsData] = useState(null);
+  const [exportsData, setExportsData] = useState(null);
   const [dataLoading, setDataLoading] = useState(true);
   
   const [activeModal, setActiveModal] = useState(null);
@@ -17,11 +19,13 @@ const EconomicPanel = ({ data, loading }) => {
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const [remittancesRes, goldRes, forexRes, currentAccountRes] = await Promise.allSettled([
+        const [remittancesRes, goldRes, forexRes, currentAccountRes, importsRes, exportsRes] = await Promise.allSettled([
           axios.get(`${API_BASE}/api/remittances`),
           axios.get(`${API_BASE}/api/gold-reserves`),
           axios.get(`${API_BASE}/api/forex-reserves`),
-          axios.get(`${API_BASE}/api/current-account`)
+          axios.get(`${API_BASE}/api/current-account`),
+          axios.get(`${API_BASE}/api/imports`),
+          axios.get(`${API_BASE}/api/exports`)
         ]);
 
         if (remittancesRes.status === 'fulfilled') {
@@ -35,6 +39,12 @@ const EconomicPanel = ({ data, loading }) => {
         }
         if (currentAccountRes.status === 'fulfilled') {
           setCurrentAccountData(currentAccountRes.value.data.data);
+        }
+        if (importsRes.status === 'fulfilled') {
+          setImportsData(importsRes.value.data.data);
+        }
+        if (exportsRes.status === 'fulfilled') {
+          setExportsData(exportsRes.value.data.data);
         }
       } catch (error) {
         console.error('Error fetching economic data:', error);
@@ -135,6 +145,26 @@ const EconomicPanel = ({ data, loading }) => {
       isLive: !dataLoading && forexData
     },
     { 
+      label: 'Imports', 
+      value: formatBillions(importsData?.latest?.value),
+      subLabel: importsData?.latest?.month || '',
+      change: importsData?.mom_change,
+      prefix: '',
+      clickable: true,
+      modalKey: 'imports',
+      isLive: !dataLoading && importsData
+    },
+    { 
+      label: 'Exports', 
+      value: formatBillions(exportsData?.latest?.value),
+      subLabel: exportsData?.latest?.month || '',
+      change: exportsData?.mom_change,
+      prefix: '',
+      clickable: true,
+      modalKey: 'exports',
+      isLive: !dataLoading && exportsData
+    },
+    { 
       label: 'Remittances', 
       value: formatBillions(remittancesData?.latest?.value),
       subLabel: remittancesData?.latest?.month || '',
@@ -162,6 +192,10 @@ const EconomicPanel = ({ data, loading }) => {
         return { data: forexData, title: "Total Forex Reserves", icon: DollarSign };
       case 'currentAccount':
         return { data: currentAccountData, title: "Current Account Balance", icon: ArrowLeftRight, isCurrentAccount: true };
+      case 'imports':
+        return { data: importsData, title: "Imports (Goods & Services)", icon: ArrowDownToLine };
+      case 'exports':
+        return { data: exportsData, title: "Exports (Goods & Services)", icon: ArrowUpFromLine };
       default:
         return null;
     }
@@ -179,7 +213,7 @@ const EconomicPanel = ({ data, loading }) => {
         <span className="panel-badge">LIVE</span>
       </div>
       <div className="panel-content">
-        <div className="economic-grid economic-grid-7">
+        <div className="economic-grid economic-grid-9">
           {indicators.map((item, index) => (
             <div 
               key={index} 
