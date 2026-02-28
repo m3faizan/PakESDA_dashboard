@@ -205,7 +205,7 @@ const EconomicPanel = ({ data, loading }) => {
                   }}></span>
                 )}
               </div>
-              <div className="economic-value">{item.prefix}{item.value}</div>
+              <div className="economic-value" style={item.isCurrentAccount ? { color: item.rawValue >= 0 ? '#22C55E' : '#EF4444' } : {}}>{item.prefix}{item.value}</div>
               {item.change !== null && item.change !== undefined && (
                 <div className={`economic-change ${item.isCurrentAccount ? (item.change >= 0 ? 'positive' : 'negative') : (item.change >= 0 ? 'positive' : 'negative')}`}>
                   {item.isCurrentAccount ? (
