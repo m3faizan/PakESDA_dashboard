@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, DollarSign, ExternalLink, Coins } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, ExternalLink, Coins, ArrowLeftRight } from 'lucide-react';
 import axios from 'axios';
 import SBPDataModal from './SBPDataModal';
 
@@ -9,17 +9,19 @@ const EconomicPanel = ({ data, loading }) => {
   const [remittancesData, setRemittancesData] = useState(null);
   const [goldData, setGoldData] = useState(null);
   const [forexData, setForexData] = useState(null);
+  const [currentAccountData, setCurrentAccountData] = useState(null);
   const [dataLoading, setDataLoading] = useState(true);
   
-  const [activeModal, setActiveModal] = useState(null); // 'remittances', 'gold', 'forex'
+  const [activeModal, setActiveModal] = useState(null);
 
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const [remittancesRes, goldRes, forexRes] = await Promise.allSettled([
+        const [remittancesRes, goldRes, forexRes, currentAccountRes] = await Promise.allSettled([
           axios.get(`${API_BASE}/api/remittances`),
           axios.get(`${API_BASE}/api/gold-reserves`),
-          axios.get(`${API_BASE}/api/forex-reserves`)
+          axios.get(`${API_BASE}/api/forex-reserves`),
+          axios.get(`${API_BASE}/api/current-account`)
         ]);
 
         if (remittancesRes.status === 'fulfilled') {
@@ -30,6 +32,9 @@ const EconomicPanel = ({ data, loading }) => {
         }
         if (forexRes.status === 'fulfilled') {
           setForexData(forexRes.value.data.data);
+        }
+        if (currentAccountRes.status === 'fulfilled') {
+          setCurrentAccountData(currentAccountRes.value.data.data);
         }
       } catch (error) {
         console.error('Error fetching economic data:', error);
@@ -59,13 +64,20 @@ const EconomicPanel = ({ data, loading }) => {
     );
   }
 
-  // Format value in billions
+  // Format value in billions/millions
   const formatBillions = (value) => {
-    if (!value) return '$--';
-    if (value >= 1000) {
+    if (value === null || value === undefined) return '$--';
+    if (Math.abs(value) >= 1000) {
       return `$${(value / 1000).toFixed(2)}B`;
     }
     return `$${value.toFixed(0)}M`;
+  };
+
+  // Format current account (can be negative)
+  const formatCurrentAccount = (value) => {
+    if (value === null || value === undefined) return '$--';
+    const prefix = value >= 0 ? '+' : '';
+    return `${prefix}$${value.toFixed(0)}M`;
   };
 
   const indicators = [
@@ -77,11 +89,15 @@ const EconomicPanel = ({ data, loading }) => {
       clickable: false
     },
     { 
-      label: 'PKR/EUR', 
-      value: data.pkr_eur?.rate?.toFixed(2), 
-      change: data.pkr_eur?.change_percent,
-      prefix: '₨',
-      clickable: false
+      label: 'Current A/C', 
+      value: formatCurrentAccount(currentAccountData?.latest?.value),
+      subLabel: currentAccountData?.latest?.month || '',
+      change: currentAccountData?.mom_change,
+      prefix: '',
+      clickable: true,
+      modalKey: 'currentAccount',
+      isLive: !dataLoading && currentAccountData,
+      isCurrentAccount: true
     },
     { 
       label: 'KSE-100', 
@@ -143,6 +159,8 @@ const EconomicPanel = ({ data, loading }) => {
         return { data: goldData, title: "Gold Reserves", icon: Coins };
       case 'forex':
         return { data: forexData, title: "Total Forex Reserves", icon: DollarSign };
+      case 'currentAccount':
+        return { data: currentAccountData, title: "Current Account Balance", icon: ArrowLeftRight, isCurrentAccount: true };
       default:
         return null;
     }
@@ -188,9 +206,18 @@ const EconomicPanel = ({ data, loading }) => {
               </div>
               <div className="economic-value">{item.prefix}{item.value}</div>
               {item.change !== null && item.change !== undefined && (
-                <div className={`economic-change ${item.change >= 0 ? 'positive' : 'negative'}`}>
-                  {item.change >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                  {Math.abs(item.change).toFixed(2)}%
+                <div className={`economic-change ${item.isCurrentAccount ? (item.change >= 0 ? 'positive' : 'negative') : (item.change >= 0 ? 'positive' : 'negative')}`}>
+                  {item.isCurrentAccount ? (
+                    <>
+                      {item.change >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                      {item.change >= 0 ? '+' : ''}{item.change.toFixed(0)}M
+                    </>
+                  ) : (
+                    <>
+                      {item.change >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                      {Math.abs(item.change).toFixed(2)}%
+                    </>
+                  )}
                 </div>
               )}
               {item.subLabel && (
@@ -216,6 +243,7 @@ const EconomicPanel = ({ data, loading }) => {
           data={modalInfo.data}
           title={modalInfo.title}
           icon={modalInfo.icon}
+          isCurrentAccount={modalInfo.isCurrentAccount}
         />
       )}
     </div>
