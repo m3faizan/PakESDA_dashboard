@@ -272,6 +272,86 @@ async def fetch_remittances_data():
     # Return None if failed
     return None
 
+async def fetch_sbp_reserves_data(url: str, name: str, start_date: str = "1990-01-01"):
+    """Generic function to fetch reserves data from State Bank of Pakistan API"""
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(
+                url,
+                params={
+                    "api_key": SBP_API_KEY,
+                    "start_date": start_date,
+                    "end_date": datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                }
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                rows = data.get("rows", [])
+                
+                if len(rows) >= 13:  # Need at least 13 months for YoY
+                    history = []
+                    for row in rows:
+                        history.append({
+                            "date": row[3],
+                            "value": float(row[4]),
+                            "unit": row[5]
+                        })
+                    
+                    latest = history[0]
+                    previous = history[1]
+                    
+                    # Find YoY comparison (12 months ago)
+                    yoy_value = None
+                    latest_date = datetime.strptime(latest["date"], "%Y-%m-%d")
+                    for item in history:
+                        item_date = datetime.strptime(item["date"], "%Y-%m-%d")
+                        months_diff = (latest_date.year - item_date.year) * 12 + (latest_date.month - item_date.month)
+                        if months_diff == 12:
+                            yoy_value = item["value"]
+                            break
+                    
+                    # Calculate MoM change
+                    mom_change = ((latest["value"] - previous["value"]) / previous["value"]) * 100
+                    
+                    # Calculate YoY change
+                    yoy_change = None
+                    if yoy_value:
+                        yoy_change = ((latest["value"] - yoy_value) / yoy_value) * 100
+                    
+                    month_name = latest_date.strftime("%B %Y")
+                    
+                    return {
+                        "latest": {
+                            "value": round(latest["value"], 2),
+                            "month": month_name,
+                            "date": latest["date"],
+                            "unit": "Million USD"
+                        },
+                        "previous": {
+                            "value": round(previous["value"], 2),
+                            "date": previous["date"]
+                        },
+                        "mom_change": round(mom_change, 2),
+                        "yoy_change": round(yoy_change, 2) if yoy_change else None,
+                        "history": history,
+                        "source": "State Bank of Pakistan",
+                        "name": name,
+                        "updated": datetime.now(timezone.utc).isoformat()
+                    }
+    except Exception as e:
+        print(f"Error fetching {name} data: {e}")
+    
+    return None
+
+async def fetch_gold_reserves_data():
+    """Fetch gold reserves data from State Bank of Pakistan"""
+    return await fetch_sbp_reserves_data(SBP_GOLD_RESERVES_URL, "Gold Reserves", "1990-01-01")
+
+async def fetch_forex_reserves_data():
+    """Fetch total forex reserves data from State Bank of Pakistan"""
+    return await fetch_sbp_reserves_data(SBP_FOREX_RESERVES_URL, "Total Forex Reserves", "1990-01-01")
+
 async def fetch_economic_data():
     """Fetch economic data - using mock data for now"""
     # In production, this would call real APIs like Alpha Vantage, Open Exchange Rates, etc.
