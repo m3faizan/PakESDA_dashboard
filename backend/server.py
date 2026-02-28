@@ -228,7 +228,7 @@ async def fetch_remittances_data():
                 data = response.json()
                 rows = data.get("rows", [])
                 
-                if len(rows) >= 2:
+                if len(rows) >= 13:  # Need at least 13 months for YoY
                     # Data is sorted newest first
                     # Each row: [Dataset Name, Series Key, Series Name, Date, Value, Unit, Status, Comments]
                     history = []
@@ -243,11 +243,24 @@ async def fetch_remittances_data():
                     latest = history[0]
                     previous = history[1]
                     
+                    # Find YoY comparison (12 months ago)
+                    yoy_value = None
+                    latest_date = datetime.strptime(latest["date"], "%Y-%m-%d")
+                    for item in history:
+                        item_date = datetime.strptime(item["date"], "%Y-%m-%d")
+                        months_diff = (latest_date.year - item_date.year) * 12 + (latest_date.month - item_date.month)
+                        if months_diff == 12:
+                            yoy_value = item["value"]
+                            break
+                    
                     # Calculate MoM change
                     mom_change = ((latest["value"] - previous["value"]) / previous["value"]) * 100
                     
-                    # Parse month from date
-                    latest_date = datetime.strptime(latest["date"], "%Y-%m-%d")
+                    # Calculate YoY change
+                    yoy_change = None
+                    if yoy_value:
+                        yoy_change = ((latest["value"] - yoy_value) / yoy_value) * 100
+                    
                     month_name = latest_date.strftime("%B %Y")
                     
                     return {
@@ -262,8 +275,10 @@ async def fetch_remittances_data():
                             "date": previous["date"]
                         },
                         "mom_change": round(mom_change, 2),
+                        "yoy_change": round(yoy_change, 2) if yoy_change else None,
                         "history": history,  # Full history for chart
                         "source": "State Bank of Pakistan",
+                        "name": "Workers' Remittances",
                         "updated": datetime.now(timezone.utc).isoformat()
                     }
     except Exception as e:
