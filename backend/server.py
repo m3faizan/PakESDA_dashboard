@@ -373,6 +373,14 @@ async def fetch_forex_reserves_data():
     """Fetch total forex reserves data from State Bank of Pakistan"""
     return await fetch_sbp_reserves_data(SBP_FOREX_RESERVES_URL, "Total Forex Reserves", "1990-01-01")
 
+async def fetch_imports_data():
+    """Fetch imports data from State Bank of Pakistan"""
+    return await fetch_sbp_reserves_data(SBP_IMPORTS_URL, "Imports", "1990-01-01")
+
+async def fetch_exports_data():
+    """Fetch exports data from State Bank of Pakistan"""
+    return await fetch_sbp_reserves_data(SBP_EXPORTS_URL, "Exports", "1990-01-01")
+
 async def fetch_current_account_data():
     """Fetch current account balance data from State Bank of Pakistan"""
     try:
