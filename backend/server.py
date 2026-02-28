@@ -891,6 +891,40 @@ async def get_current_account():
         "updated": data_cache["current_account"]["updated"].isoformat() if data_cache["current_account"]["updated"] else None
     }
 
+@app.get("/api/imports")
+async def get_imports():
+    """Get imports data from State Bank of Pakistan"""
+    if data_cache["imports"]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache["imports"]["updated"]).total_seconds()
+        if age > 3600:
+            data_cache["imports"]["data"] = await fetch_imports_data()
+            data_cache["imports"]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache["imports"]["data"] = await fetch_imports_data()
+        data_cache["imports"]["updated"] = datetime.now(timezone.utc)
+    
+    return {
+        "data": data_cache["imports"]["data"],
+        "updated": data_cache["imports"]["updated"].isoformat() if data_cache["imports"]["updated"] else None
+    }
+
+@app.get("/api/exports")
+async def get_exports():
+    """Get exports data from State Bank of Pakistan"""
+    if data_cache["exports"]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache["exports"]["updated"]).total_seconds()
+        if age > 3600:
+            data_cache["exports"]["data"] = await fetch_exports_data()
+            data_cache["exports"]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache["exports"]["data"] = await fetch_exports_data()
+        data_cache["exports"]["updated"] = datetime.now(timezone.utc)
+    
+    return {
+        "data": data_cache["exports"]["data"],
+        "updated": data_cache["exports"]["updated"].isoformat() if data_cache["exports"]["updated"] else None
+    }
+
 
 @app.get("/api/regional")
 async def get_regional_relations():
