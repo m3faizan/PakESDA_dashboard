@@ -332,27 +332,42 @@ h1, h2, h3, h4, h5, h6 {
   gap: 0.75rem;
 }
 
+.economic-grid-7 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+.economic-grid-7 .economic-item {
+  padding: 0.6rem;
+}
+
+.economic-grid-7 .economic-item:last-child {
+  grid-column: span 2;
+}
+
 .economic-item {
   padding: 0.75rem;
   background: rgba(15, 23, 42, 0.5);
   border: 1px solid var(--color-border);
+  min-height: 70px;
 }
 
 .economic-label {
-  font-size: 0.625rem;
+  font-size: 0.6rem;
   color: var(--color-muted);
   text-transform: uppercase;
   margin-bottom: 0.25rem;
 }
 
 .economic-value {
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--color-text);
 }
 
 .economic-change {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   display: flex;
   align-items: center;
   gap: 0.25rem;
