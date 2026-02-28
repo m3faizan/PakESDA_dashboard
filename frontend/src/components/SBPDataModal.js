@@ -7,7 +7,8 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer
+  ResponsiveContainer,
+  ReferenceLine
 } from 'recharts';
 
 const TIME_RANGES = [
@@ -19,7 +20,7 @@ const TIME_RANGES = [
   { key: 'ALL', label: 'All', months: null }
 ];
 
-const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign }) => {
+const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, isCurrentAccount = false }) => {
   const [selectedRange, setSelectedRange] = useState('1Y');
 
   const filteredData = useMemo(() => {
@@ -49,10 +50,28 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign })
   }, [data, selectedRange]);
 
   const formatValue = (value) => {
+    if (isCurrentAccount) {
+      const prefix = value >= 0 ? '+' : '';
+      if (Math.abs(value) >= 1000) {
+        return `${prefix}$${(value / 1000).toFixed(2)}B`;
+      }
+      return `${prefix}$${value.toFixed(0)}M`;
+    }
     if (value >= 1000) {
       return `$${(value / 1000).toFixed(2)}B`;
     }
     return `$${value.toFixed(0)}M`;
+  };
+
+  const formatChange = (value) => {
+    if (isCurrentAccount) {
+      // Absolute change for current account
+      const prefix = value >= 0 ? '+' : '';
+      return `${prefix}$${value.toFixed(0)}M`;
+    }
+    // Percentage change for others
+    const prefix = value >= 0 ? '+' : '';
+    return `${prefix}${value.toFixed(2)}%`;
   };
 
   const formatDate = (dateStr) => {
@@ -84,6 +103,11 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign })
   const yoyChange = data?.yoy_change;
   const isMomPositive = momChange >= 0;
   const isYoyPositive = yoyChange >= 0;
+
+  // Calculate Y-axis domain for current account (needs to handle negative values)
+  const values = filteredData.map(d => d.value);
+  const minValue = Math.min(...values, 0);
+  const maxValue = Math.max(...values, 0);
 
   return (
     <div className="modal-overlay" onClick={onClose} data-testid="sbp-modal-overlay">
@@ -119,13 +143,13 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign })
           <div className="summary-changes">
             <div className={`summary-change ${isMomPositive ? 'positive' : 'negative'}`}>
               {isMomPositive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-              <span>{isMomPositive ? '+' : ''}{momChange.toFixed(2)}%</span>
+              <span>{formatChange(momChange)}</span>
               <span className="change-label">MoM</span>
             </div>
             {yoyChange !== null && yoyChange !== undefined && (
               <div className={`summary-change ${isYoyPositive ? 'positive' : 'negative'}`}>
                 {isYoyPositive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                <span>{isYoyPositive ? '+' : ''}{yoyChange.toFixed(2)}%</span>
+                <span>{formatChange(yoyChange)}</span>
                 <span className="change-label">YoY</span>
               </div>
             )}
@@ -149,9 +173,13 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign })
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <defs>
-                <linearGradient id="colorSBP" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="colorPositive" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#22C55E" stopOpacity={0.3}/>
                   <stop offset="95%" stopColor="#22C55E" stopOpacity={0}/>
+                </linearGradient>
+                <linearGradient id="colorNegative" x1="0" y1="1" x2="0" y2="0">
+                  <stop offset="5%" stopColor="#EF4444" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#EF4444" stopOpacity={0}/>
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
@@ -166,22 +194,29 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign })
                 minTickGap={50}
               />
               <YAxis 
-                tickFormatter={(val) => `$${(val/1000).toFixed(1)}B`}
+                tickFormatter={(val) => {
+                  if (isCurrentAccount) {
+                    const prefix = val >= 0 ? '' : '-';
+                    return `${prefix}$${Math.abs(val/1000).toFixed(1)}B`;
+                  }
+                  return `$${(val/1000).toFixed(1)}B`;
+                }}
                 stroke="#64748b"
                 tick={{ fill: '#64748b', fontSize: 11 }}
                 axisLine={{ stroke: '#1e293b' }}
                 tickLine={{ stroke: '#1e293b' }}
-                domain={[0, 'auto']}
+                domain={isCurrentAccount ? [minValue * 1.1, maxValue * 1.1] : [0, 'auto']}
                 width={60}
               />
+              {isCurrentAccount && <ReferenceLine y={0} stroke="#64748b" strokeDasharray="3 3" />}
               <Tooltip content={<CustomTooltip />} />
               <Area 
                 type="monotone" 
                 dataKey="value" 
-                stroke="#22C55E" 
+                stroke={isCurrentAccount ? (latest?.value >= 0 ? "#22C55E" : "#EF4444") : "#22C55E"}
                 strokeWidth={2}
                 fillOpacity={1}
-                fill="url(#colorSBP)"
+                fill={isCurrentAccount ? (latest?.value >= 0 ? "url(#colorPositive)" : "url(#colorNegative)") : "url(#colorPositive)"}
               />
             </AreaChart>
           </ResponsiveContainer>
