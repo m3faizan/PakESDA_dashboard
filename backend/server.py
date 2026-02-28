@@ -743,6 +743,40 @@ async def get_remittances():
         "updated": data_cache["remittances"]["updated"].isoformat() if data_cache["remittances"]["updated"] else None
     }
 
+@app.get("/api/gold-reserves")
+async def get_gold_reserves():
+    """Get gold reserves data from State Bank of Pakistan"""
+    if data_cache["gold_reserves"]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache["gold_reserves"]["updated"]).total_seconds()
+        if age > 3600:
+            data_cache["gold_reserves"]["data"] = await fetch_gold_reserves_data()
+            data_cache["gold_reserves"]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache["gold_reserves"]["data"] = await fetch_gold_reserves_data()
+        data_cache["gold_reserves"]["updated"] = datetime.now(timezone.utc)
+    
+    return {
+        "data": data_cache["gold_reserves"]["data"],
+        "updated": data_cache["gold_reserves"]["updated"].isoformat() if data_cache["gold_reserves"]["updated"] else None
+    }
+
+@app.get("/api/forex-reserves")
+async def get_forex_reserves():
+    """Get total forex reserves data from State Bank of Pakistan"""
+    if data_cache["forex_reserves"]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache["forex_reserves"]["updated"]).total_seconds()
+        if age > 3600:
+            data_cache["forex_reserves"]["data"] = await fetch_forex_reserves_data()
+            data_cache["forex_reserves"]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache["forex_reserves"]["data"] = await fetch_forex_reserves_data()
+        data_cache["forex_reserves"]["updated"] = datetime.now(timezone.utc)
+    
+    return {
+        "data": data_cache["forex_reserves"]["data"],
+        "updated": data_cache["forex_reserves"]["updated"].isoformat() if data_cache["forex_reserves"]["updated"] else None
+    }
+
 
 @app.get("/api/regional")
 async def get_regional_relations():
