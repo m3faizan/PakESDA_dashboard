@@ -346,6 +346,29 @@ h1, h2, h3, h4, h5, h6 {
   grid-column: span 2;
 }
 
+.economic-grid-9 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+}
+
+.economic-grid-9 .economic-item {
+  padding: 0.5rem;
+  min-height: 65px;
+}
+
+.economic-grid-9 .economic-label {
+  font-size: 0.55rem;
+}
+
+.economic-grid-9 .economic-value {
+  font-size: 0.9rem;
+}
+
+.economic-grid-9 .economic-change {
+  font-size: 0.6rem;
+}
+
 .economic-item {
   padding: 0.75rem;
   background: rgba(15, 23, 42, 0.5);
