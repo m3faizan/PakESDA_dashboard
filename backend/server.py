@@ -369,6 +369,74 @@ async def fetch_forex_reserves_data():
     """Fetch total forex reserves data from State Bank of Pakistan"""
     return await fetch_sbp_reserves_data(SBP_FOREX_RESERVES_URL, "Total Forex Reserves", "1990-01-01")
 
+async def fetch_current_account_data():
+    """Fetch current account balance data from State Bank of Pakistan"""
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(
+                SBP_CURRENT_ACCOUNT_URL,
+                params={
+                    "api_key": SBP_API_KEY,
+                    "start_date": "1990-01-01",
+                    "end_date": datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                }
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                rows = data.get("rows", [])
+                
+                if len(rows) >= 13:
+                    history = []
+                    for row in rows:
+                        history.append({
+                            "date": row[3],
+                            "value": float(row[4]),  # Can be negative
+                            "unit": row[5]
+                        })
+                    
+                    latest = history[0]
+                    previous = history[1]
+                    
+                    # Find YoY comparison
+                    yoy_value = None
+                    latest_date = datetime.strptime(latest["date"], "%Y-%m-%d")
+                    for item in history:
+                        item_date = datetime.strptime(item["date"], "%Y-%m-%d")
+                        months_diff = (latest_date.year - item_date.year) * 12 + (latest_date.month - item_date.month)
+                        if months_diff == 12:
+                            yoy_value = item["value"]
+                            break
+                    
+                    # Calculate change (absolute difference for current account since it can be negative)
+                    mom_change = latest["value"] - previous["value"]
+                    yoy_change = (latest["value"] - yoy_value) if yoy_value is not None else None
+                    
+                    month_name = latest_date.strftime("%B %Y")
+                    
+                    return {
+                        "latest": {
+                            "value": round(latest["value"], 2),
+                            "month": month_name,
+                            "date": latest["date"],
+                            "unit": "Million USD"
+                        },
+                        "previous": {
+                            "value": round(previous["value"], 2),
+                            "date": previous["date"]
+                        },
+                        "mom_change": round(mom_change, 2),  # Absolute change
+                        "yoy_change": round(yoy_change, 2) if yoy_change is not None else None,
+                        "history": history,
+                        "source": "State Bank of Pakistan",
+                        "name": "Current Account Balance",
+                        "updated": datetime.now(timezone.utc).isoformat()
+                    }
+    except Exception as e:
+        print(f"Error fetching current account data: {e}")
+    
+    return None
+
 async def fetch_economic_data():
     """Fetch economic data - using mock data for now"""
     # In production, this would call real APIs like Alpha Vantage, Open Exchange Rates, etc.
