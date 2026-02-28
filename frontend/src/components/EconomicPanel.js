@@ -97,7 +97,8 @@ const EconomicPanel = ({ data, loading }) => {
       clickable: true,
       modalKey: 'currentAccount',
       isLive: !dataLoading && currentAccountData,
-      isCurrentAccount: true
+      isCurrentAccount: true,
+      rawValue: currentAccountData?.latest?.value
     },
     { 
       label: 'KSE-100', 
