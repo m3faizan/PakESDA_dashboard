@@ -49,6 +49,17 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
     return history.filter(item => new Date(item.date) >= cutoffDate);
   }, [data, selectedRange]);
 
+  // For current account, split data into positive and negative for dual coloring
+  const chartData = useMemo(() => {
+    if (!isCurrentAccount) return filteredData;
+    
+    return filteredData.map(item => ({
+      ...item,
+      positive: item.value >= 0 ? item.value : 0,
+      negative: item.value < 0 ? item.value : 0
+    }));
+  }, [filteredData, isCurrentAccount]);
+
   const formatValue = (value) => {
     if (isCurrentAccount) {
       const prefix = value >= 0 ? '+' : '';
@@ -65,11 +76,9 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
 
   const formatChange = (value) => {
     if (isCurrentAccount) {
-      // Absolute change for current account
       const prefix = value >= 0 ? '+' : '';
       return `${prefix}$${value.toFixed(0)}M`;
     }
-    // Percentage change for others
     const prefix = value >= 0 ? '+' : '';
     return `${prefix}${value.toFixed(2)}%`;
   };
@@ -86,10 +95,17 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
         month: 'long', 
         year: 'numeric' 
       });
+      // For current account, get the actual value from either positive or negative
+      let value = payload[0].value;
+      if (isCurrentAccount && payload.length > 1) {
+        value = payload[0].payload.value; // Get original value
+      }
       return (
         <div className="remittances-tooltip">
           <p className="tooltip-date">{formattedDate}</p>
-          <p className="tooltip-value">{formatValue(payload[0].value)}</p>
+          <p className="tooltip-value" style={{ color: isCurrentAccount && value < 0 ? '#EF4444' : '#22C55E' }}>
+            {formatValue(value)}
+          </p>
         </div>
       );
     }
@@ -99,12 +115,14 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
   if (!isOpen) return null;
 
   const latest = data?.latest;
+  const latestValue = latest?.value || 0;
   const momChange = data?.mom_change || 0;
   const yoyChange = data?.yoy_change;
   const isMomPositive = momChange >= 0;
   const isYoyPositive = yoyChange >= 0;
+  const isLatestPositive = latestValue >= 0;
 
-  // Calculate Y-axis domain for current account (needs to handle negative values)
+  // Calculate Y-axis domain
   const values = filteredData.map(d => d.value);
   const minValue = Math.min(...values, 0);
   const maxValue = Math.max(...values, 0);
@@ -132,8 +150,8 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
 
         <div className="modal-summary">
           <div className="summary-main">
-            <div className="summary-value">
-              {formatValue(latest?.value || 0)}
+            <div className="summary-value" style={isCurrentAccount ? { color: isLatestPositive ? '#22C55E' : '#EF4444' } : {}}>
+              {formatValue(latestValue)}
             </div>
             <div className="summary-period">
               <Calendar size={14} />
@@ -171,15 +189,19 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
 
         <div className="chart-container" data-testid="sbp-chart">
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorPositive" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#22C55E" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#22C55E" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#22C55E" stopOpacity={0.4}/>
+                  <stop offset="95%" stopColor="#22C55E" stopOpacity={0.05}/>
                 </linearGradient>
                 <linearGradient id="colorNegative" x1="0" y1="1" x2="0" y2="0">
-                  <stop offset="5%" stopColor="#EF4444" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#EF4444" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#EF4444" stopOpacity={0.4}/>
+                  <stop offset="95%" stopColor="#EF4444" stopOpacity={0.05}/>
+                </linearGradient>
+                <linearGradient id="colorDefault" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#22C55E" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#22C55E" stopOpacity={0}/>
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
@@ -210,14 +232,38 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
               />
               {isCurrentAccount && <ReferenceLine y={0} stroke="#64748b" strokeDasharray="3 3" />}
               <Tooltip content={<CustomTooltip />} />
-              <Area 
-                type="monotone" 
-                dataKey="value" 
-                stroke={isCurrentAccount ? (latest?.value >= 0 ? "#22C55E" : "#EF4444") : "#22C55E"}
-                strokeWidth={2}
-                fillOpacity={1}
-                fill={isCurrentAccount ? (latest?.value >= 0 ? "url(#colorPositive)" : "url(#colorNegative)") : "url(#colorPositive)"}
-              />
+              
+              {isCurrentAccount ? (
+                <>
+                  <Area 
+                    type="monotone" 
+                    dataKey="positive" 
+                    stroke="#22C55E" 
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#colorPositive)"
+                    connectNulls={false}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="negative" 
+                    stroke="#EF4444" 
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#colorNegative)"
+                    connectNulls={false}
+                  />
+                </>
+              ) : (
+                <Area 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke="#22C55E" 
+                  strokeWidth={2}
+                  fillOpacity={1}
+                  fill="url(#colorDefault)"
+                />
+              )}
             </AreaChart>
           </ResponsiveContainer>
         </div>
