@@ -73,7 +73,9 @@ data_cache = {
     "remittances": {"data": {}, "updated": None},
     "gold_reserves": {"data": {}, "updated": None},
     "forex_reserves": {"data": {}, "updated": None},
-    "current_account": {"data": {}, "updated": None}
+    "current_account": {"data": {}, "updated": None},
+    "imports": {"data": {}, "updated": None},
+    "exports": {"data": {}, "updated": None}
 }
 
 # SBP API endpoints
