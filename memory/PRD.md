@@ -32,26 +32,28 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 9. Dark theme with Pakistan green accents
 10. Responsive design
 
-## What's Been Implemented (Feb 27, 2026)
+## What's Been Implemented (Feb 28, 2026)
 
 ### Backend (FastAPI)
 - [x] `/api/health` - Health check endpoint
 - [x] `/api/news` - RSS feed aggregation from 12+ Pakistani news sources with category filtering
-- [x] `/api/economic` - Economic indicators (PKR/USD, PKR/EUR, KSE-100, inflation, forex reserves, remittances)
+- [x] `/api/economic` - Economic indicators (PKR/USD, PKR/EUR, KSE-100, inflation)
 - [x] `/api/weather` - Weather data for major cities (Karachi, Lahore, Islamabad, Peshawar, Quetta, Multan)
 - [x] `/api/security` - Security and political alerts
 - [x] `/api/regional` - Regional relations data (India, China, Afghanistan, Iran, Saudi Arabia, USA)
 - [x] `/api/infrastructure` - Real scraped data for 5 airports (ISB, KHI, LHE, MUX, PEW) and 3 ports (Karachi, Port Qasim, Gwadar)
 - [x] `/api/map-data` - Map markers for Pakistani cities and CPEC routes
-- [x] `/api/remittances` - **LIVE** Workers' remittances data from State Bank of Pakistan API with full historical data
+- [x] `/api/remittances` - **LIVE** Workers' remittances data from SBP API (1972-present, MoM & YoY)
+- [x] `/api/gold-reserves` - **LIVE** Gold reserves data from SBP API (1990-present, MoM & YoY)
+- [x] `/api/forex-reserves` - **LIVE** Total forex reserves data from SBP API (1990-present, MoM & YoY)
 
 ### Frontend (React)
 - [x] Header with logo, live indicator, **Pakistan time (PKT/UTC+5)**, refresh button
 - [x] News ticker (scrolling headlines)
 - [x] Bento grid layout with responsive panels
 - [x] NewsPanel - Displays latest news with category tabs (All, General, Energy, Business, International, Tech, Regional) and infinite scroll
-- [x] EconomicPanel - Shows PKR rates, KSE-100, inflation, **LIVE remittances from SBP API with clickable chart modal**
-- [x] **RemittancesModal** - Interactive chart modal with time range selectors (YTD, 6M, 1Y, 5Y, 10Y, ALL)
+- [x] EconomicPanel - Shows 7 indicators with **3 LIVE from SBP** (Gold, Forex, Remittances) with clickable chart modals
+- [x] **SBPDataModal** - Reusable interactive chart modal with MoM%, YoY%, time range selectors (YTD, 6M, 1Y, 5Y, 10Y, ALL)
 - [x] SecurityPanel - Shows security/political alerts with severity indicators
 - [x] WeatherPanel - Shows weather for major cities
 - [x] RegionalPanel - Shows diplomatic relations status
@@ -69,8 +71,10 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 
 ## Data Sources
 - **News**: Real RSS feeds from Pakistani news outlets
-- **Remittances**: **LIVE** - State Bank of Pakistan EasyData API (15+ years of historical data)
-- **Economic**: MOCKED (ready for API integration) - except remittances which is live
+- **Remittances**: **LIVE** - State Bank of Pakistan EasyData API (1972-present, 643 data points)
+- **Gold Reserves**: **LIVE** - State Bank of Pakistan EasyData API (1990-present)
+- **Forex Reserves**: **LIVE** - State Bank of Pakistan EasyData API (1990-present)
+- **Economic**: PKR rates, KSE-100, Inflation - MOCKED (ready for API integration)
 - **Weather**: MOCKED (ready for OpenWeatherMap integration)
 - **Security**: MOCKED (ready for API integration)
 - **Regional**: MOCKED (ready for API integration)
