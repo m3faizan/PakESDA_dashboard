@@ -1,28 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, DollarSign, ExternalLink } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, ExternalLink, Coins } from 'lucide-react';
 import axios from 'axios';
-import RemittancesModal from './RemittancesModal';
+import SBPDataModal from './SBPDataModal';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 
 const EconomicPanel = ({ data, loading }) => {
   const [remittancesData, setRemittancesData] = useState(null);
-  const [remittancesLoading, setRemittancesLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
+  const [goldData, setGoldData] = useState(null);
+  const [forexData, setForexData] = useState(null);
+  const [dataLoading, setDataLoading] = useState(true);
+  
+  const [activeModal, setActiveModal] = useState(null); // 'remittances', 'gold', 'forex'
 
   useEffect(() => {
-    const fetchRemittances = async () => {
+    const fetchAllData = async () => {
       try {
-        const response = await axios.get(`${API_BASE}/api/remittances`);
-        setRemittancesData(response.data.data);
+        const [remittancesRes, goldRes, forexRes] = await Promise.allSettled([
+          axios.get(`${API_BASE}/api/remittances`),
+          axios.get(`${API_BASE}/api/gold-reserves`),
+          axios.get(`${API_BASE}/api/forex-reserves`)
+        ]);
+
+        if (remittancesRes.status === 'fulfilled') {
+          setRemittancesData(remittancesRes.value.data.data);
+        }
+        if (goldRes.status === 'fulfilled') {
+          setGoldData(goldRes.value.data.data);
+        }
+        if (forexRes.status === 'fulfilled') {
+          setForexData(forexRes.value.data.data);
+        }
       } catch (error) {
-        console.error('Error fetching remittances:', error);
+        console.error('Error fetching economic data:', error);
       } finally {
-        setRemittancesLoading(false);
+        setDataLoading(false);
       }
     };
 
-    fetchRemittances();
+    fetchAllData();
   }, []);
 
   if (loading || !data) {
@@ -43,24 +59,13 @@ const EconomicPanel = ({ data, loading }) => {
     );
   }
 
-  // Format remittance value for display
-  const formatRemittanceValue = () => {
-    if (remittancesLoading || !remittancesData?.latest) {
-      return '$--';
-    }
-    const value = remittancesData.latest.value;
-    // Value is in millions, convert to billions for display
+  // Format value in billions
+  const formatBillions = (value) => {
+    if (!value) return '$--';
     if (value >= 1000) {
       return `$${(value / 1000).toFixed(2)}B`;
     }
     return `$${value.toFixed(0)}M`;
-  };
-
-  const getRemittanceChange = () => {
-    if (remittancesLoading || !remittancesData) {
-      return null;
-    }
-    return remittancesData.mom_change;
   };
 
   const indicators = [
@@ -93,28 +98,57 @@ const EconomicPanel = ({ data, loading }) => {
       clickable: false
     },
     { 
-      label: 'Forex Reserves', 
-      value: '$' + data.forex_reserves?.value + 'B', 
-      change: data.forex_reserves?.change > 0 ? 2.3 : -2.3,
+      label: 'Gold Reserves', 
+      value: formatBillions(goldData?.latest?.value),
+      subLabel: goldData?.latest?.month || '',
+      change: goldData?.mom_change,
       prefix: '',
-      clickable: false
+      clickable: true,
+      modalKey: 'gold',
+      isLive: !dataLoading && goldData
+    },
+    { 
+      label: 'Forex Reserves', 
+      value: formatBillions(forexData?.latest?.value),
+      subLabel: forexData?.latest?.month || '',
+      change: forexData?.mom_change,
+      prefix: '',
+      clickable: true,
+      modalKey: 'forex',
+      isLive: !dataLoading && forexData
     },
     { 
       label: 'Remittances', 
-      value: formatRemittanceValue(),
+      value: formatBillions(remittancesData?.latest?.value),
       subLabel: remittancesData?.latest?.month || '',
-      change: getRemittanceChange(),
+      change: remittancesData?.mom_change,
       prefix: '',
       clickable: true,
-      isLive: !remittancesLoading && remittancesData
+      modalKey: 'remittances',
+      isLive: !dataLoading && remittancesData
     },
   ];
 
   const handleItemClick = (item) => {
-    if (item.label === 'Remittances' && item.clickable) {
-      setShowModal(true);
+    if (item.clickable && item.modalKey) {
+      setActiveModal(item.modalKey);
     }
   };
+
+  const getModalData = () => {
+    switch (activeModal) {
+      case 'remittances':
+        return { data: remittancesData, title: "Workers' Remittances", icon: DollarSign };
+      case 'gold':
+        return { data: goldData, title: "Gold Reserves", icon: Coins };
+      case 'forex':
+        return { data: forexData, title: "Total Forex Reserves", icon: DollarSign };
+      default:
+        return null;
+    }
+  };
+
+  const modalInfo = getModalData();
 
   return (
     <div className="panel" data-testid="economic-panel">
@@ -126,7 +160,7 @@ const EconomicPanel = ({ data, loading }) => {
         <span className="panel-badge">LIVE</span>
       </div>
       <div className="panel-content">
-        <div className="economic-grid">
+        <div className="economic-grid economic-grid-7">
           {indicators.map((item, index) => (
             <div 
               key={index} 
@@ -153,7 +187,7 @@ const EconomicPanel = ({ data, loading }) => {
                 )}
               </div>
               <div className="economic-value">{item.prefix}{item.value}</div>
-              {item.change !== null && (
+              {item.change !== null && item.change !== undefined && (
                 <div className={`economic-change ${item.change >= 0 ? 'positive' : 'negative'}`}>
                   {item.change >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                   {Math.abs(item.change).toFixed(2)}%
@@ -164,7 +198,7 @@ const EconomicPanel = ({ data, loading }) => {
                   position: 'absolute',
                   bottom: '0.5rem',
                   right: '0.5rem',
-                  fontSize: '0.6rem', 
+                  fontSize: '0.55rem', 
                   color: 'var(--color-muted)',
                 }}>
                   {item.subLabel}
@@ -175,11 +209,15 @@ const EconomicPanel = ({ data, loading }) => {
         </div>
       </div>
 
-      <RemittancesModal 
-        isOpen={showModal} 
-        onClose={() => setShowModal(false)} 
-        data={remittancesData}
-      />
+      {modalInfo && (
+        <SBPDataModal 
+          isOpen={!!activeModal} 
+          onClose={() => setActiveModal(null)} 
+          data={modalInfo.data}
+          title={modalInfo.title}
+          icon={modalInfo.icon}
+        />
+      )}
     </div>
   );
 };
