@@ -862,6 +862,23 @@ async def get_forex_reserves():
         "updated": data_cache["forex_reserves"]["updated"].isoformat() if data_cache["forex_reserves"]["updated"] else None
     }
 
+@app.get("/api/current-account")
+async def get_current_account():
+    """Get current account balance data from State Bank of Pakistan"""
+    if data_cache["current_account"]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache["current_account"]["updated"]).total_seconds()
+        if age > 3600:
+            data_cache["current_account"]["data"] = await fetch_current_account_data()
+            data_cache["current_account"]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache["current_account"]["data"] = await fetch_current_account_data()
+        data_cache["current_account"]["updated"] = datetime.now(timezone.utc)
+    
+    return {
+        "data": data_cache["current_account"]["data"],
+        "updated": data_cache["current_account"]["updated"].isoformat() if data_cache["current_account"]["updated"] else None
+    }
+
 
 @app.get("/api/regional")
 async def get_regional_relations():
