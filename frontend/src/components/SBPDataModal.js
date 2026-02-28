@@ -3,6 +3,9 @@ import { X, TrendingUp, TrendingDown, Calendar, DollarSign } from 'lucide-react'
 import { 
   AreaChart,
   Area,
+  BarChart,
+  Bar,
+  Cell,
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -49,17 +52,6 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
     return history.filter(item => new Date(item.date) >= cutoffDate);
   }, [data, selectedRange]);
 
-  // For current account, split data into positive and negative for dual coloring
-  const chartData = useMemo(() => {
-    if (!isCurrentAccount) return filteredData;
-    
-    return filteredData.map(item => ({
-      ...item,
-      positive: item.value >= 0 ? item.value : 0,
-      negative: item.value < 0 ? item.value : 0
-    }));
-  }, [filteredData, isCurrentAccount]);
-
   const formatValue = (value) => {
     if (isCurrentAccount) {
       const prefix = value >= 0 ? '+' : '';
@@ -95,15 +87,11 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
         month: 'long', 
         year: 'numeric' 
       });
-      // For current account, get the actual value from either positive or negative
-      let value = payload[0].value;
-      if (isCurrentAccount && payload.length > 1) {
-        value = payload[0].payload.value; // Get original value
-      }
+      const value = payload[0].value;
       return (
         <div className="remittances-tooltip">
           <p className="tooltip-date">{formattedDate}</p>
-          <p className="tooltip-value" style={{ color: isCurrentAccount && value < 0 ? '#EF4444' : '#22C55E' }}>
+          <p className="tooltip-value" style={{ color: isCurrentAccount ? (value >= 0 ? '#22C55E' : '#EF4444') : '#22C55E' }}>
             {formatValue(value)}
           </p>
         </div>
@@ -120,7 +108,6 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
   const yoyChange = data?.yoy_change;
   const isMomPositive = momChange >= 0;
   const isYoyPositive = yoyChange >= 0;
-  const isLatestPositive = latestValue >= 0;
 
   // Calculate Y-axis domain
   const values = filteredData.map(d => d.value);
@@ -150,7 +137,7 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
 
         <div className="modal-summary">
           <div className="summary-main">
-            <div className="summary-value" style={isCurrentAccount ? { color: isLatestPositive ? '#22C55E' : '#EF4444' } : {}}>
+            <div className="summary-value">
               {formatValue(latestValue)}
             </div>
             <div className="summary-period">
@@ -189,72 +176,74 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
 
         <div className="chart-container" data-testid="sbp-chart">
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="colorPositive" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#22C55E" stopOpacity={0.4}/>
-                  <stop offset="95%" stopColor="#22C55E" stopOpacity={0.05}/>
-                </linearGradient>
-                <linearGradient id="colorNegative" x1="0" y1="1" x2="0" y2="0">
-                  <stop offset="5%" stopColor="#EF4444" stopOpacity={0.4}/>
-                  <stop offset="95%" stopColor="#EF4444" stopOpacity={0.05}/>
-                </linearGradient>
-                <linearGradient id="colorDefault" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#22C55E" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#22C55E" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-              <XAxis 
-                dataKey="date" 
-                tickFormatter={formatDate}
-                stroke="#64748b"
-                tick={{ fill: '#64748b', fontSize: 11 }}
-                axisLine={{ stroke: '#1e293b' }}
-                tickLine={{ stroke: '#1e293b' }}
-                interval="preserveStartEnd"
-                minTickGap={50}
-              />
-              <YAxis 
-                tickFormatter={(val) => {
-                  if (isCurrentAccount) {
+            {isCurrentAccount ? (
+              // Bar chart for Current Account Balance
+              <BarChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <XAxis 
+                  dataKey="date" 
+                  tickFormatter={formatDate}
+                  stroke="#64748b"
+                  tick={{ fill: '#64748b', fontSize: 11 }}
+                  axisLine={{ stroke: '#1e293b' }}
+                  tickLine={{ stroke: '#1e293b' }}
+                  interval="preserveStartEnd"
+                  minTickGap={50}
+                />
+                <YAxis 
+                  tickFormatter={(val) => {
                     const prefix = val >= 0 ? '' : '-';
                     return `${prefix}$${Math.abs(val/1000).toFixed(1)}B`;
-                  }
-                  return `$${(val/1000).toFixed(1)}B`;
-                }}
-                stroke="#64748b"
-                tick={{ fill: '#64748b', fontSize: 11 }}
-                axisLine={{ stroke: '#1e293b' }}
-                tickLine={{ stroke: '#1e293b' }}
-                domain={isCurrentAccount ? [minValue * 1.1, maxValue * 1.1] : [0, 'auto']}
-                width={60}
-              />
-              {isCurrentAccount && <ReferenceLine y={0} stroke="#64748b" strokeDasharray="3 3" />}
-              <Tooltip content={<CustomTooltip />} />
-              
-              {isCurrentAccount ? (
-                <>
-                  <Area 
-                    type="monotone" 
-                    dataKey="positive" 
-                    stroke="#22C55E" 
-                    strokeWidth={2}
-                    fillOpacity={1}
-                    fill="url(#colorPositive)"
-                    connectNulls={false}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="negative" 
-                    stroke="#EF4444" 
-                    strokeWidth={2}
-                    fillOpacity={1}
-                    fill="url(#colorNegative)"
-                    connectNulls={false}
-                  />
-                </>
-              ) : (
+                  }}
+                  stroke="#64748b"
+                  tick={{ fill: '#64748b', fontSize: 11 }}
+                  axisLine={{ stroke: '#1e293b' }}
+                  tickLine={{ stroke: '#1e293b' }}
+                  domain={[minValue * 1.1, maxValue * 1.1]}
+                  width={60}
+                />
+                <ReferenceLine y={0} stroke="#64748b" strokeDasharray="3 3" />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="value" radius={[2, 2, 0, 0]}>
+                  {filteredData.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={entry.value >= 0 ? '#22C55E' : '#EF4444'} 
+                      fillOpacity={0.8}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            ) : (
+              // Area chart for other indicators
+              <AreaChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorDefault" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#22C55E" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#22C55E" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <XAxis 
+                  dataKey="date" 
+                  tickFormatter={formatDate}
+                  stroke="#64748b"
+                  tick={{ fill: '#64748b', fontSize: 11 }}
+                  axisLine={{ stroke: '#1e293b' }}
+                  tickLine={{ stroke: '#1e293b' }}
+                  interval="preserveStartEnd"
+                  minTickGap={50}
+                />
+                <YAxis 
+                  tickFormatter={(val) => `$${(val/1000).toFixed(1)}B`}
+                  stroke="#64748b"
+                  tick={{ fill: '#64748b', fontSize: 11 }}
+                  axisLine={{ stroke: '#1e293b' }}
+                  tickLine={{ stroke: '#1e293b' }}
+                  domain={[0, 'auto']}
+                  width={60}
+                />
+                <Tooltip content={<CustomTooltip />} />
                 <Area 
                   type="monotone" 
                   dataKey="value" 
@@ -263,8 +252,8 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
                   fillOpacity={1}
                   fill="url(#colorDefault)"
                 />
-              )}
-            </AreaChart>
+              </AreaChart>
+            )}
           </ResponsiveContainer>
         </div>
 
