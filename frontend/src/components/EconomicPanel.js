@@ -152,7 +152,8 @@ const EconomicPanel = ({ data, loading }) => {
       prefix: '',
       clickable: true,
       modalKey: 'imports',
-      isLive: !dataLoading && importsData
+      isLive: !dataLoading && importsData,
+      isImports: true  // Inverse color logic: decrease is good
     },
     { 
       label: 'Exports', 
