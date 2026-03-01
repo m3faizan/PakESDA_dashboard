@@ -18,6 +18,8 @@ import SecurityPanel from './components/SecurityPanel';
 import WeatherPanel from './components/WeatherPanel';
 import RegionalPanel from './components/RegionalPanel';
 import InfrastructurePanel from './components/InfrastructurePanel';
+import AirTrafficPanel from './components/AirTrafficPanel';
+import MarineTrafficPanel from './components/MarineTrafficPanel';
 import MapSection from './components/MapSection';
 import NewsTicker from './components/NewsTicker';
 
