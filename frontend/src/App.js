@@ -170,6 +170,8 @@ function App() {
             <WeatherPanel cities={weather} loading={loading} />
             <RegionalPanel relations={regional} loading={loading} />
             <InfrastructurePanel data={infrastructure} loading={loading} />
+            <AirTrafficPanel data={infrastructure} loading={loading} />
+            <MarineTrafficPanel data={infrastructure} loading={loading} />
           </div>
         </div>
       </main>
