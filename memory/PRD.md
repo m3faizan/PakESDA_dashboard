@@ -32,32 +32,37 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 9. Dark theme with Pakistan green accents
 10. Responsive design
 
-## What's Been Implemented (Feb 28, 2026)
+## What's Been Implemented (Mar 1, 2026)
 
 ### Backend (FastAPI)
 - [x] `/api/health` - Health check endpoint
 - [x] `/api/news` - RSS feed aggregation from 12+ Pakistani news sources with category filtering
-- [x] `/api/economic` - Economic indicators (PKR/USD, PKR/EUR, KSE-100, inflation)
+- [x] `/api/economic` - Economic indicators (PKR/USD, KSE-100, inflation)
 - [x] `/api/weather` - Weather data for major cities (Karachi, Lahore, Islamabad, Peshawar, Quetta, Multan)
 - [x] `/api/security` - Security and political alerts
 - [x] `/api/regional` - Regional relations data (India, China, Afghanistan, Iran, Saudi Arabia, USA)
-- [x] `/api/infrastructure` - Real scraped data for 5 airports (ISB, KHI, LHE, MUX, PEW) and 3 ports (Karachi, Port Qasim, Gwadar)
+- [x] `/api/infrastructure` - Power grid, internet, airport & port data for 5 airports and 3 ports
 - [x] `/api/map-data` - Map markers for Pakistani cities and CPEC routes
-- [x] `/api/remittances` - **LIVE** Workers' remittances data from SBP API (1972-present, MoM & YoY)
-- [x] `/api/gold-reserves` - **LIVE** Gold reserves data from SBP API (1990-present, MoM & YoY)
-- [x] `/api/forex-reserves` - **LIVE** Total forex reserves data from SBP API (1990-present, MoM & YoY)
+- [x] `/api/remittances` - **LIVE** Workers' remittances from SBP API (1972-present)
+- [x] `/api/gold-reserves` - **LIVE** Gold reserves from SBP API (1990-present)
+- [x] `/api/forex-reserves` - **LIVE** Total forex reserves from SBP API (1990-present)
+- [x] `/api/current-account` - **LIVE** Current account balance from SBP API
+- [x] `/api/imports` - **LIVE** Imports data from SBP API (1990-present)
+- [x] `/api/exports` - **LIVE** Exports data from SBP API (1990-present)
 
 ### Frontend (React)
 - [x] Header with logo, live indicator, **Pakistan time (PKT/UTC+5)**, refresh button
 - [x] News ticker (scrolling headlines)
-- [x] Bento grid layout with responsive panels
-- [x] NewsPanel - Displays latest news with category tabs (All, General, Energy, Business, International, Tech, Regional) and infinite scroll
-- [x] EconomicPanel - Shows 7 indicators with **3 LIVE from SBP** (Gold, Forex, Remittances) with clickable chart modals
-- [x] **SBPDataModal** - Reusable interactive chart modal with MoM%, YoY%, time range selectors (YTD, 6M, 1Y, 5Y, 10Y, ALL)
-- [x] SecurityPanel - Shows security/political alerts with severity indicators
-- [x] WeatherPanel - Shows weather for major cities
-- [x] RegionalPanel - Shows diplomatic relations status
-- [x] InfrastructurePanel - Airport status (5 airports with full names) and Port status (3 ports with vessel counts)
+- [x] Bento grid layout with responsive panels (6 bottom panels in 3x2 grid)
+- [x] NewsPanel - Latest news with category tabs and infinite scroll
+- [x] EconomicPanel - 9 indicators with **6 LIVE from SBP** (Current A/C, Gold, Forex, Imports, Exports, Remittances)
+- [x] **SBPDataModal** - Reusable chart modal with MoM%, YoY%, time range selectors
+- [x] SecurityPanel - Security/political alerts with severity indicators
+- [x] WeatherPanel - Weather for 6 major cities
+- [x] RegionalPanel - Diplomatic relations status
+- [x] **InfrastructurePanel** - Power Grid (status, load shedding, capacity) and Internet (status, speed, outages)
+- [x] **AirTrafficPanel** - 5 airports with operational status, departures/arrivals (FlightStats)
+- [x] **MarineTrafficPanel** - 3 ports with In Port, Arrivals, Departures, Expected (MyShipTracking)
 - [x] MapSection - Interactive map with Pakistan focus, city markers, legend
 
 ### Design
