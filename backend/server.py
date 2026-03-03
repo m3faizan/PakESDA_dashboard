@@ -4,7 +4,7 @@ Real-time intelligence dashboard for Pakistan-related information
 """
 import os
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from contextlib import asynccontextmanager
 from typing import Optional
 import httpx
@@ -75,8 +75,12 @@ data_cache = {
     "forex_reserves": {"data": {}, "updated": None},
     "current_account": {"data": {}, "updated": None},
     "imports": {"data": {}, "updated": None},
-    "exports": {"data": {}, "updated": None}
+    "exports": {"data": {}, "updated": None},
+    "road_advisory": {"data": [], "updated": None}
 }
+
+# NHMP Road Advisory API
+NHMP_ADVISORY_URL = "http://cpo.nhmp.gov.pk:6788/api/TravelAdvisory/FilteredAdvisory"
 
 # SBP API endpoints
 SBP_API_KEY = "69C3217DDBE2E78290E66D79E07CCFE19EFB1134"
@@ -380,6 +384,70 @@ async def fetch_imports_data():
 async def fetch_exports_data():
     """Fetch exports data from State Bank of Pakistan"""
     return await fetch_sbp_reserves_data(SBP_EXPORTS_URL, "Exports", "1990-01-01")
+
+async def fetch_road_advisory():
+    """Fetch road advisory data from NHMP"""
+    try:
+        print(f"Fetching road advisory from {NHMP_ADVISORY_URL}")
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(
+                NHMP_ADVISORY_URL,
+                params={
+                    "network": "All",
+                    "road": "All",
+                    "section": "All",
+                    "filter": "true"
+                }
+            )
+            
+            print(f"NHMP API response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                data = response.json()
+                advisories = data.get("data", [])
+                print(f"NHMP API returned {len(advisories)} advisories")
+                
+                # Filter to last 15 days (to capture recent advisories)
+                cutoff_date = datetime.now(timezone.utc) - timedelta(days=15)
+                
+                filtered_advisories = []
+                for adv in advisories:
+                    record_time = adv.get("recordTime")
+                    if record_time:
+                        try:
+                            adv_date = datetime.fromisoformat(record_time.replace("Z", "+00:00"))
+                            if adv_date.tzinfo is None:
+                                adv_date = adv_date.replace(tzinfo=timezone.utc)
+                            
+                            if adv_date >= cutoff_date:
+                                filtered_advisories.append({
+                                    "id": adv.get("id"),
+                                    "road": adv.get("road"),
+                                    "route": adv.get("route"),
+                                    "type": adv.get("type"),
+                                    "subType": adv.get("subType"),
+                                    "fromPlace": adv.get("fromPlace"),
+                                    "toPlace": adv.get("toPlace"),
+                                    "fromKm": adv.get("fromKilometer"),
+                                    "toKm": adv.get("toKilometer"),
+                                    "recordTime": record_time,
+                                    "source": adv.get("source"),
+                                    "destination": adv.get("destination"),
+                                    "remarks": adv.get("remarks"),
+                                    "lat": adv.get("fromLat"),
+                                    "lng": adv.get("fromLng")
+                                })
+                        except:
+                            continue
+                
+                # Sort by record time (newest first)
+                filtered_advisories.sort(key=lambda x: x.get("recordTime", ""), reverse=True)
+                
+                return filtered_advisories
+    except Exception as e:
+        print(f"Error fetching road advisory: {e}")
+    
+    return []
 
 async def fetch_current_account_data():
     """Fetch current account balance data from State Bank of Pakistan"""
@@ -923,6 +991,27 @@ async def get_exports():
     return {
         "data": data_cache["exports"]["data"],
         "updated": data_cache["exports"]["updated"].isoformat() if data_cache["exports"]["updated"] else None
+    }
+
+
+@app.get("/api/road-advisory")
+async def get_road_advisory():
+    """Get road advisory data from NHMP"""
+    # Refresh every 30 minutes
+    if data_cache["road_advisory"]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache["road_advisory"]["updated"]).total_seconds()
+        if age > 1800:  # 30 minutes
+            data_cache["road_advisory"]["data"] = await fetch_road_advisory()
+            data_cache["road_advisory"]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache["road_advisory"]["data"] = await fetch_road_advisory()
+        data_cache["road_advisory"]["updated"] = datetime.now(timezone.utc)
+    
+    return {
+        "advisories": data_cache["road_advisory"]["data"],
+        "count": len(data_cache["road_advisory"]["data"]),
+        "source": "National Highway & Motorway Police",
+        "updated": data_cache["road_advisory"]["updated"].isoformat() if data_cache["road_advisory"]["updated"] else None
     }
 
 
