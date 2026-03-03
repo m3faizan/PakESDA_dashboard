@@ -63,6 +63,7 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] **InfrastructurePanel** - Power Grid (status, load shedding, capacity) and Internet (status, speed, outages)
 - [x] **AirTrafficPanel** - 5 airports with operational status, departures/arrivals (FlightStats)
 - [x] **MarineTrafficPanel** - 3 ports with In Port, Arrivals, Departures, Expected (MyShipTracking)
+- [x] **GovernancePanel** - Provincial CM Tracker with projects, completed, focus area, impact score, days in power
 - [x] MapSection - Interactive map with Pakistan focus, city markers, legend
 
 ### Design

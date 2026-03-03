@@ -20,6 +20,7 @@ import RegionalPanel from './components/RegionalPanel';
 import InfrastructurePanel from './components/InfrastructurePanel';
 import AirTrafficPanel from './components/AirTrafficPanel';
 import MarineTrafficPanel from './components/MarineTrafficPanel';
+import GovernancePanel from './components/GovernancePanel';
 import MapSection from './components/MapSection';
 import NewsTicker from './components/NewsTicker';
 
@@ -172,6 +173,7 @@ function App() {
             <InfrastructurePanel data={infrastructure} loading={loading} />
             <AirTrafficPanel data={infrastructure} loading={loading} />
             <MarineTrafficPanel data={infrastructure} loading={loading} />
+            <GovernancePanel loading={loading} />
           </div>
         </div>
       </main>
