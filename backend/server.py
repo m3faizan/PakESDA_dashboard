@@ -77,7 +77,8 @@ data_cache = {
     "imports": {"data": {}, "updated": None},
     "exports": {"data": {}, "updated": None},
     "road_advisory": {"data": [], "updated": None},
-    "pkr_usd": {"data": {}, "updated": None}
+    "pkr_usd": {"data": {}, "updated": None},
+    "psx_data": {"data": {}, "updated": None}
 }
 
 # NHMP Road Advisory API
@@ -1110,6 +1111,129 @@ async def get_pkr_usd():
     return {
         "data": data_cache["pkr_usd"]["data"],
         "updated": data_cache["pkr_usd"]["updated"].isoformat() if data_cache["pkr_usd"]["updated"] else None
+    }
+
+
+async def fetch_psx_data():
+    """Fetch PSX KSE-100 data by scraping the PSX data portal"""
+    import re
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(
+                "https://dps.psx.com.pk/",
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                }
+            )
+            
+            if response.status_code == 200:
+                html = response.text
+                
+                # Extract KSE100 data from the indices slider
+                kse100_match = re.search(
+                    r'topIndices__item__name">KSE100</div><div class="topIndices__item__val">([0-9,\.]+)</div></div><div class="change__text--(neg|pos)"><div class="topIndices__item__change"><i class="icon-(down|up)-dir"></i>\s*([-0-9,\.]+)</div><div class="topIndices__item__changep">\(([-0-9\.]+)%\)</div>',
+                    html
+                )
+                
+                if kse100_match:
+                    value_str = kse100_match.group(1).replace(',', '')
+                    change_str = kse100_match.group(4).replace(',', '')
+                    change_percent_str = kse100_match.group(5)
+                    
+                    value = float(value_str)
+                    change = float(change_str)
+                    change_percent = float(change_percent_str)
+                    
+                    # Extract detailed stats from the KSE100 panel
+                    # Find the KSE100 panel section
+                    panel_match = re.search(
+                        r'tabs__panel marketIndices__details" data-name="KSE100"[^>]*data-date="([^"]+)"[^>]*>(.*?)</div></div></div></div>',
+                        html,
+                        re.DOTALL
+                    )
+                    
+                    timestamp = None
+                    high = None
+                    low = None
+                    volume = None
+                    yoy_change = None
+                    ytd_change = None
+                    prev_close = None
+                    
+                    if panel_match:
+                        timestamp = panel_match.group(1)
+                        panel_html = panel_match.group(2)
+                        
+                        # Extract High
+                        high_match = re.search(r'stats_label">High</div><div class="stats_value">([0-9,\.]+)</div>', panel_html)
+                        if high_match:
+                            high = float(high_match.group(1).replace(',', ''))
+                        
+                        # Extract Low
+                        low_match = re.search(r'stats_label">Low</div><div class="stats_value">([0-9,\.]+)</div>', panel_html)
+                        if low_match:
+                            low = float(low_match.group(1).replace(',', ''))
+                        
+                        # Extract Volume
+                        vol_match = re.search(r'stats_label">Volume</div><div class="stats_value">([0-9,\.]+)</div>', panel_html)
+                        if vol_match:
+                            volume = int(vol_match.group(1).replace(',', ''))
+                        
+                        # Extract 1-Year Change
+                        yoy_match = re.search(r'stats_label">1-Year Change</div><div class="stats_value change__text--(pos|neg)">[^0-9]*([\d\.]+)%</div>', panel_html)
+                        if yoy_match:
+                            yoy_change = float(yoy_match.group(2))
+                            if yoy_match.group(1) == 'neg':
+                                yoy_change = -yoy_change
+                        
+                        # Extract YTD Change
+                        ytd_match = re.search(r'stats_label">YTD Change</div><div class="stats_value change__text--(pos|neg)">.*?([-]?[\d\.]+)%</div>', panel_html)
+                        if ytd_match:
+                            ytd_change = float(ytd_match.group(2))
+                            if ytd_match.group(1) == 'neg' and ytd_change > 0:
+                                ytd_change = -ytd_change
+                        
+                        # Extract Previous Close
+                        prev_match = re.search(r'stats_label">Previous Close</div><div class="stats_value">([0-9,\.]+)</div>', panel_html)
+                        if prev_match:
+                            prev_close = float(prev_match.group(1).replace(',', ''))
+                    
+                    return {
+                        "value": value,
+                        "change": change,
+                        "change_percent": change_percent,
+                        "high": high,
+                        "low": low,
+                        "volume": volume,
+                        "yoy_change": yoy_change,
+                        "ytd_change": ytd_change,
+                        "previous_close": prev_close,
+                        "timestamp": timestamp,
+                        "source": "Pakistan Stock Exchange",
+                        "updated": datetime.now(timezone.utc).isoformat()
+                    }
+    except Exception as e:
+        print(f"Error fetching PSX data: {e}")
+    
+    return None
+
+
+@app.get("/api/psx-data")
+async def get_psx_data():
+    """Get PSX KSE-100 index data"""
+    # Refresh every 5 minutes during market hours
+    if data_cache["psx_data"]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache["psx_data"]["updated"]).total_seconds()
+        if age > 300:  # 5 minutes
+            data_cache["psx_data"]["data"] = await fetch_psx_data()
+            data_cache["psx_data"]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache["psx_data"]["data"] = await fetch_psx_data()
+        data_cache["psx_data"]["updated"] = datetime.now(timezone.utc)
+    
+    return {
+        "data": data_cache["psx_data"]["data"],
+        "updated": data_cache["psx_data"]["updated"].isoformat() if data_cache["psx_data"]["updated"] else None
     }
 
 

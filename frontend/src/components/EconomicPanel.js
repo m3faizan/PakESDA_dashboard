@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, DollarSign, ExternalLink, Coins, ArrowLeftRight, ArrowDownToLine, ArrowUpFromLine, Banknote } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, ExternalLink, Coins, ArrowLeftRight, ArrowDownToLine, ArrowUpFromLine, Banknote, BarChart3 } from 'lucide-react';
 import axios from 'axios';
 import SBPDataModal from './SBPDataModal';
+import PSXDataModal from './PSXDataModal';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -13,6 +14,7 @@ const EconomicPanel = ({ data, loading }) => {
   const [importsData, setImportsData] = useState(null);
   const [exportsData, setExportsData] = useState(null);
   const [pkrUsdData, setPkrUsdData] = useState(null);
+  const [psxData, setPsxData] = useState(null);
   const [dataLoading, setDataLoading] = useState(true);
   
   const [activeModal, setActiveModal] = useState(null);
@@ -20,14 +22,15 @@ const EconomicPanel = ({ data, loading }) => {
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const [remittancesRes, goldRes, forexRes, currentAccountRes, importsRes, exportsRes, pkrUsdRes] = await Promise.allSettled([
+        const [remittancesRes, goldRes, forexRes, currentAccountRes, importsRes, exportsRes, pkrUsdRes, psxRes] = await Promise.allSettled([
           axios.get(`${API_BASE}/api/remittances`),
           axios.get(`${API_BASE}/api/gold-reserves`),
           axios.get(`${API_BASE}/api/forex-reserves`),
           axios.get(`${API_BASE}/api/current-account`),
           axios.get(`${API_BASE}/api/imports`),
           axios.get(`${API_BASE}/api/exports`),
-          axios.get(`${API_BASE}/api/pkr-usd`)
+          axios.get(`${API_BASE}/api/pkr-usd`),
+          axios.get(`${API_BASE}/api/psx-data`)
         ]);
 
         if (remittancesRes.status === 'fulfilled') {
@@ -50,6 +53,9 @@ const EconomicPanel = ({ data, loading }) => {
         }
         if (pkrUsdRes.status === 'fulfilled') {
           setPkrUsdData(pkrUsdRes.value.data.data);
+        }
+        if (psxRes.status === 'fulfilled') {
+          setPsxData(psxRes.value.data.data);
         }
       } catch (error) {
         console.error('Error fetching economic data:', error);
@@ -121,14 +127,16 @@ const EconomicPanel = ({ data, loading }) => {
     },
     { 
       label: 'KSE-100', 
-      value: data.psx_kse100?.value?.toLocaleString(), 
-      change: data.psx_kse100?.change_percent,
+      value: psxData?.value?.toLocaleString() || data?.psx_kse100?.value?.toLocaleString() || '--', 
+      change: psxData?.change_percent || data?.psx_kse100?.change_percent,
       prefix: '',
-      clickable: false
+      clickable: true,
+      modalKey: 'psx',
+      isLive: !dataLoading && psxData
     },
     { 
       label: 'CPI Inflation', 
-      value: data.inflation?.cpi + '%', 
+      value: data?.inflation?.cpi + '%', 
       change: null,
       prefix: '',
       clickable: false
@@ -208,6 +216,8 @@ const EconomicPanel = ({ data, loading }) => {
         return { data: exportsData, title: "Exports (Goods & Services)", icon: ArrowUpFromLine };
       case 'pkrUsd':
         return { data: pkrUsdData, title: "PKR/USD Exchange Rate", icon: Banknote, isPkrUsd: true };
+      case 'psx':
+        return { data: psxData, title: "KSE-100 Index", icon: BarChart3, isPsx: true };
       default:
         return null;
     }
@@ -294,7 +304,7 @@ const EconomicPanel = ({ data, loading }) => {
         </div>
       </div>
 
-      {modalInfo && (
+      {modalInfo && !modalInfo.isPsx && (
         <SBPDataModal 
           isOpen={!!activeModal} 
           onClose={() => setActiveModal(null)} 
@@ -303,6 +313,14 @@ const EconomicPanel = ({ data, loading }) => {
           icon={modalInfo.icon}
           isCurrentAccount={modalInfo.isCurrentAccount}
           isPkrUsd={modalInfo.isPkrUsd}
+        />
+      )}
+
+      {modalInfo && modalInfo.isPsx && (
+        <PSXDataModal 
+          isOpen={!!activeModal} 
+          onClose={() => setActiveModal(null)} 
+          data={modalInfo.data}
         />
       )}
     </div>
