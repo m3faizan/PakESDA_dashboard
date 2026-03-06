@@ -32,7 +32,7 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 9. Dark theme with Pakistan green accents
 10. Responsive design
 
-## What's Been Implemented (Mar 1, 2026)
+## What's Been Implemented (Mar 6, 2026)
 
 ### Backend (FastAPI)
 - [x] `/api/health` - Health check endpoint
@@ -49,14 +49,17 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] `/api/current-account` - **LIVE** Current account balance from SBP API
 - [x] `/api/imports` - **LIVE** Imports data from SBP API (1990-present)
 - [x] `/api/exports` - **LIVE** Exports data from SBP API (1990-present)
+- [x] `/api/pkr-usd` - **LIVE** PKR/USD exchange rate from SBP API
+- [x] `/api/psx-data` - **LIVE** KSE-100 Index data scraped from PSX (dps.psx.com.pk)
 
 ### Frontend (React)
 - [x] Header with logo, live indicator, **Pakistan time (PKT/UTC+5)**, refresh button
 - [x] News ticker (scrolling headlines)
 - [x] Bento grid layout with responsive panels (6 bottom panels in 3x2 grid)
 - [x] NewsPanel - Latest news with category tabs and infinite scroll
-- [x] EconomicPanel - 9 indicators with **6 LIVE from SBP** (Current A/C, Gold, Forex, Imports, Exports, Remittances)
+- [x] EconomicPanel - 9 indicators with **8 LIVE** (PSX, PKR/USD, Current A/C, Gold, Forex, Imports, Exports, Remittances)
 - [x] **SBPDataModal** - Reusable chart modal with MoM%, YoY%, time range selectors
+- [x] **PSXDataModal** - KSE-100 modal with Day High/Low, Volume, Previous Close, YTD/YoY changes
 - [x] SecurityPanel - Security/political alerts with severity indicators
 - [x] WeatherPanel - Weather for 6 major cities
 - [x] RegionalPanel - Diplomatic relations status
@@ -77,10 +80,14 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 
 ## Data Sources
 - **News**: Real RSS feeds from Pakistani news outlets
+- **KSE-100 Index**: **LIVE** - Scraped from Pakistan Stock Exchange (dps.psx.com.pk)
+- **PKR/USD Exchange Rate**: **LIVE** - State Bank of Pakistan EasyData API
 - **Remittances**: **LIVE** - State Bank of Pakistan EasyData API (1972-present, 643 data points)
 - **Gold Reserves**: **LIVE** - State Bank of Pakistan EasyData API (1990-present)
 - **Forex Reserves**: **LIVE** - State Bank of Pakistan EasyData API (1990-present)
-- **Economic**: PKR rates, KSE-100, Inflation - MOCKED (ready for API integration)
+- **Current Account**: **LIVE** - State Bank of Pakistan EasyData API
+- **Imports/Exports**: **LIVE** - State Bank of Pakistan EasyData API
+- **CPI Inflation**: MOCKED (static value)
 - **Weather**: MOCKED (ready for OpenWeatherMap integration)
 - **Security**: MOCKED (ready for API integration)
 - **Regional**: MOCKED (ready for API integration)
@@ -95,17 +102,19 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] All panels rendering
 - [x] Infrastructure panel with real scraped airport & port data
 - [x] Pakistan local time display (PKT/UTC+5) in header
-- [x] **LIVE remittances data from SBP API with interactive chart modal (YTD, 6M, 1Y, 5Y, 10Y, ALL)**
+- [x] **LIVE remittances data from SBP API with interactive chart modal**
+- [x] **LIVE PKR/USD exchange rate from SBP API**
+- [x] **LIVE KSE-100 Index data from PSX with clickable modal** (Mar 6, 2026)
 
 ### P1 (High Priority)
+- [ ] Make Governance Panel dynamic (scrape from pakistanprojects.pakesda.com)
 - [ ] Real-time data for Security & Politics panel (GDELT, ACLED, or RSS feeds)
-- [ ] Real economic data API (Alpha Vantage, Open Exchange Rates)
 - [ ] Real weather API integration (OpenWeatherMap)
 - [ ] WebSocket for real-time updates
 - [ ] User preferences persistence
 
 ### P2 (Medium Priority)
-- [ ] Historical data charts
+- [ ] Historical data charts for PSX (intraday graphs)
 - [ ] News search and filtering
 - [ ] Export functionality
 - [ ] Dark/Light theme toggle
@@ -119,14 +128,14 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [ ] Social sharing
 
 ## Next Tasks
-1. Integrate real economic data APIs (Alpha Vantage for PKR rates)
+1. Make Governance Panel dynamic
 2. Add OpenWeatherMap API for real weather data
 3. Implement WebSocket for real-time data updates
-4. Add charts/graphs for economic trends
-5. Implement news search and category filtering
+4. Add intraday PSX charts
 
 ## Technical Notes
 - Preview URL may show "unavailable" due to gateway warm-up; app runs correctly locally
 - MapLibre GL requires async import pattern in React
 - RSS feeds refresh every 5 minutes
+- PSX data cached for 5 minutes
 - All data-testid attributes added for testing
