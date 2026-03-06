@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, DollarSign, ExternalLink, Coins, ArrowLeftRight, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, ExternalLink, Coins, ArrowLeftRight, ArrowDownToLine, ArrowUpFromLine, Banknote } from 'lucide-react';
 import axios from 'axios';
 import SBPDataModal from './SBPDataModal';
 
@@ -12,6 +12,7 @@ const EconomicPanel = ({ data, loading }) => {
   const [currentAccountData, setCurrentAccountData] = useState(null);
   const [importsData, setImportsData] = useState(null);
   const [exportsData, setExportsData] = useState(null);
+  const [pkrUsdData, setPkrUsdData] = useState(null);
   const [dataLoading, setDataLoading] = useState(true);
   
   const [activeModal, setActiveModal] = useState(null);
@@ -19,13 +20,14 @@ const EconomicPanel = ({ data, loading }) => {
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const [remittancesRes, goldRes, forexRes, currentAccountRes, importsRes, exportsRes] = await Promise.allSettled([
+        const [remittancesRes, goldRes, forexRes, currentAccountRes, importsRes, exportsRes, pkrUsdRes] = await Promise.allSettled([
           axios.get(`${API_BASE}/api/remittances`),
           axios.get(`${API_BASE}/api/gold-reserves`),
           axios.get(`${API_BASE}/api/forex-reserves`),
           axios.get(`${API_BASE}/api/current-account`),
           axios.get(`${API_BASE}/api/imports`),
-          axios.get(`${API_BASE}/api/exports`)
+          axios.get(`${API_BASE}/api/exports`),
+          axios.get(`${API_BASE}/api/pkr-usd`)
         ]);
 
         if (remittancesRes.status === 'fulfilled') {
@@ -45,6 +47,9 @@ const EconomicPanel = ({ data, loading }) => {
         }
         if (exportsRes.status === 'fulfilled') {
           setExportsData(exportsRes.value.data.data);
+        }
+        if (pkrUsdRes.status === 'fulfilled') {
+          setPkrUsdData(pkrUsdRes.value.data.data);
         }
       } catch (error) {
         console.error('Error fetching economic data:', error);
@@ -93,10 +98,14 @@ const EconomicPanel = ({ data, loading }) => {
   const indicators = [
     { 
       label: 'PKR/USD', 
-      value: data.pkr_usd?.rate?.toFixed(2), 
-      change: data.pkr_usd?.change_percent,
+      value: pkrUsdData?.latest?.value?.toFixed(2) || '--',
+      subLabel: pkrUsdData?.latest?.dateFormatted || '',
+      change: pkrUsdData?.daily_change,
       prefix: '₨',
-      clickable: false
+      clickable: true,
+      modalKey: 'pkrUsd',
+      isLive: !dataLoading && pkrUsdData,
+      isPkrUsd: true
     },
     { 
       label: 'Current A/C', 
@@ -197,6 +206,8 @@ const EconomicPanel = ({ data, loading }) => {
         return { data: importsData, title: "Imports (Goods & Services)", icon: ArrowDownToLine };
       case 'exports':
         return { data: exportsData, title: "Exports (Goods & Services)", icon: ArrowUpFromLine };
+      case 'pkrUsd':
+        return { data: pkrUsdData, title: "PKR/USD Exchange Rate", icon: Banknote, isPkrUsd: true };
       default:
         return null;
     }
@@ -291,6 +302,7 @@ const EconomicPanel = ({ data, loading }) => {
           title={modalInfo.title}
           icon={modalInfo.icon}
           isCurrentAccount={modalInfo.isCurrentAccount}
+          isPkrUsd={modalInfo.isPkrUsd}
         />
       )}
     </div>

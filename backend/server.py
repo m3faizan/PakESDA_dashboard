@@ -76,7 +76,8 @@ data_cache = {
     "current_account": {"data": {}, "updated": None},
     "imports": {"data": {}, "updated": None},
     "exports": {"data": {}, "updated": None},
-    "road_advisory": {"data": [], "updated": None}
+    "road_advisory": {"data": [], "updated": None},
+    "pkr_usd": {"data": {}, "updated": None}
 }
 
 # NHMP Road Advisory API
@@ -90,6 +91,7 @@ SBP_FOREX_RESERVES_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_EXT_PA
 SBP_CURRENT_ACCOUNT_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BOP_BPM6SUM_M.P00010/data"
 SBP_IMPORTS_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BOP_XMGS_M.P00320/data"
 SBP_EXPORTS_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BOP_XMGS_M.P00170/data"
+SBP_PKR_USD_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_ES_FADERPKR_M.XRDAVG0220/data"
 
 # RSS feeds for Pakistan news - comprehensive list
 PAKISTAN_NEWS_FEEDS = [
@@ -384,6 +386,83 @@ async def fetch_imports_data():
 async def fetch_exports_data():
     """Fetch exports data from State Bank of Pakistan"""
     return await fetch_sbp_reserves_data(SBP_EXPORTS_URL, "Exports", "1990-01-01")
+
+async def fetch_pkr_usd_data():
+    """Fetch PKR/USD exchange rate data from State Bank of Pakistan"""
+    try:
+        print(f"Fetching PKR/USD from {SBP_PKR_USD_URL}")
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(
+                SBP_PKR_USD_URL,
+                params={
+                    "api_key": SBP_API_KEY,
+                    "start_date": "2015-01-01",
+                    "end_date": datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                }
+            )
+            
+            print(f"PKR/USD API response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                data = response.json()
+                rows = data.get("rows", [])
+                print(f"PKR/USD rows: {len(rows)}")
+                
+                if len(rows) >= 2:
+                    history = []
+                    for row in rows:
+                        history.append({
+                            "date": row[3],
+                            "value": float(row[4]),
+                            "unit": row[5]
+                        })
+                    
+                    latest = history[0]
+                    previous = history[1]
+                    
+                    # Find YoY comparison (same day last year or closest)
+                    yoy_value = None
+                    latest_date = datetime.strptime(latest["date"], "%Y-%m-%d")
+                    target_date = latest_date - timedelta(days=365)
+                    
+                    for item in history:
+                        item_date = datetime.strptime(item["date"], "%Y-%m-%d")
+                        if abs((item_date - target_date).days) <= 7:
+                            yoy_value = item["value"]
+                            break
+                    
+                    # Calculate daily change (percentage)
+                    daily_change = ((latest["value"] - previous["value"]) / previous["value"]) * 100
+                    
+                    # Calculate YoY change
+                    yoy_change = None
+                    if yoy_value:
+                        yoy_change = ((latest["value"] - yoy_value) / yoy_value) * 100
+                    
+                    date_str = latest_date.strftime("%b %d, %Y")
+                    
+                    return {
+                        "latest": {
+                            "value": round(latest["value"], 2),
+                            "date": latest["date"],
+                            "dateFormatted": date_str,
+                            "unit": "PKR"
+                        },
+                        "previous": {
+                            "value": round(previous["value"], 2),
+                            "date": previous["date"]
+                        },
+                        "daily_change": round(daily_change, 4),
+                        "yoy_change": round(yoy_change, 2) if yoy_change else None,
+                        "history": history,
+                        "source": "State Bank of Pakistan",
+                        "name": "PKR/USD Exchange Rate",
+                        "updated": datetime.now(timezone.utc).isoformat()
+                    }
+    except Exception as e:
+        print(f"Error fetching PKR/USD data: {e}")
+    
+    return None
 
 async def fetch_road_advisory():
     """Fetch road advisory data from NHMP"""
@@ -1012,6 +1091,25 @@ async def get_road_advisory():
         "count": len(data_cache["road_advisory"]["data"]),
         "source": "National Highway & Motorway Police",
         "updated": data_cache["road_advisory"]["updated"].isoformat() if data_cache["road_advisory"]["updated"] else None
+    }
+
+
+@app.get("/api/pkr-usd")
+async def get_pkr_usd():
+    """Get PKR/USD exchange rate from State Bank of Pakistan"""
+    # Refresh every hour (daily data, no need for frequent refresh)
+    if data_cache["pkr_usd"]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache["pkr_usd"]["updated"]).total_seconds()
+        if age > 3600:
+            data_cache["pkr_usd"]["data"] = await fetch_pkr_usd_data()
+            data_cache["pkr_usd"]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache["pkr_usd"]["data"] = await fetch_pkr_usd_data()
+        data_cache["pkr_usd"]["updated"] = datetime.now(timezone.utc)
+    
+    return {
+        "data": data_cache["pkr_usd"]["data"],
+        "updated": data_cache["pkr_usd"]["updated"].isoformat() if data_cache["pkr_usd"]["updated"] else None
     }
 
 

@@ -23,7 +23,7 @@ const TIME_RANGES = [
   { key: 'ALL', label: 'All', months: null }
 ];
 
-const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, isCurrentAccount = false }) => {
+const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, isCurrentAccount = false, isPkrUsd = false }) => {
   const [selectedRange, setSelectedRange] = useState('1Y');
 
   const filteredData = useMemo(() => {
@@ -53,6 +53,9 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
   }, [data, selectedRange]);
 
   const formatValue = (value) => {
+    if (isPkrUsd) {
+      return `₨${value.toFixed(2)}`;
+    }
     if (isCurrentAccount) {
       const prefix = value >= 0 ? '+' : '';
       if (Math.abs(value) >= 1000) {
@@ -85,6 +88,7 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
       const date = new Date(label);
       const formattedDate = date.toLocaleDateString('en-US', { 
         month: 'long', 
+        day: isPkrUsd ? 'numeric' : undefined,
         year: 'numeric' 
       });
       const value = payload[0].value;
@@ -104,7 +108,7 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
 
   const latest = data?.latest;
   const latestValue = latest?.value || 0;
-  const momChange = data?.mom_change || 0;
+  const momChange = isPkrUsd ? data?.daily_change : data?.mom_change || 0;
   const yoyChange = data?.yoy_change;
   const isMomPositive = momChange >= 0;
   const isYoyPositive = yoyChange >= 0;
@@ -142,14 +146,14 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
             </div>
             <div className="summary-period">
               <Calendar size={14} />
-              {latest?.month || 'N/A'}
+              {isPkrUsd ? latest?.dateFormatted : latest?.month || 'N/A'}
             </div>
           </div>
           <div className="summary-changes">
             <div className={`summary-change ${isMomPositive ? 'positive' : 'negative'}`}>
               {isMomPositive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
               <span>{formatChange(momChange)}</span>
-              <span className="change-label">MoM</span>
+              <span className="change-label">{isPkrUsd ? 'Daily' : 'MoM'}</span>
             </div>
             {yoyChange !== null && yoyChange !== undefined && (
               <div className={`summary-change ${isYoyPositive ? 'positive' : 'negative'}`}>
@@ -235,12 +239,12 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
                   minTickGap={50}
                 />
                 <YAxis 
-                  tickFormatter={(val) => `$${(val/1000).toFixed(1)}B`}
+                  tickFormatter={(val) => isPkrUsd ? `₨${val.toFixed(0)}` : `$${(val/1000).toFixed(1)}B`}
                   stroke="#64748b"
                   tick={{ fill: '#64748b', fontSize: 11 }}
                   axisLine={{ stroke: '#1e293b' }}
                   tickLine={{ stroke: '#1e293b' }}
-                  domain={[0, 'auto']}
+                  domain={isPkrUsd ? ['auto', 'auto'] : [0, 'auto']}
                   width={60}
                 />
                 <Tooltip content={<CustomTooltip />} />
