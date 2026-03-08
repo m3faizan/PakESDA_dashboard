@@ -11,7 +11,10 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  ReferenceLine
+  ReferenceLine,
+  ComposedChart,
+  Line,
+  Legend
 } from 'recharts';
 
 const TIME_RANGES = [
@@ -25,6 +28,7 @@ const TIME_RANGES = [
 
 const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, isCurrentAccount = false, isPkrUsd = false, isForexReserves = false }) => {
   const [selectedRange, setSelectedRange] = useState('1Y');
+  const [showBreakdown, setShowBreakdown] = useState(false);
 
   const filteredData = useMemo(() => {
     if (!data?.history) return [];
@@ -216,11 +220,80 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
               {range.label}
             </button>
           ))}
+          
+          {/* Chart type toggle for Forex Reserves */}
+          {isForexReserves && (
+            <button
+              className={`range-btn ${showBreakdown ? 'active' : ''}`}
+              onClick={() => setShowBreakdown(!showBreakdown)}
+              style={{ marginLeft: '1rem', borderLeft: '1px solid var(--color-border)', paddingLeft: '1rem' }}
+              data-testid="breakdown-toggle"
+            >
+              {showBreakdown ? 'Total' : 'Breakdown'}
+            </button>
+          )}
         </div>
 
         <div className="chart-container" data-testid="sbp-chart">
           <ResponsiveContainer width="100%" height={300}>
-            {isCurrentAccount ? (
+            {isForexReserves && showBreakdown ? (
+              // Stacked bar chart with line for total
+              <ComposedChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <XAxis 
+                  dataKey="date" 
+                  tickFormatter={formatDate}
+                  stroke="#64748b"
+                  tick={{ fill: '#64748b', fontSize: 11 }}
+                  axisLine={{ stroke: '#1e293b' }}
+                  tickLine={{ stroke: '#1e293b' }}
+                  interval="preserveStartEnd"
+                  minTickGap={50}
+                />
+                <YAxis 
+                  tickFormatter={(val) => `$${(val/1000).toFixed(0)}B`}
+                  stroke="#64748b"
+                  tick={{ fill: '#64748b', fontSize: 11 }}
+                  axisLine={{ stroke: '#1e293b' }}
+                  tickLine={{ stroke: '#1e293b' }}
+                  domain={[0, 'auto']}
+                  width={50}
+                />
+                <Tooltip 
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      const date = new Date(label);
+                      const formattedDate = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                      return (
+                        <div className="remittances-tooltip" style={{ minWidth: '180px' }}>
+                          <p className="tooltip-date">{formattedDate}</p>
+                          {payload.map((entry, idx) => (
+                            <p key={idx} style={{ color: entry.color, fontSize: '0.85rem', margin: '0.25rem 0' }}>
+                              {entry.name}: ${(entry.value / 1000).toFixed(2)}B
+                            </p>
+                          ))}
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Legend 
+                  wrapperStyle={{ paddingTop: '10px' }}
+                  formatter={(value) => <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>{value}</span>}
+                />
+                <Bar dataKey="sbp_reserves" name="SBP Reserves" stackId="a" fill="#22C55E" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="bank_reserves" name="Bank Reserves" stackId="a" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                <Line 
+                  type="monotone" 
+                  dataKey="value" 
+                  name="Total" 
+                  stroke="#F59E0B" 
+                  strokeWidth={2} 
+                  dot={false}
+                />
+              </ComposedChart>
+            ) : isCurrentAccount ? (
               // Bar chart for Current Account Balance
               <BarChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
