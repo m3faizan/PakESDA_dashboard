@@ -54,17 +54,38 @@ const CPIDataModal = ({ isOpen, onClose, data, title, type }) => {
     return history.filter(item => new Date(item.date) >= cutoffDate);
   }, [data, selectedRange]);
 
-  // Get base year markers within the selected range
+  // Get base year markers within the selected range, mapped to actual data points
   const baseYearMarkers = useMemo(() => {
     if (!data?.base_year_markers || filteredData.length === 0) return [];
     
     const startDate = new Date(filteredData[0].date);
     const endDate = new Date(filteredData[filteredData.length - 1].date);
     
-    return data.base_year_markers.filter(marker => {
-      const markerDate = new Date(marker.date);
-      return markerDate >= startDate && markerDate <= endDate;
-    });
+    // Filter markers within range and find closest data point for each
+    return data.base_year_markers
+      .filter(marker => {
+        const markerDate = new Date(marker.date);
+        return markerDate >= startDate && markerDate <= endDate;
+      })
+      .map(marker => {
+        // Find the closest data point date to this marker
+        const markerTime = new Date(marker.date).getTime();
+        let closestDate = filteredData[0].date;
+        let minDiff = Math.abs(new Date(filteredData[0].date).getTime() - markerTime);
+        
+        for (const dataPoint of filteredData) {
+          const diff = Math.abs(new Date(dataPoint.date).getTime() - markerTime);
+          if (diff < minDiff) {
+            minDiff = diff;
+            closestDate = dataPoint.date;
+          }
+        }
+        
+        return {
+          ...marker,
+          chartDate: closestDate  // Use the actual data point date for the chart
+        };
+      });
   }, [data, filteredData]);
 
   const formatValue = (value) => {
@@ -221,7 +242,7 @@ const CPIDataModal = ({ isOpen, onClose, data, title, type }) => {
                 {baseYearMarkers.map((marker, idx) => (
                   <ReferenceLine 
                     key={`base-${idx}`}
-                    x={marker.date} 
+                    x={marker.chartDate} 
                     stroke="#6366f1" 
                     strokeDasharray="5 5"
                     strokeWidth={2}
@@ -279,7 +300,7 @@ const CPIDataModal = ({ isOpen, onClose, data, title, type }) => {
                 {baseYearMarkers.map((marker, idx) => (
                   <ReferenceLine 
                     key={`base-${idx}`}
-                    x={marker.date} 
+                    x={marker.chartDate} 
                     stroke="#6366f1" 
                     strokeDasharray="5 5"
                     strokeWidth={2}
