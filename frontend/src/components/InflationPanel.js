@@ -14,9 +14,11 @@ const InflationPanel = ({ loading: parentLoading }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [yoyRes, momRes] = await Promise.allSettled([
+        const [yoyRes, momRes, yoyHistRes, momHistRes] = await Promise.allSettled([
           axios.get(`${API_BASE}/api/cpi-yoy`),
-          axios.get(`${API_BASE}/api/cpi-mom`)
+          axios.get(`${API_BASE}/api/cpi-mom`),
+          axios.get(`${API_BASE}/api/cpi-yoy-historical`),
+          axios.get(`${API_BASE}/api/cpi-mom-historical`)
         ]);
 
         if (yoyRes.status === 'fulfilled') {
@@ -24,6 +26,22 @@ const InflationPanel = ({ loading: parentLoading }) => {
         }
         if (momRes.status === 'fulfilled') {
           setCpiMomData(momRes.value.data.data);
+        }
+        // Merge historical data with latest data
+        if (yoyHistRes.status === 'fulfilled' && yoyHistRes.value.data.data) {
+          setCpiYoyData(prev => ({
+            ...prev,
+            ...yoyHistRes.value.data.data,
+            // Keep latest from regular endpoint if available
+            latest: prev?.latest || yoyHistRes.value.data.data.latest
+          }));
+        }
+        if (momHistRes.status === 'fulfilled' && momHistRes.value.data.data) {
+          setCpiMomData(prev => ({
+            ...prev,
+            ...momHistRes.value.data.data,
+            latest: prev?.latest || momHistRes.value.data.data.latest
+          }));
         }
       } catch (error) {
         console.error('Error fetching CPI data:', error);
@@ -116,7 +134,6 @@ const InflationPanel = ({ loading: parentLoading }) => {
         <div className="inflation-grid">
           {indicators.map((item, index) => {
             const status = getInflationStatus(item.value);
-            const isNegative = item.value !== null && item.value < 0;
             
             return (
               <div
@@ -149,9 +166,7 @@ const InflationPanel = ({ loading: parentLoading }) => {
                   <span 
                     className={`inflation-value ${status}`}
                     style={{
-                      color: status === 'critical' ? '#EF4444' : 
-                             status === 'warning' ? '#F59E0B' : 
-                             isNegative ? '#22C55E' : 'var(--color-text)'
+                      color: 'var(--color-text)'
                     }}
                   >
                     {item.value !== null && item.value !== undefined ? (

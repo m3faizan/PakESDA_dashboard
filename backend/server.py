@@ -80,7 +80,9 @@ data_cache = {
     "pkr_usd": {"data": {}, "updated": None},
     "psx_data": {"data": {}, "updated": None},
     "cpi_yoy": {"data": {}, "updated": None},
-    "cpi_mom": {"data": {}, "updated": None}
+    "cpi_mom": {"data": {}, "updated": None},
+    "cpi_yoy_historical": {"data": {}, "updated": None},
+    "cpi_mom_historical": {"data": {}, "updated": None}
 }
 
 # NHMP Road Advisory API
@@ -99,6 +101,74 @@ SBP_PKR_USD_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_ES_FADERPKR_M
 # CPI API endpoints (2016-present - latest base year)
 SBP_CPI_YOY_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_PT_CPI_M.P00011516/data"
 SBP_CPI_MOM_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_PT_CPI_M.P00461516/data"
+
+# Historical CPI API endpoints by base year period
+CPI_HISTORICAL_APIS = [
+    {
+        "url": "https://easydata.sbp.org.pk/api/v1/series/TS_GP_PT_CPI_M.P00011516/data",  # YoY
+        "mom_url": "https://easydata.sbp.org.pk/api/v1/series/TS_GP_PT_CPI_M.P00461516/data",  # MoM
+        "base_year": "2015-16",
+        "start_date": "2016-07-01",
+        "end_date": None,
+        "label": "Base: 2015-16"
+    },
+    {
+        "yoy_series": "TS_GP_RLS_CPI0708_M.P00010708",
+        "mom_series": "TS_GP_RLS_CPI0708_M.P00020708",
+        "base_year": "2007-08",
+        "start_date": "2008-07-01",
+        "end_date": "2016-06-30",
+        "label": "Base: 2007-08"
+    },
+    {
+        "yoy_series": "TS_GP_RLS_CPI0001_M.P00010001",
+        "mom_series": "TS_GP_RLS_CPI0001_M.P00020001",
+        "base_year": "2000-01",
+        "start_date": "2001-07-01",
+        "end_date": "2008-06-30",
+        "label": "Base: 2000-01"
+    },
+    {
+        "yoy_series": "TS_GP_RLS_CPI9091_M.P00019091",
+        "mom_series": "TS_GP_RLS_CPI9091_M.P00029091",
+        "base_year": "1990-91",
+        "start_date": "1995-01-01",
+        "end_date": "2001-06-30",
+        "label": "Base: 1990-91"
+    },
+    {
+        "yoy_series": "TS_GP_RLS_CPI8081_M.P00018081",
+        "mom_series": "TS_GP_RLS_CPI8081_M.P00028081",
+        "base_year": "1980-81",
+        "start_date": "1985-03-01",
+        "end_date": "1994-12-31",
+        "label": "Base: 1980-81"
+    },
+    {
+        "yoy_series": "TS_GP_RLS_CPI7576_M.P00017576",
+        "mom_series": "TS_GP_RLS_CPI7576_M.P00027576",
+        "base_year": "1975-76",
+        "start_date": "1982-07-01",
+        "end_date": "1985-02-28",
+        "label": "Base: 1975-76"
+    },
+    {
+        "yoy_series": "TS_GP_RLS_CPI6970_M.P00016970",
+        "mom_series": "TS_GP_RLS_CPI6970_M.P00026970",
+        "base_year": "1969-70",
+        "start_date": "1974-01-01",
+        "end_date": "1982-06-30",
+        "label": "Base: 1969-70"
+    },
+    {
+        "yoy_series": "TS_GP_RLS_CPI5960_M.P00015960",
+        "mom_series": "TS_GP_RLS_CPI5960_M.P00025960",
+        "base_year": "1959-60",
+        "start_date": "1964-07-01",
+        "end_date": "1973-12-31",
+        "label": "Base: 1959-60"
+    }
+]
 
 # RSS feeds for Pakistan news - comprehensive list
 PAKISTAN_NEWS_FEEDS = [
@@ -504,7 +574,8 @@ async def fetch_cpi_data(cpi_type: str = "yoy"):
                             history.append({
                                 "date": row[3],
                                 "value": value,
-                                "unit": row[5]
+                                "unit": row[5],
+                                "base_year": "2015-16"
                             })
                         except (ValueError, IndexError):
                             continue
@@ -553,6 +624,123 @@ async def fetch_cpi_data(cpi_type: str = "yoy"):
                     }
     except Exception as e:
         print(f"Error fetching CPI {cpi_type} data: {e}")
+    
+    return None
+
+
+async def fetch_cpi_historical_data(cpi_type: str = "yoy"):
+    """Fetch complete CPI history from all base year periods (1964-present)
+    
+    Args:
+        cpi_type: 'yoy' for Year-on-Year or 'mom' for Month-on-Month
+    """
+    all_history = []
+    base_year_markers = []
+    
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            # Fetch all historical periods
+            for api_config in CPI_HISTORICAL_APIS:
+                try:
+                    # Determine the series URL
+                    if "url" in api_config:
+                        # Latest period (2016-present)
+                        url = api_config["url"] if cpi_type == "yoy" else api_config.get("mom_url", api_config["url"])
+                    else:
+                        # Historical periods
+                        series_code = api_config["yoy_series"] if cpi_type == "yoy" else api_config["mom_series"]
+                        url = f"https://easydata.sbp.org.pk/api/v1/series/{series_code}/data"
+                    
+                    params = {
+                        "api_key": SBP_API_KEY,
+                        "start_date": api_config["start_date"]
+                    }
+                    if api_config["end_date"]:
+                        params["end_date"] = api_config["end_date"]
+                    else:
+                        params["end_date"] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                    
+                    response = await client.get(url, params=params)
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        rows = data.get("rows", [])
+                        
+                        period_history = []
+                        for row in rows:
+                            try:
+                                value = float(row[4]) if row[4] else None
+                                if value is not None:
+                                    period_history.append({
+                                        "date": row[3],
+                                        "value": value,
+                                        "base_year": api_config["base_year"]
+                                    })
+                            except (ValueError, IndexError):
+                                continue
+                        
+                        if period_history:
+                            all_history.extend(period_history)
+                            base_year_markers.append({
+                                "date": api_config["start_date"],
+                                "label": api_config["label"],
+                                "base_year": api_config["base_year"]
+                            })
+                            print(f"Fetched {len(period_history)} points for {api_config['label']}")
+                
+                except Exception as e:
+                    print(f"Error fetching CPI for {api_config.get('label', 'unknown')}: {e}")
+                    continue
+            
+            # Sort all history by date (oldest to newest)
+            all_history.sort(key=lambda x: x["date"])
+            
+            # Remove duplicates (keep first occurrence for overlapping dates)
+            seen_dates = {}
+            unique_history = []
+            for item in all_history:
+                if item["date"] not in seen_dates:
+                    seen_dates[item["date"]] = True
+                    unique_history.append(item)
+            
+            # Sort base year markers
+            base_year_markers.sort(key=lambda x: x["date"])
+            
+            if unique_history:
+                # Get latest value for summary
+                latest = unique_history[-1]
+                previous = unique_history[-2] if len(unique_history) > 1 else None
+                
+                latest_date = datetime.strptime(latest["date"], "%Y-%m-%d")
+                month_name = latest_date.strftime("%B %Y")
+                
+                # Calculate change
+                mom_change = None
+                if previous:
+                    mom_change = latest["value"] - previous["value"]
+                
+                return {
+                    "latest": {
+                        "value": round(latest["value"], 2),
+                        "month": month_name,
+                        "date": latest["date"],
+                        "unit": "Percent"
+                    },
+                    "mom_change": round(mom_change, 2) if mom_change is not None else None,
+                    "history": unique_history,
+                    "base_year_markers": base_year_markers,
+                    "total_data_points": len(unique_history),
+                    "date_range": f"{unique_history[0]['date']} to {unique_history[-1]['date']}",
+                    "source": "State Bank of Pakistan",
+                    "name": f"CPI ({'Year-on-Year' if cpi_type == 'yoy' else 'Month-on-Month'})",
+                    "type": cpi_type,
+                    "updated": datetime.now(timezone.utc).isoformat()
+                }
+    
+    except Exception as e:
+        print(f"Error fetching historical CPI {cpi_type} data: {e}")
+        import traceback
+        traceback.print_exc()
     
     return None
 
@@ -1241,6 +1429,44 @@ async def get_cpi_mom():
     return {
         "data": data_cache["cpi_mom"]["data"],
         "updated": data_cache["cpi_mom"]["updated"].isoformat() if data_cache["cpi_mom"]["updated"] else None
+    }
+
+
+@app.get("/api/cpi-yoy-historical")
+async def get_cpi_yoy_historical():
+    """Get complete historical CPI Year-on-Year inflation data (1964-present)"""
+    # Refresh every 24 hours (historical data rarely changes)
+    if data_cache["cpi_yoy_historical"]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache["cpi_yoy_historical"]["updated"]).total_seconds()
+        if age > 86400:  # 24 hours
+            data_cache["cpi_yoy_historical"]["data"] = await fetch_cpi_historical_data("yoy")
+            data_cache["cpi_yoy_historical"]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache["cpi_yoy_historical"]["data"] = await fetch_cpi_historical_data("yoy")
+        data_cache["cpi_yoy_historical"]["updated"] = datetime.now(timezone.utc)
+    
+    return {
+        "data": data_cache["cpi_yoy_historical"]["data"],
+        "updated": data_cache["cpi_yoy_historical"]["updated"].isoformat() if data_cache["cpi_yoy_historical"]["updated"] else None
+    }
+
+
+@app.get("/api/cpi-mom-historical")
+async def get_cpi_mom_historical():
+    """Get complete historical CPI Month-on-Month inflation data (1964-present)"""
+    # Refresh every 24 hours (historical data rarely changes)
+    if data_cache["cpi_mom_historical"]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache["cpi_mom_historical"]["updated"]).total_seconds()
+        if age > 86400:  # 24 hours
+            data_cache["cpi_mom_historical"]["data"] = await fetch_cpi_historical_data("mom")
+            data_cache["cpi_mom_historical"]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache["cpi_mom_historical"]["data"] = await fetch_cpi_historical_data("mom")
+        data_cache["cpi_mom_historical"]["updated"] = datetime.now(timezone.utc)
+    
+    return {
+        "data": data_cache["cpi_mom_historical"]["data"],
+        "updated": data_cache["cpi_mom_historical"]["updated"].isoformat() if data_cache["cpi_mom_historical"]["updated"] else None
     }
 
 

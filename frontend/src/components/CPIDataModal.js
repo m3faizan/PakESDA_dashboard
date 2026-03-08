@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X, TrendingUp, TrendingDown, Calendar, Percent } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, Calendar, Percent, Info } from 'lucide-react';
 import { 
   AreaChart,
   Area,
@@ -19,16 +19,19 @@ const TIME_RANGES = [
   { key: '1Y', label: '1Y', months: 12 },
   { key: '2Y', label: '2Y', months: 24 },
   { key: '5Y', label: '5Y', months: 60 },
+  { key: '10Y', label: '10Y', months: 120 },
+  { key: '20Y', label: '20Y', months: 240 },
   { key: 'ALL', label: 'All', months: null }
 ];
 
 const CPIDataModal = ({ isOpen, onClose, data, title, type }) => {
-  const [selectedRange, setSelectedRange] = useState('2Y');
+  const [selectedRange, setSelectedRange] = useState('5Y');
 
   const filteredData = useMemo(() => {
     if (!data?.history) return [];
     
-    const history = [...data.history].reverse();
+    // Ensure history is sorted oldest to newest
+    const history = [...data.history].sort((a, b) => new Date(a.date) - new Date(b.date));
     const now = new Date();
     const currentYear = now.getFullYear();
     
@@ -51,6 +54,19 @@ const CPIDataModal = ({ isOpen, onClose, data, title, type }) => {
     return history.filter(item => new Date(item.date) >= cutoffDate);
   }, [data, selectedRange]);
 
+  // Get base year markers within the selected range
+  const baseYearMarkers = useMemo(() => {
+    if (!data?.base_year_markers || filteredData.length === 0) return [];
+    
+    const startDate = new Date(filteredData[0].date);
+    const endDate = new Date(filteredData[filteredData.length - 1].date);
+    
+    return data.base_year_markers.filter(marker => {
+      const markerDate = new Date(marker.date);
+      return markerDate >= startDate && markerDate <= endDate;
+    });
+  }, [data, filteredData]);
+
   const formatValue = (value) => {
     if (value === null || value === undefined) return '--';
     return `${value >= 0 ? '' : ''}${value.toFixed(1)}%`;
@@ -69,6 +85,7 @@ const CPIDataModal = ({ isOpen, onClose, data, title, type }) => {
         year: 'numeric' 
       });
       const value = payload[0].value;
+      const baseYear = payload[0].payload?.base_year;
       return (
         <div className="remittances-tooltip">
           <p className="tooltip-date">{formattedDate}</p>
@@ -79,6 +96,11 @@ const CPIDataModal = ({ isOpen, onClose, data, title, type }) => {
           }}>
             {formatValue(value)}
           </p>
+          {baseYear && (
+            <p className="tooltip-base" style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '4px' }}>
+              Base Year: {baseYear}
+            </p>
+          )}
         </div>
       );
     }
@@ -195,6 +217,23 @@ const CPIDataModal = ({ isOpen, onClose, data, title, type }) => {
                   width={45}
                 />
                 <ReferenceLine y={0} stroke="#64748b" strokeDasharray="3 3" />
+                {/* Base year change markers */}
+                {baseYearMarkers.map((marker, idx) => (
+                  <ReferenceLine 
+                    key={`base-${idx}`}
+                    x={marker.date} 
+                    stroke="#6366f1" 
+                    strokeDasharray="5 5"
+                    strokeWidth={2}
+                    label={{ 
+                      value: marker.label, 
+                      fill: '#6366f1', 
+                      fontSize: 9,
+                      position: 'top',
+                      angle: -45
+                    }}
+                  />
+                ))}
                 <Tooltip content={<CustomTooltip />} />
                 <Bar dataKey="value" radius={[2, 2, 0, 0]}>
                   {filteredData.map((entry, index) => (
@@ -236,6 +275,23 @@ const CPIDataModal = ({ isOpen, onClose, data, title, type }) => {
                   width={45}
                 />
                 <ReferenceLine y={5} stroke="#F59E0B" strokeDasharray="5 5" label={{ value: '5% Target', fill: '#F59E0B', fontSize: 10 }} />
+                {/* Base year change markers */}
+                {baseYearMarkers.map((marker, idx) => (
+                  <ReferenceLine 
+                    key={`base-${idx}`}
+                    x={marker.date} 
+                    stroke="#6366f1" 
+                    strokeDasharray="5 5"
+                    strokeWidth={2}
+                    label={{ 
+                      value: marker.label, 
+                      fill: '#6366f1', 
+                      fontSize: 9,
+                      position: 'top',
+                      angle: -45
+                    }}
+                  />
+                ))}
                 <Tooltip content={<CustomTooltip />} />
                 <Area 
                   type="monotone" 
@@ -250,9 +306,33 @@ const CPIDataModal = ({ isOpen, onClose, data, title, type }) => {
           </ResponsiveContainer>
         </div>
 
+        {/* Base Year Legend */}
+        {baseYearMarkers.length > 0 && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.5rem 0.75rem',
+            background: 'rgba(99, 102, 241, 0.1)',
+            borderRadius: '6px',
+            marginBottom: '0.75rem',
+            fontSize: '0.75rem'
+          }}>
+            <Info size={14} style={{ color: '#6366f1' }} />
+            <span style={{ color: '#94a3b8' }}>
+              Purple lines indicate CPI base year changes. Different base years are not directly comparable.
+            </span>
+          </div>
+        )}
+
         <div className="modal-footer">
           <span className="data-source">Source: State Bank of Pakistan</span>
           <span className="data-updated">
+            {data?.total_data_points && (
+              <span style={{ marginRight: '1rem', color: '#64748b' }}>
+                {data.total_data_points} data points
+              </span>
+            )}
             Last updated: {new Date(data?.updated || Date.now()).toLocaleDateString()}
           </span>
         </div>
