@@ -53,6 +53,8 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] `/api/psx-data` - **LIVE** KSE-100 Index data scraped from PSX (dps.psx.com.pk)
 - [x] `/api/cpi-yoy` - **LIVE** CPI Year-on-Year inflation from SBP API (2016-present)
 - [x] `/api/cpi-mom` - **LIVE** CPI Month-on-Month inflation from SBP API (2016-present)
+- [x] `/api/cpi-yoy-historical` - **LIVE** Complete CPI YoY history (1965-2026, 656 points, 8 base year periods)
+- [x] `/api/cpi-mom-historical` - **LIVE** Complete CPI MoM history (1964-2026, 711 points, 8 base year periods)
 
 ### Frontend (React)
 - [x] Header with logo, live indicator, **Pakistan time (PKT/UTC+5)**, refresh button
@@ -60,10 +62,10 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] Bento grid layout with responsive panels (10 bottom panels)
 - [x] NewsPanel - Latest news with category tabs and infinite scroll
 - [x] EconomicPanel - 8 indicators with all **LIVE** (PSX, PKR/USD, Current A/C, Gold, Forex, Imports, Exports, Remittances)
-- [x] **InflationPanel** - NEW! CPI YoY (7%) and CPI MoM (0.3%) with clickable chart modals
+- [x] **InflationPanel** - CPI YoY (7%) and CPI MoM (0.3%) with clickable chart modals, 60+ year history
 - [x] **SBPDataModal** - Reusable chart modal with MoM%, YoY%, time range selectors
 - [x] **PSXDataModal** - KSE-100 modal with Day High/Low, Volume, Previous Close, YTD/YoY changes
-- [x] **CPIDataModal** - CPI inflation modal with area chart (YoY) or bar chart (MoM), 5% target line
+- [x] **CPIDataModal** - CPI modal with 60-year history, base year markers, 10Y/20Y/ALL time ranges
 - [x] SecurityPanel - Security/political alerts with severity indicators
 - [x] WeatherPanel - Weather for 6 major cities
 - [x] RegionalPanel - Diplomatic relations status
@@ -91,7 +93,7 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - **Forex Reserves**: **LIVE** - State Bank of Pakistan EasyData API (1990-present)
 - **Current Account**: **LIVE** - State Bank of Pakistan EasyData API
 - **Imports/Exports**: **LIVE** - State Bank of Pakistan EasyData API
-- **CPI Inflation (YoY/MoM)**: **LIVE** - State Bank of Pakistan EasyData API (2016-present)
+- **CPI Inflation (YoY/MoM)**: **LIVE** - State Bank of Pakistan EasyData API (1964-2026, 8 base year periods combined)
 - **Weather**: MOCKED (ready for OpenWeatherMap integration)
 - **Security**: MOCKED (ready for API integration)
 - **Regional**: MOCKED (ready for API integration)
