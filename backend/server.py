@@ -78,7 +78,9 @@ data_cache = {
     "exports": {"data": {}, "updated": None},
     "road_advisory": {"data": [], "updated": None},
     "pkr_usd": {"data": {}, "updated": None},
-    "psx_data": {"data": {}, "updated": None}
+    "psx_data": {"data": {}, "updated": None},
+    "cpi_yoy": {"data": {}, "updated": None},
+    "cpi_mom": {"data": {}, "updated": None}
 }
 
 # NHMP Road Advisory API
@@ -93,6 +95,10 @@ SBP_CURRENT_ACCOUNT_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BOP_B
 SBP_IMPORTS_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BOP_XMGS_M.P00320/data"
 SBP_EXPORTS_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BOP_XMGS_M.P00170/data"
 SBP_PKR_USD_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_ES_FADERPKR_M.XRDAVG0220/data"
+
+# CPI API endpoints (2016-present - latest base year)
+SBP_CPI_YOY_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_PT_CPI_M.P00011516/data"
+SBP_CPI_MOM_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_PT_CPI_M.P00461516/data"
 
 # RSS feeds for Pakistan news - comprehensive list
 PAKISTAN_NEWS_FEEDS = [
@@ -464,6 +470,92 @@ async def fetch_pkr_usd_data():
         print(f"Error fetching PKR/USD data: {e}")
     
     return None
+
+
+async def fetch_cpi_data(cpi_type: str = "yoy"):
+    """Fetch CPI inflation data from State Bank of Pakistan API
+    
+    Args:
+        cpi_type: 'yoy' for Year-on-Year or 'mom' for Month-on-Month
+    """
+    try:
+        url = SBP_CPI_YOY_URL if cpi_type == "yoy" else SBP_CPI_MOM_URL
+        name = "CPI (Year-on-Year)" if cpi_type == "yoy" else "CPI (Month-on-Month)"
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(
+                url,
+                params={
+                    "api_key": SBP_API_KEY,
+                    "start_date": "2016-01-01",
+                    "end_date": datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                }
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                rows = data.get("rows", [])
+                
+                if len(rows) >= 2:
+                    history = []
+                    for row in rows:
+                        try:
+                            value = float(row[4]) if row[4] else 0
+                            history.append({
+                                "date": row[3],
+                                "value": value,
+                                "unit": row[5]
+                            })
+                        except (ValueError, IndexError):
+                            continue
+                    
+                    if not history:
+                        return None
+                    
+                    latest = history[0]
+                    previous = history[1] if len(history) > 1 else None
+                    
+                    # Find YoY comparison (12 months ago)
+                    yoy_value = None
+                    latest_date = datetime.strptime(latest["date"], "%Y-%m-%d")
+                    for item in history:
+                        item_date = datetime.strptime(item["date"], "%Y-%m-%d")
+                        months_diff = (latest_date.year - item_date.year) * 12 + (latest_date.month - item_date.month)
+                        if months_diff == 12:
+                            yoy_value = item["value"]
+                            break
+                    
+                    # Calculate change from previous month
+                    mom_change = None
+                    if previous:
+                        mom_change = latest["value"] - previous["value"]
+                    
+                    month_name = latest_date.strftime("%B %Y")
+                    
+                    return {
+                        "latest": {
+                            "value": round(latest["value"], 2),
+                            "month": month_name,
+                            "date": latest["date"],
+                            "unit": "Percent"
+                        },
+                        "previous": {
+                            "value": round(previous["value"], 2) if previous else None,
+                            "date": previous["date"] if previous else None
+                        },
+                        "mom_change": round(mom_change, 2) if mom_change is not None else None,
+                        "yoy_comparison": round(yoy_value, 2) if yoy_value is not None else None,
+                        "history": history,
+                        "source": "State Bank of Pakistan",
+                        "name": name,
+                        "type": cpi_type,
+                        "updated": datetime.now(timezone.utc).isoformat()
+                    }
+    except Exception as e:
+        print(f"Error fetching CPI {cpi_type} data: {e}")
+    
+    return None
+
 
 async def fetch_road_advisory():
     """Fetch road advisory data from NHMP"""
@@ -1111,6 +1203,44 @@ async def get_pkr_usd():
     return {
         "data": data_cache["pkr_usd"]["data"],
         "updated": data_cache["pkr_usd"]["updated"].isoformat() if data_cache["pkr_usd"]["updated"] else None
+    }
+
+
+@app.get("/api/cpi-yoy")
+async def get_cpi_yoy():
+    """Get CPI Year-on-Year inflation data from State Bank of Pakistan"""
+    # Refresh every hour (monthly data)
+    if data_cache["cpi_yoy"]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache["cpi_yoy"]["updated"]).total_seconds()
+        if age > 3600:
+            data_cache["cpi_yoy"]["data"] = await fetch_cpi_data("yoy")
+            data_cache["cpi_yoy"]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache["cpi_yoy"]["data"] = await fetch_cpi_data("yoy")
+        data_cache["cpi_yoy"]["updated"] = datetime.now(timezone.utc)
+    
+    return {
+        "data": data_cache["cpi_yoy"]["data"],
+        "updated": data_cache["cpi_yoy"]["updated"].isoformat() if data_cache["cpi_yoy"]["updated"] else None
+    }
+
+
+@app.get("/api/cpi-mom")
+async def get_cpi_mom():
+    """Get CPI Month-on-Month inflation data from State Bank of Pakistan"""
+    # Refresh every hour (monthly data)
+    if data_cache["cpi_mom"]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache["cpi_mom"]["updated"]).total_seconds()
+        if age > 3600:
+            data_cache["cpi_mom"]["data"] = await fetch_cpi_data("mom")
+            data_cache["cpi_mom"]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache["cpi_mom"]["data"] = await fetch_cpi_data("mom")
+        data_cache["cpi_mom"]["updated"] = datetime.now(timezone.utc)
+    
+    return {
+        "data": data_cache["cpi_mom"]["data"],
+        "updated": data_cache["cpi_mom"]["updated"].isoformat() if data_cache["cpi_mom"]["updated"] else None
     }
 
 

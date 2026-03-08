@@ -135,13 +135,6 @@ const EconomicPanel = ({ data, loading }) => {
       isLive: !dataLoading && psxData
     },
     { 
-      label: 'CPI Inflation', 
-      value: data?.inflation?.cpi + '%', 
-      change: null,
-      prefix: '',
-      clickable: false
-    },
-    { 
       label: 'Gold Reserves', 
       value: formatBillions(goldData?.latest?.value),
       subLabel: goldData?.latest?.month || '',
@@ -235,7 +228,7 @@ const EconomicPanel = ({ data, loading }) => {
         <span className="panel-badge">LIVE</span>
       </div>
       <div className="panel-content">
-        <div className="economic-grid economic-grid-9">
+        <div className="economic-grid economic-grid-8">
           {indicators.map((item, index) => (
             <div 
               key={index} 
