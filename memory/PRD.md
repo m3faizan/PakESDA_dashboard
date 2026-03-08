@@ -55,6 +55,10 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] `/api/cpi-mom` - **LIVE** CPI Month-on-Month inflation from SBP API (2016-present)
 - [x] `/api/cpi-yoy-historical` - **LIVE** Complete CPI YoY history (1965-2026, 656 points, 8 base year periods)
 - [x] `/api/cpi-mom-historical` - **LIVE** Complete CPI MoM history (1964-2026, 711 points, 8 base year periods)
+- [x] `/api/admin/airport-history` - Historical airport traffic data with date/code filters
+- [x] `/api/admin/port-history` - Historical port traffic data with date/code filters
+- [x] `/api/admin/airport-history/summary` - Airport history statistics (avg/max departures, arrivals)
+- [x] `/api/admin/port-history/summary` - Port history statistics (avg/max vessels, arrivals, departures)
 
 ### Frontend (React)
 - [x] Header with logo, live indicator, **Pakistan time (PKT/UTC+5)**, refresh button

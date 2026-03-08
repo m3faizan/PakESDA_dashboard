@@ -28,6 +28,12 @@ news_collection = db["news"]
 economic_collection = db["economic_data"]
 security_collection = db["security_alerts"]
 weather_collection = db["weather_data"]
+airport_history_collection = db["airport_history"]
+port_history_collection = db["port_history"]
+
+# Create indexes for efficient querying
+airport_history_collection.create_index([("airport_code", 1), ("timestamp", -1)])
+port_history_collection.create_index([("port_code", 1), ("timestamp", -1)])
 
 # Flight data cache (refreshes every 6 hours)
 flight_cache = {
@@ -988,6 +994,7 @@ async def fetch_airport_flights(airport_key: str):
         return
     
     code = airport["code"]
+    timestamp = datetime.now(timezone.utc)
     
     async with httpx.AsyncClient(timeout=15.0) as client:
         # Fetch departures
@@ -1016,7 +1023,24 @@ async def fetch_airport_flights(airport_key: str):
         except Exception as e:
             print(f"Error fetching {airport_key} arrivals: {e}")
     
-    flight_cache[airport_key]["updated"] = datetime.now(timezone.utc)
+    flight_cache[airport_key]["updated"] = timestamp
+    
+    # Store historical record in MongoDB
+    try:
+        historical_record = {
+            "airport_key": airport_key,
+            "airport_code": code,
+            "airport_name": airport["name"],
+            "departures": flight_cache[airport_key]["departures"],
+            "arrivals": flight_cache[airport_key]["arrivals"],
+            "timestamp": timestamp,
+            "date": timestamp.strftime("%Y-%m-%d"),
+            "hour": timestamp.hour
+        }
+        airport_history_collection.insert_one(historical_record)
+        print(f"Stored airport history for {airport_key}: dep={historical_record['departures']}, arr={historical_record['arrivals']}")
+    except Exception as e:
+        print(f"Error storing airport history for {airport_key}: {e}")
 
 async def fetch_all_airports():
     """Fetch flight data for all airports"""
@@ -1031,6 +1055,7 @@ async def fetch_port_data(port_key: str):
         return
     
     port_id = port["id"]
+    timestamp = datetime.now(timezone.utc)
     url = f"https://www.myshiptracking.com/ports/port-id-{port_id}"
     
     try:
@@ -1062,7 +1087,26 @@ async def fetch_port_data(port_key: str):
                 if match:
                     port_cache[port_key]["expected"] = int(match.group(1))
                 
-                port_cache[port_key]["updated"] = datetime.now(timezone.utc)
+                port_cache[port_key]["updated"] = timestamp
+                
+                # Store historical record in MongoDB
+                try:
+                    historical_record = {
+                        "port_key": port_key,
+                        "port_code": port["code"],
+                        "port_name": port["name"],
+                        "in_port": port_cache[port_key]["in_port"],
+                        "arrivals": port_cache[port_key]["arrivals"],
+                        "departures": port_cache[port_key]["departures"],
+                        "expected": port_cache[port_key]["expected"],
+                        "timestamp": timestamp,
+                        "date": timestamp.strftime("%Y-%m-%d"),
+                        "hour": timestamp.hour
+                    }
+                    port_history_collection.insert_one(historical_record)
+                    print(f"Stored port history for {port_key}: in_port={historical_record['in_port']}, arr={historical_record['arrivals']}, dep={historical_record['departures']}")
+                except Exception as e:
+                    print(f"Error storing port history for {port_key}: {e}")
     except Exception as e:
         print(f"Error fetching {port_key} port data: {e}")
 
@@ -1770,6 +1814,211 @@ async def get_map_data():
         "updated": datetime.now(timezone.utc).isoformat()
     }
     return markers
+
+
+# Admin endpoints for historical data
+@app.get("/api/admin/airport-history")
+async def get_airport_history(
+    airport_code: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    limit: int = 100
+):
+    """Get historical airport data for admin analysis
+    
+    Args:
+        airport_code: Filter by airport code (ISB, KHI, LHE, PEW, MUX)
+        start_date: Start date filter (YYYY-MM-DD)
+        end_date: End date filter (YYYY-MM-DD)
+        limit: Maximum records to return (default 100, max 1000)
+    """
+    query = {}
+    
+    if airport_code:
+        query["airport_code"] = airport_code.upper()
+    
+    if start_date:
+        try:
+            start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+            query["timestamp"] = {"$gte": start_dt.replace(tzinfo=timezone.utc)}
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid start_date format. Use YYYY-MM-DD")
+    
+    if end_date:
+        try:
+            end_dt = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)
+            if "timestamp" in query:
+                query["timestamp"]["$lt"] = end_dt.replace(tzinfo=timezone.utc)
+            else:
+                query["timestamp"] = {"$lt": end_dt.replace(tzinfo=timezone.utc)}
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid end_date format. Use YYYY-MM-DD")
+    
+    limit = min(limit, 1000)
+    
+    records = list(airport_history_collection.find(
+        query, 
+        {"_id": 0}
+    ).sort("timestamp", -1).limit(limit))
+    
+    # Convert datetime objects to ISO strings
+    for record in records:
+        if isinstance(record.get("timestamp"), datetime):
+            record["timestamp"] = record["timestamp"].isoformat()
+    
+    return {
+        "total_records": airport_history_collection.count_documents(query),
+        "returned_records": len(records),
+        "data": records,
+        "filters_applied": {
+            "airport_code": airport_code,
+            "start_date": start_date,
+            "end_date": end_date
+        }
+    }
+
+
+@app.get("/api/admin/port-history")
+async def get_port_history(
+    port_code: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    limit: int = 100
+):
+    """Get historical port data for admin analysis
+    
+    Args:
+        port_code: Filter by port code (PKKHI, PKBQM, PKGWD)
+        start_date: Start date filter (YYYY-MM-DD)
+        end_date: End date filter (YYYY-MM-DD)
+        limit: Maximum records to return (default 100, max 1000)
+    """
+    query = {}
+    
+    if port_code:
+        query["port_code"] = port_code.upper()
+    
+    if start_date:
+        try:
+            start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+            query["timestamp"] = {"$gte": start_dt.replace(tzinfo=timezone.utc)}
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid start_date format. Use YYYY-MM-DD")
+    
+    if end_date:
+        try:
+            end_dt = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)
+            if "timestamp" in query:
+                query["timestamp"]["$lt"] = end_dt.replace(tzinfo=timezone.utc)
+            else:
+                query["timestamp"] = {"$lt": end_dt.replace(tzinfo=timezone.utc)}
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid end_date format. Use YYYY-MM-DD")
+    
+    limit = min(limit, 1000)
+    
+    records = list(port_history_collection.find(
+        query, 
+        {"_id": 0}
+    ).sort("timestamp", -1).limit(limit))
+    
+    # Convert datetime objects to ISO strings
+    for record in records:
+        if isinstance(record.get("timestamp"), datetime):
+            record["timestamp"] = record["timestamp"].isoformat()
+    
+    return {
+        "total_records": port_history_collection.count_documents(query),
+        "returned_records": len(records),
+        "data": records,
+        "filters_applied": {
+            "port_code": port_code,
+            "start_date": start_date,
+            "end_date": end_date
+        }
+    }
+
+
+@app.get("/api/admin/airport-history/summary")
+async def get_airport_history_summary():
+    """Get summary statistics of airport historical data"""
+    pipeline = [
+        {
+            "$group": {
+                "_id": "$airport_code",
+                "airport_name": {"$first": "$airport_name"},
+                "total_records": {"$sum": 1},
+                "first_record": {"$min": "$timestamp"},
+                "last_record": {"$max": "$timestamp"},
+                "avg_departures": {"$avg": "$departures"},
+                "avg_arrivals": {"$avg": "$arrivals"},
+                "max_departures": {"$max": "$departures"},
+                "max_arrivals": {"$max": "$arrivals"}
+            }
+        },
+        {"$sort": {"_id": 1}}
+    ]
+    
+    results = list(airport_history_collection.aggregate(pipeline))
+    
+    for result in results:
+        if isinstance(result.get("first_record"), datetime):
+            result["first_record"] = result["first_record"].isoformat()
+        if isinstance(result.get("last_record"), datetime):
+            result["last_record"] = result["last_record"].isoformat()
+        if result.get("avg_departures"):
+            result["avg_departures"] = round(result["avg_departures"], 1)
+        if result.get("avg_arrivals"):
+            result["avg_arrivals"] = round(result["avg_arrivals"], 1)
+    
+    return {
+        "total_airports": len(results),
+        "total_records": airport_history_collection.count_documents({}),
+        "airports": results
+    }
+
+
+@app.get("/api/admin/port-history/summary")
+async def get_port_history_summary():
+    """Get summary statistics of port historical data"""
+    pipeline = [
+        {
+            "$group": {
+                "_id": "$port_code",
+                "port_name": {"$first": "$port_name"},
+                "total_records": {"$sum": 1},
+                "first_record": {"$min": "$timestamp"},
+                "last_record": {"$max": "$timestamp"},
+                "avg_in_port": {"$avg": "$in_port"},
+                "avg_arrivals": {"$avg": "$arrivals"},
+                "avg_departures": {"$avg": "$departures"},
+                "max_in_port": {"$max": "$in_port"},
+                "max_arrivals": {"$max": "$arrivals"}
+            }
+        },
+        {"$sort": {"_id": 1}}
+    ]
+    
+    results = list(port_history_collection.aggregate(pipeline))
+    
+    for result in results:
+        if isinstance(result.get("first_record"), datetime):
+            result["first_record"] = result["first_record"].isoformat()
+        if isinstance(result.get("last_record"), datetime):
+            result["last_record"] = result["last_record"].isoformat()
+        if result.get("avg_in_port"):
+            result["avg_in_port"] = round(result["avg_in_port"], 1)
+        if result.get("avg_arrivals"):
+            result["avg_arrivals"] = round(result["avg_arrivals"], 1)
+        if result.get("avg_departures"):
+            result["avg_departures"] = round(result["avg_departures"], 1)
+    
+    return {
+        "total_ports": len(results),
+        "total_records": port_history_collection.count_documents({}),
+        "ports": results
+    }
+
 
 if __name__ == "__main__":
     import uvicorn
