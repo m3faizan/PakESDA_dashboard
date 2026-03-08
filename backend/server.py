@@ -99,6 +99,8 @@ SBP_API_KEY = "69C3217DDBE2E78290E66D79E07CCFE19EFB1134"
 SBP_REMITTANCES_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BOP_WR_M.WR0340/data"
 SBP_GOLD_RESERVES_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_EXT_PAKRES_M.Z00010/data"
 SBP_FOREX_RESERVES_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_EXT_PAKRES_M.Z00020/data"
+SBP_BANK_RESERVES_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_EXT_PAKRES_M.Z00040/data"
+SBP_SBP_RESERVES_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_EXT_PAKRES_M.Z00020/data"
 SBP_CURRENT_ACCOUNT_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BOP_BPM6SUM_M.P00010/data"
 SBP_IMPORTS_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BOP_XMGS_M.P00320/data"
 SBP_EXPORTS_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BOP_XMGS_M.P00170/data"
@@ -459,8 +461,159 @@ async def fetch_gold_reserves_data():
     return await fetch_sbp_reserves_data(SBP_GOLD_RESERVES_URL, "Gold Reserves", "1990-01-01")
 
 async def fetch_forex_reserves_data():
-    """Fetch total forex reserves data from State Bank of Pakistan"""
-    return await fetch_sbp_reserves_data(SBP_FOREX_RESERVES_URL, "Total Forex Reserves", "1990-01-01")
+    """Fetch total forex reserves (SBP + Banks) from State Bank of Pakistan"""
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            # Fetch SBP reserves and Bank reserves in parallel
+            sbp_response, bank_response = await asyncio.gather(
+                client.get(
+                    SBP_SBP_RESERVES_URL,
+                    params={
+                        "api_key": SBP_API_KEY,
+                        "start_date": "1990-01-01",
+                        "end_date": datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                    }
+                ),
+                client.get(
+                    SBP_BANK_RESERVES_URL,
+                    params={
+                        "api_key": SBP_API_KEY,
+                        "start_date": "1990-01-01",
+                        "end_date": datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                    }
+                )
+            )
+            
+            sbp_data = []
+            bank_data = []
+            
+            if sbp_response.status_code == 200:
+                data = sbp_response.json()
+                for row in data.get("rows", []):
+                    try:
+                        value = float(row[4]) if row[4] else 0
+                        sbp_data.append({
+                            "date": row[3],
+                            "value": value
+                        })
+                    except (ValueError, IndexError):
+                        continue
+            
+            if bank_response.status_code == 200:
+                data = bank_response.json()
+                for row in data.get("rows", []):
+                    try:
+                        value = float(row[4]) if row[4] else 0
+                        bank_data.append({
+                            "date": row[3],
+                            "value": value
+                        })
+                    except (ValueError, IndexError):
+                        continue
+            
+            # Create a combined history with total = SBP + Bank
+            # Index by date for easy lookup
+            sbp_by_date = {item["date"]: item["value"] for item in sbp_data}
+            bank_by_date = {item["date"]: item["value"] for item in bank_data}
+            
+            # Get all unique dates
+            all_dates = sorted(set(sbp_by_date.keys()) | set(bank_by_date.keys()), reverse=True)
+            
+            combined_history = []
+            sbp_history = []
+            bank_history = []
+            
+            for date in all_dates:
+                sbp_val = sbp_by_date.get(date, 0)
+                bank_val = bank_by_date.get(date, 0)
+                total_val = sbp_val + bank_val
+                
+                combined_history.append({
+                    "date": date,
+                    "value": round(total_val, 2),
+                    "sbp_reserves": round(sbp_val, 2),
+                    "bank_reserves": round(bank_val, 2)
+                })
+                
+                sbp_history.append({
+                    "date": date,
+                    "value": round(sbp_val, 2)
+                })
+                
+                bank_history.append({
+                    "date": date,
+                    "value": round(bank_val, 2)
+                })
+            
+            if not combined_history:
+                return None
+            
+            latest = combined_history[0]
+            previous = combined_history[1] if len(combined_history) > 1 else None
+            
+            # Calculate MoM change
+            mom_change = None
+            if previous:
+                mom_change = ((latest["value"] - previous["value"]) / previous["value"]) * 100
+            
+            # Find YoY comparison
+            yoy_value = None
+            yoy_change = None
+            latest_date = datetime.strptime(latest["date"], "%Y-%m-%d")
+            for item in combined_history:
+                item_date = datetime.strptime(item["date"], "%Y-%m-%d")
+                months_diff = (latest_date.year - item_date.year) * 12 + (latest_date.month - item_date.month)
+                if months_diff == 12:
+                    yoy_value = item["value"]
+                    yoy_change = ((latest["value"] - yoy_value) / yoy_value) * 100
+                    break
+            
+            month_name = latest_date.strftime("%B %Y")
+            
+            return {
+                "latest": {
+                    "value": latest["value"],
+                    "sbp_reserves": latest["sbp_reserves"],
+                    "bank_reserves": latest["bank_reserves"],
+                    "month": month_name,
+                    "date": latest["date"],
+                    "dateFormatted": month_name,
+                    "unit": "Million USD"
+                },
+                "previous": {
+                    "value": previous["value"] if previous else None,
+                    "sbp_reserves": previous["sbp_reserves"] if previous else None,
+                    "bank_reserves": previous["bank_reserves"] if previous else None,
+                    "date": previous["date"] if previous else None
+                },
+                "mom_change": round(mom_change, 2) if mom_change is not None else None,
+                "yoy_change": round(yoy_change, 2) if yoy_change is not None else None,
+                "yoy_value": round(yoy_value, 2) if yoy_value is not None else None,
+                "history": combined_history,
+                "sbp_history": sbp_history,
+                "bank_history": bank_history,
+                "source": "State Bank of Pakistan",
+                "name": "Total Forex Reserves",
+                "breakdown": {
+                    "sbp_reserves": {
+                        "name": "SBP Reserves",
+                        "latest_value": latest["sbp_reserves"],
+                        "unit": "Million USD"
+                    },
+                    "bank_reserves": {
+                        "name": "Bank Reserves",
+                        "latest_value": latest["bank_reserves"],
+                        "unit": "Million USD"
+                    }
+                },
+                "updated": datetime.now(timezone.utc).isoformat()
+            }
+    except Exception as e:
+        print(f"Error fetching forex reserves: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    return None
 
 async def fetch_imports_data():
     """Fetch imports data from State Bank of Pakistan"""

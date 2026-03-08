@@ -200,7 +200,7 @@ const EconomicPanel = ({ data, loading }) => {
       case 'gold':
         return { data: goldData, title: "Gold Reserves", icon: Coins };
       case 'forex':
-        return { data: forexData, title: "Total Forex Reserves", icon: DollarSign };
+        return { data: forexData, title: "Total Forex Reserves", icon: DollarSign, isForexReserves: true };
       case 'currentAccount':
         return { data: currentAccountData, title: "Current Account Balance", icon: ArrowLeftRight, isCurrentAccount: true };
       case 'imports':
@@ -306,6 +306,7 @@ const EconomicPanel = ({ data, loading }) => {
           icon={modalInfo.icon}
           isCurrentAccount={modalInfo.isCurrentAccount}
           isPkrUsd={modalInfo.isPkrUsd}
+          isForexReserves={modalInfo.isForexReserves}
         />
       )}
 

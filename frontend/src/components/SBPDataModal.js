@@ -23,7 +23,7 @@ const TIME_RANGES = [
   { key: 'ALL', label: 'All', months: null }
 ];
 
-const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, isCurrentAccount = false, isPkrUsd = false }) => {
+const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, isCurrentAccount = false, isPkrUsd = false, isForexReserves = false }) => {
   const [selectedRange, setSelectedRange] = useState('1Y');
 
   const filteredData = useMemo(() => {
@@ -164,6 +164,46 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
             )}
           </div>
         </div>
+
+        {/* Forex Reserves Breakdown */}
+        {isForexReserves && data?.breakdown && (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: '0.75rem',
+            padding: '0.75rem',
+            background: 'rgba(15, 23, 42, 0.5)',
+            borderRadius: '8px',
+            marginBottom: '1rem'
+          }}>
+            <div style={{
+              padding: '0.75rem',
+              background: 'var(--color-background)',
+              borderRadius: '6px',
+              borderLeft: '3px solid #22C55E'
+            }}>
+              <div style={{ fontSize: '0.65rem', color: 'var(--color-muted)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
+                SBP Reserves
+              </div>
+              <div style={{ fontSize: '1.1rem', fontWeight: '600', color: 'var(--color-text)', fontFamily: "'JetBrains Mono', monospace" }}>
+                ${(data.breakdown.sbp_reserves?.latest_value / 1000).toFixed(2)}B
+              </div>
+            </div>
+            <div style={{
+              padding: '0.75rem',
+              background: 'var(--color-background)',
+              borderRadius: '6px',
+              borderLeft: '3px solid #6366f1'
+            }}>
+              <div style={{ fontSize: '0.65rem', color: 'var(--color-muted)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
+                Bank Reserves
+              </div>
+              <div style={{ fontSize: '1.1rem', fontWeight: '600', color: 'var(--color-text)', fontFamily: "'JetBrains Mono', monospace" }}>
+                ${(data.breakdown.bank_reserves?.latest_value / 1000).toFixed(2)}B
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="time-range-selector" data-testid="time-range-selector">
           {TIME_RANGES.map((range) => (
