@@ -32,7 +32,7 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 9. Dark theme with Pakistan green accents
 10. Responsive design
 
-## What's Been Implemented (Mar 6, 2026)
+## What's Been Implemented (Mar 8, 2026)
 
 ### Backend (FastAPI)
 - [x] `/api/health` - Health check endpoint
@@ -51,15 +51,19 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] `/api/exports` - **LIVE** Exports data from SBP API (1990-present)
 - [x] `/api/pkr-usd` - **LIVE** PKR/USD exchange rate from SBP API
 - [x] `/api/psx-data` - **LIVE** KSE-100 Index data scraped from PSX (dps.psx.com.pk)
+- [x] `/api/cpi-yoy` - **LIVE** CPI Year-on-Year inflation from SBP API (2016-present)
+- [x] `/api/cpi-mom` - **LIVE** CPI Month-on-Month inflation from SBP API (2016-present)
 
 ### Frontend (React)
 - [x] Header with logo, live indicator, **Pakistan time (PKT/UTC+5)**, refresh button
 - [x] News ticker (scrolling headlines)
-- [x] Bento grid layout with responsive panels (6 bottom panels in 3x2 grid)
+- [x] Bento grid layout with responsive panels (10 bottom panels)
 - [x] NewsPanel - Latest news with category tabs and infinite scroll
-- [x] EconomicPanel - 9 indicators with **8 LIVE** (PSX, PKR/USD, Current A/C, Gold, Forex, Imports, Exports, Remittances)
+- [x] EconomicPanel - 8 indicators with all **LIVE** (PSX, PKR/USD, Current A/C, Gold, Forex, Imports, Exports, Remittances)
+- [x] **InflationPanel** - NEW! CPI YoY (7%) and CPI MoM (0.3%) with clickable chart modals
 - [x] **SBPDataModal** - Reusable chart modal with MoM%, YoY%, time range selectors
 - [x] **PSXDataModal** - KSE-100 modal with Day High/Low, Volume, Previous Close, YTD/YoY changes
+- [x] **CPIDataModal** - CPI inflation modal with area chart (YoY) or bar chart (MoM), 5% target line
 - [x] SecurityPanel - Security/political alerts with severity indicators
 - [x] WeatherPanel - Weather for 6 major cities
 - [x] RegionalPanel - Diplomatic relations status
@@ -87,7 +91,7 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - **Forex Reserves**: **LIVE** - State Bank of Pakistan EasyData API (1990-present)
 - **Current Account**: **LIVE** - State Bank of Pakistan EasyData API
 - **Imports/Exports**: **LIVE** - State Bank of Pakistan EasyData API
-- **CPI Inflation**: MOCKED (static value)
+- **CPI Inflation (YoY/MoM)**: **LIVE** - State Bank of Pakistan EasyData API (2016-present)
 - **Weather**: MOCKED (ready for OpenWeatherMap integration)
 - **Security**: MOCKED (ready for API integration)
 - **Regional**: MOCKED (ready for API integration)
@@ -105,6 +109,7 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] **LIVE remittances data from SBP API with interactive chart modal**
 - [x] **LIVE PKR/USD exchange rate from SBP API**
 - [x] **LIVE KSE-100 Index data from PSX with clickable modal** (Mar 6, 2026)
+- [x] **LIVE CPI Inflation Monitor panel with YoY/MoM data** (Mar 8, 2026)
 
 ### P1 (High Priority)
 - [ ] Make Governance Panel dynamic (scrape from pakistanprojects.pakesda.com)
