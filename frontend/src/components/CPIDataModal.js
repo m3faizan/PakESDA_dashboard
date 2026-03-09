@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X, TrendingUp, TrendingDown, Calendar, Percent, Info } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, Calendar, Percent } from 'lucide-react';
 import { 
   AreaChart,
   Area,
@@ -247,11 +247,11 @@ const CPIDataModal = ({ isOpen, onClose, data, title, type }) => {
                     strokeDasharray="5 5"
                     strokeWidth={2}
                     label={{ 
-                      value: marker.label, 
+                      value: marker.base_year, 
                       fill: '#6366f1', 
-                      fontSize: 9,
-                      position: 'top',
-                      angle: -45
+                      fontSize: 10,
+                      position: 'insideTopRight',
+                      offset: 5
                     }}
                   />
                 ))}
@@ -305,11 +305,11 @@ const CPIDataModal = ({ isOpen, onClose, data, title, type }) => {
                     strokeDasharray="5 5"
                     strokeWidth={2}
                     label={{ 
-                      value: marker.label, 
+                      value: marker.base_year, 
                       fill: '#6366f1', 
-                      fontSize: 9,
-                      position: 'top',
-                      angle: -45
+                      fontSize: 10,
+                      position: 'insideTopRight',
+                      offset: 5
                     }}
                   />
                 ))}
@@ -326,25 +326,6 @@ const CPIDataModal = ({ isOpen, onClose, data, title, type }) => {
             )}
           </ResponsiveContainer>
         </div>
-
-        {/* Base Year Legend */}
-        {baseYearMarkers.length > 0 && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            padding: '0.5rem 0.75rem',
-            background: 'rgba(99, 102, 241, 0.1)',
-            borderRadius: '6px',
-            marginBottom: '0.75rem',
-            fontSize: '0.75rem'
-          }}>
-            <Info size={14} style={{ color: '#6366f1' }} />
-            <span style={{ color: '#94a3b8' }}>
-              Purple lines indicate CPI base year changes. Different base years are not directly comparable.
-            </span>
-          </div>
-        )}
 
         <div className="modal-footer">
           <span className="data-source">Source: State Bank of Pakistan</span>
