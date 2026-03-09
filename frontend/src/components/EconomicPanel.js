@@ -282,13 +282,7 @@ const EconomicPanel = ({ data, loading }) => {
                 </div>
               )}
               {item.subLabel && (
-                <div className="economic-sublabel" style={{ 
-                  position: 'absolute',
-                  bottom: '0.5rem',
-                  right: '0.5rem',
-                  fontSize: '0.55rem', 
-                  color: 'var(--color-muted)',
-                }}>
+                <div className="economic-sublabel">
                   {item.subLabel}
                 </div>
               )}
