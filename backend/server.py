@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 from typing import Optional
 import httpx
 import feedparser
+from openpyxl import load_workbook
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -1042,90 +1043,103 @@ def _parse_date_by_formats(date_text: str, formats):
     return None
 
 
-async def fetch_google_sheet_csv(sheet_name: str):
-    """Fetch public CSV from Google Sheets tab"""
-    sheet_url = f"https://docs.google.com/spreadsheets/d/{SPI_GOOGLE_SHEET_ID}/gviz/tq"
+async def fetch_google_sheet_workbook():
+    """Fetch Google Sheet as XLSX so formula-computed latest values are included."""
+    workbook_url = f"https://docs.google.com/spreadsheets/d/{SPI_GOOGLE_SHEET_ID}/export?format=xlsx"
 
     async with httpx.AsyncClient(timeout=45.0) as client:
         response = await client.get(
-            sheet_url,
-            params={"tqx": "out:csv", "sheet": sheet_name},
+            workbook_url,
+            follow_redirects=True,
             headers={
                 "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
             }
         )
 
     if response.status_code != 200:
-        raise ValueError(f"Google Sheet fetch failed ({sheet_name}) with status {response.status_code}")
+        raise ValueError(f"Google Sheet XLSX fetch failed with status {response.status_code}")
 
-    content_type = (response.headers.get("content-type") or "").lower()
-    if "text/csv" not in content_type and response.text.lstrip().startswith("<!DOCTYPE html>"):
-        raise ValueError(f"Google Sheet response for {sheet_name} is not accessible CSV")
+    return load_workbook(filename=io.BytesIO(response.content), data_only=True)
 
-    return response.text
+
+def _normalize_sheet_name(name: str):
+    return str(name).strip().lower().replace("_", " ")
+
+
+def _get_workbook_sheet(workbook, expected_name: str):
+    target = _normalize_sheet_name(expected_name)
+    for sheet_name in workbook.sheetnames:
+        if _normalize_sheet_name(sheet_name) == target:
+            return workbook[sheet_name]
+
+    return workbook[workbook.sheetnames[0]]
 
 
 async def fetch_spi_weekly_data():
-    """Fetch weekly SPI combined index history from Google Sheet (main raw data tab)"""
+    """Fetch weekly SPI combined index history from workbook tab Main_Raw_Data."""
+    workbook = None
     try:
-        csv_text = await fetch_google_sheet_csv(SPI_WEEKLY_SHEET_NAME)
-        reader = csv.DictReader(io.StringIO(csv_text))
+        workbook = await fetch_google_sheet_workbook()
+        sheet = _get_workbook_sheet(workbook, SPI_WEEKLY_SHEET_NAME)
 
-        if not reader.fieldnames:
+        if sheet.max_row < 2:
             return None
 
+        header_row = [sheet.cell(row=1, column=col).value for col in range(1, sheet.max_column + 1)]
         field_map = {}
-        for field in reader.fieldnames:
-            if not field:
+        for idx, header in enumerate(header_row, start=1):
+            if not header:
                 continue
 
-            clean_field = field.strip()
-            lower_field = clean_field.lower()
-            if lower_field.startswith("week #"):
-                field_map["week"] = clean_field
-            elif lower_field.startswith("week ending"):
-                field_map["week_ending"] = clean_field
-            elif lower_field.startswith("q1"):
-                field_map["q1"] = clean_field
-            elif lower_field.startswith("q2"):
-                field_map["q2"] = clean_field
-            elif lower_field.startswith("q3"):
-                field_map["q3"] = clean_field
-            elif lower_field.startswith("q4"):
-                field_map["q4"] = clean_field
-            elif lower_field.startswith("q5"):
-                field_map["q5"] = clean_field
-            elif lower_field.startswith("combined"):
-                field_map["combined"] = clean_field
-            elif lower_field.startswith("items"):
-                field_map["items"] = clean_field
-            elif lower_field.startswith("increase"):
-                field_map["increase"] = clean_field
-            elif lower_field.startswith("decrease"):
-                field_map["decrease"] = clean_field
-            elif lower_field.startswith("stable"):
-                field_map["stable"] = clean_field
+            lower_header = str(header).strip().lower()
+            if lower_header.startswith("week #"):
+                field_map["week"] = idx
+            elif lower_header.startswith("week ending"):
+                field_map["week_ending"] = idx
+            elif lower_header.startswith("q1"):
+                field_map["q1"] = idx
+            elif lower_header.startswith("q2"):
+                field_map["q2"] = idx
+            elif lower_header.startswith("q3"):
+                field_map["q3"] = idx
+            elif lower_header.startswith("q4"):
+                field_map["q4"] = idx
+            elif lower_header.startswith("q5"):
+                field_map["q5"] = idx
+            elif lower_header.startswith("combined"):
+                field_map["combined"] = idx
+            elif lower_header.startswith("items"):
+                field_map["items"] = idx
+            elif lower_header.startswith("increase"):
+                field_map["increase"] = idx
+            elif lower_header.startswith("decrease"):
+                field_map["decrease"] = idx
+            elif lower_header.startswith("stable"):
+                field_map["stable"] = idx
 
         history = []
-        for row in reader:
-            date_obj = _parse_date_by_formats(
-                row.get(field_map.get("week_ending", "Week Ending")),
-                ["%m/%d/%Y", "%m/%d/%y", "%Y-%m-%d", "%d/%m/%Y", "%d-%b-%Y"]
-            )
-            combined_value = _safe_float(row.get(field_map.get("combined", "Combined")))
+        for row in range(2, sheet.max_row + 1):
+            raw_date = sheet.cell(row=row, column=field_map.get("week_ending", 2)).value
+            if isinstance(raw_date, datetime):
+                date_obj = raw_date
+            else:
+                date_obj = _parse_date_by_formats(raw_date, ["%m/%d/%Y", "%m/%d/%y", "%Y-%m-%d", "%d/%m/%Y", "%d-%b-%Y"])
+
+            combined_value = _safe_float(sheet.cell(row=row, column=field_map.get("combined", 8)).value)
 
             if not date_obj or combined_value is None:
                 continue
 
-            q1 = _safe_float(row.get(field_map.get("q1")))
-            q2 = _safe_float(row.get(field_map.get("q2")))
-            q3 = _safe_float(row.get(field_map.get("q3")))
-            q4 = _safe_float(row.get(field_map.get("q4")))
-            q5 = _safe_float(row.get(field_map.get("q5")))
-
-            week_label = (row.get(field_map.get("week", "Week #")) or "").strip()
-            if week_label and not str(week_label).upper().startswith("W"):
+            week_raw = sheet.cell(row=row, column=field_map.get("week", 1)).value
+            week_label = str(int(week_raw)) if isinstance(week_raw, float) else str(week_raw or "").strip()
+            if week_label and not week_label.upper().startswith("W"):
                 week_label = f"W{week_label}"
+
+            q1 = _safe_float(sheet.cell(row=row, column=field_map.get("q1", 3)).value)
+            q2 = _safe_float(sheet.cell(row=row, column=field_map.get("q2", 4)).value)
+            q3 = _safe_float(sheet.cell(row=row, column=field_map.get("q3", 5)).value)
+            q4 = _safe_float(sheet.cell(row=row, column=field_map.get("q4", 6)).value)
+            q5 = _safe_float(sheet.cell(row=row, column=field_map.get("q5", 7)).value)
 
             history.append({
                 "date": date_obj.strftime("%Y-%m-%d"),
@@ -1137,10 +1151,10 @@ async def fetch_spi_weekly_data():
                 "q3": round(q3, 2) if q3 is not None else None,
                 "q4": round(q4, 2) if q4 is not None else None,
                 "q5": round(q5, 2) if q5 is not None else None,
-                "items_tracked": int(_safe_float(row.get(field_map.get("items", "Items"))) or 0),
-                "increase": int(_safe_float(row.get(field_map.get("increase", "Increase"))) or 0),
-                "decrease": int(_safe_float(row.get(field_map.get("decrease", "Decrease"))) or 0),
-                "stable": int(_safe_float(row.get(field_map.get("stable", "Stable"))) or 0)
+                "items_tracked": int(_safe_float(sheet.cell(row=row, column=field_map.get("items", 9)).value) or 0),
+                "increase": int(_safe_float(sheet.cell(row=row, column=field_map.get("increase", 10)).value) or 0),
+                "decrease": int(_safe_float(sheet.cell(row=row, column=field_map.get("decrease", 11)).value) or 0),
+                "stable": int(_safe_float(sheet.cell(row=row, column=field_map.get("stable", 12)).value) or 0)
             })
 
         history.sort(key=lambda x: x["date"])
@@ -1156,7 +1170,6 @@ async def fetch_spi_weekly_data():
 
         latest = history[-1]
         previous = history[-2] if len(history) > 1 else None
-
         wow_change = (latest["value"] - previous["value"]) if previous else None
         wow_change_pct = (((wow_change / previous["value"]) * 100) if previous and previous["value"] else None)
 
@@ -1206,31 +1219,45 @@ async def fetch_spi_weekly_data():
         }
     except Exception as e:
         print(f"Error fetching weekly SPI data: {e}")
+    finally:
+        if workbook:
+            workbook.close()
 
     return None
 
 
 async def fetch_spi_monthly_data():
-    """Fetch monthly SPI index from Google Sheet (monthly_spi tab)"""
+    """Fetch monthly SPI index (Q1) from workbook tab Monthly_SPI."""
+    workbook = None
     try:
-        csv_text = await fetch_google_sheet_csv(SPI_MONTHLY_SHEET_NAME)
-        reader = csv.DictReader(io.StringIO(csv_text))
+        workbook = await fetch_google_sheet_workbook()
+        sheet = _get_workbook_sheet(workbook, SPI_MONTHLY_SHEET_NAME)
 
-        if not reader.fieldnames:
+        if sheet.max_row < 2:
             return None
 
-        normalized_fields = [field.strip() for field in reader.fieldnames if field and field.strip()]
-        month_field = next((field for field in normalized_fields if field.lower() == "month"), normalized_fields[0])
-        spi_field = next((field for field in normalized_fields if field.lower().startswith("spi")), None)
+        header_row = [sheet.cell(row=1, column=col).value for col in range(1, sheet.max_column + 1)]
+        month_col = 1
+        spi_col = 2
+        for idx, header in enumerate(header_row, start=1):
+            if not header:
+                continue
 
-        if not spi_field:
-            return None
+            lower_header = str(header).strip().lower()
+            if lower_header == "month":
+                month_col = idx
+            elif lower_header.startswith("spi"):
+                spi_col = idx
 
         history = []
-        for row in reader:
-            month_label = row.get(month_field)
-            spi_value = _safe_float(row.get(spi_field))
-            month_obj = _parse_date_by_formats(month_label, ["%b-%y", "%b-%Y", "%Y-%m"])
+        for row in range(2, sheet.max_row + 1):
+            raw_month = sheet.cell(row=row, column=month_col).value
+            spi_value = _safe_float(sheet.cell(row=row, column=spi_col).value)
+
+            if isinstance(raw_month, datetime):
+                month_obj = raw_month
+            else:
+                month_obj = _parse_date_by_formats(raw_month, ["%b-%y", "%b-%Y", "%Y-%m", "%Y-%m-%d"])
 
             if not month_obj or spi_value is None:
                 continue
@@ -1254,7 +1281,6 @@ async def fetch_spi_monthly_data():
 
         latest = history[-1]
         previous = history[-2] if len(history) > 1 else None
-
         mom_change = (latest["value"] - previous["value"]) if previous else None
         mom_change_pct = (((mom_change / previous["value"]) * 100) if previous and previous["value"] else None)
 
@@ -1285,6 +1311,9 @@ async def fetch_spi_monthly_data():
         }
     except Exception as e:
         print(f"Error fetching monthly SPI data: {e}")
+    finally:
+        if workbook:
+            workbook.close()
 
     return None
 
@@ -2076,12 +2105,14 @@ async def get_cpi_mom_historical():
 async def get_spi_weekly():
     """Get weekly SPI data from Google Sheet (main raw data)"""
     # Refresh every 12 hours (weekly source; user requested low-frequency refresh)
-    if data_cache["spi_weekly"]["updated"]:
-        age = (datetime.now(timezone.utc) - data_cache["spi_weekly"]["updated"]).total_seconds()
-        if age > 43200:
-            data_cache["spi_weekly"]["data"] = await fetch_spi_weekly_data()
-            data_cache["spi_weekly"]["updated"] = datetime.now(timezone.utc)
+    should_refresh = False
+    if not data_cache["spi_weekly"]["updated"] or not data_cache["spi_weekly"]["data"]:
+        should_refresh = True
     else:
+        age = (datetime.now(timezone.utc) - data_cache["spi_weekly"]["updated"]).total_seconds()
+        should_refresh = age > 43200
+
+    if should_refresh:
         data_cache["spi_weekly"]["data"] = await fetch_spi_weekly_data()
         data_cache["spi_weekly"]["updated"] = datetime.now(timezone.utc)
 
@@ -2095,12 +2126,14 @@ async def get_spi_weekly():
 async def get_spi_monthly():
     """Get monthly SPI data from Google Sheet (monthly_spi)"""
     # Refresh every 12 hours (monthly source; user requested low-frequency refresh)
-    if data_cache["spi_monthly"]["updated"]:
-        age = (datetime.now(timezone.utc) - data_cache["spi_monthly"]["updated"]).total_seconds()
-        if age > 43200:
-            data_cache["spi_monthly"]["data"] = await fetch_spi_monthly_data()
-            data_cache["spi_monthly"]["updated"] = datetime.now(timezone.utc)
+    should_refresh = False
+    if not data_cache["spi_monthly"]["updated"] or not data_cache["spi_monthly"]["data"]:
+        should_refresh = True
     else:
+        age = (datetime.now(timezone.utc) - data_cache["spi_monthly"]["updated"]).total_seconds()
+        should_refresh = age > 43200
+
+    if should_refresh:
         data_cache["spi_monthly"]["data"] = await fetch_spi_monthly_data()
         data_cache["spi_monthly"]["updated"] = datetime.now(timezone.utc)
 

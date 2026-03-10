@@ -46,6 +46,9 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] SPI sentiment and source polish:
   - SPI increases are now treated visually as **negative** (red), while decreases are **positive** (green)
   - Modal source now links directly to **spi.pakesda.com** (without Google Sheet wording)
+- [x] Fixed missing latest SPI weekly points (2026 rows):
+  - Switched backend SPI ingestion from CSV export to **XLSX export parsing** to capture formula-evaluated latest values
+  - Weekly SPI now correctly includes values up to **Mar 05, 2026** (as present in the sheet)
 - [x] Completed **Liquid FX modal breakdown flow** end-to-end:
   - Breakdown toggle now cleanly switches between total and stacked breakdown views
   - `% Change` and `Breakdown` toggles now reset each other to avoid conflicting chart states
