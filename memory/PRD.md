@@ -35,6 +35,14 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 ## What's Been Implemented (Mar 8-10, 2026)
 
 ### Latest Updates (Mar 10, 2026)
+- [x] Added **SPI integration** in Inflation Monitor using Google Sheet source:
+  - Weekly SPI from `main raw data` and Monthly SPI from `monthly_spi`
+  - Added new APIs: `/api/spi-weekly` and `/api/spi-monthly` with low-frequency cache (12h)
+  - Added SPI cards + SPI modal with historical chart and `% Change` toggle
+- [x] Enhanced Weekly SPI modal and panel UX:
+  - Weekly chart now includes **Combined + Quintile series (Q1–Q5)** with select/deselect controls
+  - Tooltip now shows full **week-ending date** (month + day + year)
+  - Inflation panel now shows item movement chips for Weekly SPI: **↑ increase, ↓ decrease, = stable**
 - [x] Completed **Liquid FX modal breakdown flow** end-to-end:
   - Breakdown toggle now cleanly switches between total and stacked breakdown views
   - `% Change` and `Breakdown` toggles now reset each other to avoid conflicting chart states
@@ -65,6 +73,8 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] `/api/cpi-mom` - **LIVE** CPI Month-on-Month inflation from SBP API (2016-present)
 - [x] `/api/cpi-yoy-historical` - **LIVE** Complete CPI YoY history (1965-2026, 656 points, 8 base year periods)
 - [x] `/api/cpi-mom-historical` - **LIVE** Complete CPI MoM history (1964-2026, 711 points, 8 base year periods)
+- [x] `/api/spi-weekly` - **LIVE** Weekly SPI (Combined + Q1-Q5 + increase/decrease/stable counts) from Google Sheet
+- [x] `/api/spi-monthly` - **LIVE** Monthly SPI (Q1 index) from Google Sheet
 - [x] `/api/admin/airport-history` - Historical airport traffic data with date/code filters
 - [x] `/api/admin/port-history` - Historical port traffic data with date/code filters
 - [x] `/api/admin/airport-history/summary` - Airport history statistics (avg/max departures, arrivals)
@@ -76,7 +86,7 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] Bento grid layout with responsive panels (10 bottom panels)
 - [x] NewsPanel - Latest news with category tabs and infinite scroll
 - [x] EconomicPanel - 9 indicators with all **LIVE** (PSX, PKR/USD, Current A/C, Gold, Forex, Imports, Exports, Remittances, Liquid FX)
-- [x] **InflationPanel** - CPI YoY (7%) and CPI MoM (0.3%) with clickable chart modals, 60+ year history
+- [x] **InflationPanel** - CPI (YoY/MoM) + SPI (Weekly/Monthly) with clickable chart modals and movement summary chips
 - [x] **SBPDataModal** - Reusable chart modal with MoM%, YoY%, time range selectors
 - [x] **PSXDataModal** - KSE-100 modal with Day High/Low, Volume, Previous Close, YTD/YoY changes
 - [x] **CPIDataModal** - CPI modal with 60-year history, base year markers, 10Y/20Y/ALL time ranges
@@ -108,6 +118,7 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - **Current Account**: **LIVE** - State Bank of Pakistan EasyData API
 - **Imports/Exports**: **LIVE** - State Bank of Pakistan EasyData API
 - **CPI Inflation (YoY/MoM)**: **LIVE** - State Bank of Pakistan EasyData API (1964-2026, 8 base year periods combined)
+- **SPI (Weekly/Monthly)**: **LIVE** - Google Sheet source (`main raw data`, `monthly_spi`)
 - **Weather**: MOCKED (ready for OpenWeatherMap integration)
 - **Security**: MOCKED (ready for API integration)
 - **Regional**: MOCKED (ready for API integration)

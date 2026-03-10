@@ -1,8 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { X, TrendingUp, TrendingDown, Calendar, Activity } from 'lucide-react';
 import {
   AreaChart,
   Area,
+  LineChart,
+  Line,
   BarChart,
   Bar,
   Cell,
@@ -11,7 +13,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ReferenceLine
+  ReferenceLine,
+  Legend
 } from 'recharts';
 
 const TIME_RANGES = [
@@ -22,9 +25,45 @@ const TIME_RANGES = [
   { key: 'ALL', label: 'All', months: null }
 ];
 
-const SPIModal = ({ isOpen, onClose, data, title }) => {
-  const [selectedRange, setSelectedRange] = useState('2Y');
+const SERIES_CONFIG = {
+  value: { label: 'Combined', color: '#22C55E' },
+  q1: { label: 'Q1', color: '#22d3ee' },
+  q2: { label: 'Q2', color: '#6366f1' },
+  q3: { label: 'Q3', color: '#f59e0b' },
+  q4: { label: 'Q4', color: '#ec4899' },
+  q5: { label: 'Q5', color: '#ef4444' }
+};
+
+const SPIModal = ({ isOpen, onClose, data, title, frequency = 'Weekly' }) => {
+  const [selectedRange, setSelectedRange] = useState('ALL');
   const [showPctChange, setShowPctChange] = useState(false);
+  const [selectedSeries, setSelectedSeries] = useState(['value']);
+
+  const modalFrequency = frequency || data?.frequency || 'Weekly';
+  const isWeekly = modalFrequency.toLowerCase() === 'weekly';
+  const availableSeries = data?.available_series || ['value'];
+  const canToggleSeries = isWeekly && availableSeries.length > 1;
+
+  useEffect(() => {
+    if (canToggleSeries) {
+      setSelectedSeries(['value']);
+    } else {
+      setSelectedSeries(['value']);
+    }
+  }, [canToggleSeries, data?.updated]);
+
+  const toggleSeries = (seriesKey) => {
+    setSelectedSeries((current) => {
+      if (current.includes(seriesKey)) {
+        if (current.length === 1) {
+          return current;
+        }
+        return current.filter((key) => key !== seriesKey);
+      }
+
+      return [...current, seriesKey];
+    });
+  };
 
   const filteredData = useMemo(() => {
     if (!data?.history) return [];
@@ -50,16 +89,36 @@ const SPIModal = ({ isOpen, onClose, data, title }) => {
   const primaryLabel = data?.primary_change_label || 'Change';
   const isPositive = (primaryChange || 0) >= 0;
 
-  const formatDate = (dateStr) => {
+  const formatTickDate = (dateStr) => {
     const date = new Date(dateStr);
+    if (isWeekly) {
+      return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+    }
+
     return date.toLocaleDateString('en-US', {
       month: 'short',
       year: '2-digit'
     });
   };
 
-  const minValue = Math.min(...filteredData.map(d => d.value), 0);
-  const maxValue = Math.max(...filteredData.map(d => d.value), 0);
+  const formatTooltipDate = (dateStr) => {
+    const date = new Date(dateStr);
+
+    if (isWeekly) {
+      return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    }
+
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  };
+
+  const valuesForDomain = filteredData.flatMap((row) => (
+    selectedSeries
+      .map((seriesKey) => row?.[seriesKey])
+      .filter((value) => value !== null && value !== undefined)
+  ));
+
+  const minValue = valuesForDomain.length ? Math.min(...valuesForDomain, 0) : 0;
+  const maxValue = valuesForDomain.length ? Math.max(...valuesForDomain, 0) : 0;
 
   return (
     <div className="modal-overlay" onClick={onClose} data-testid="spi-modal-overlay">
@@ -120,6 +179,33 @@ const SPIModal = ({ isOpen, onClose, data, title }) => {
           </button>
         </div>
 
+        {canToggleSeries && !showPctChange && (
+          <div
+            style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}
+            data-testid="spi-series-toggle-group"
+          >
+            {availableSeries.map((seriesKey) => {
+              const isActive = selectedSeries.includes(seriesKey);
+              const config = SERIES_CONFIG[seriesKey] || { label: seriesKey.toUpperCase(), color: '#22C55E' };
+              return (
+                <button
+                  key={seriesKey}
+                  onClick={() => toggleSeries(seriesKey)}
+                  className="range-btn"
+                  data-testid={`spi-series-toggle-${seriesKey}`}
+                  style={{
+                    borderColor: isActive ? config.color : 'var(--color-border)',
+                    color: isActive ? config.color : 'var(--color-muted)',
+                    background: isActive ? `${config.color}22` : 'transparent'
+                  }}
+                >
+                  {config.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <div className="chart-container" data-testid="spi-chart-container">
           <ResponsiveContainer width="100%" height={300}>
             {showPctChange ? (
@@ -127,7 +213,7 @@ const SPIModal = ({ isOpen, onClose, data, title }) => {
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                 <XAxis
                   dataKey="date"
-                  tickFormatter={formatDate}
+                  tickFormatter={formatTickDate}
                   stroke="#64748b"
                   tick={{ fill: '#64748b', fontSize: 11 }}
                   axisLine={{ stroke: '#1e293b' }}
@@ -148,8 +234,7 @@ const SPIModal = ({ isOpen, onClose, data, title }) => {
                 <Tooltip
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
-                      const date = new Date(label);
-                      const formattedDate = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                      const formattedDate = formatTooltipDate(label);
                       const pct = payload[0].value || 0;
                       return (
                         <div className="remittances-tooltip">
@@ -169,6 +254,66 @@ const SPIModal = ({ isOpen, onClose, data, title }) => {
                   ))}
                 </Bar>
               </BarChart>
+            ) : canToggleSeries ? (
+              <LineChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={formatTickDate}
+                  stroke="#64748b"
+                  tick={{ fill: '#64748b', fontSize: 11 }}
+                  axisLine={{ stroke: '#1e293b' }}
+                  tickLine={{ stroke: '#1e293b' }}
+                  interval="preserveStartEnd"
+                  minTickGap={50}
+                />
+                <YAxis
+                  tickFormatter={(val) => val.toFixed(0)}
+                  stroke="#64748b"
+                  tick={{ fill: '#64748b', fontSize: 11 }}
+                  axisLine={{ stroke: '#1e293b' }}
+                  tickLine={{ stroke: '#1e293b' }}
+                  domain={[Math.max(0, minValue * 0.98), maxValue * 1.02]}
+                  width={50}
+                />
+                <Tooltip
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      const formattedDate = formatTooltipDate(label);
+                      return (
+                        <div className="remittances-tooltip" style={{ minWidth: '190px' }}>
+                          <p className="tooltip-date">{formattedDate}</p>
+                          {payload.map((entry) => (
+                            <p key={entry.dataKey} style={{ color: entry.color, fontSize: '0.8rem', margin: '0.2rem 0' }}>
+                              {(SERIES_CONFIG[entry.dataKey]?.label || entry.name)}: {(entry.value || 0).toFixed(2)}
+                            </p>
+                          ))}
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Legend
+                  wrapperStyle={{ paddingTop: '8px' }}
+                  formatter={(value) => <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>{value}</span>}
+                />
+                {selectedSeries.map((seriesKey) => {
+                  const config = SERIES_CONFIG[seriesKey] || { label: seriesKey.toUpperCase(), color: '#22C55E' };
+                  return (
+                    <Line
+                      key={seriesKey}
+                      type="monotone"
+                      dataKey={seriesKey}
+                      name={config.label}
+                      stroke={config.color}
+                      strokeWidth={seriesKey === 'value' ? 2.5 : 1.8}
+                      dot={false}
+                      connectNulls
+                    />
+                  );
+                })}
+              </LineChart>
             ) : (
               <AreaChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
@@ -180,7 +325,7 @@ const SPIModal = ({ isOpen, onClose, data, title }) => {
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                 <XAxis
                   dataKey="date"
-                  tickFormatter={formatDate}
+                  tickFormatter={formatTickDate}
                   stroke="#64748b"
                   tick={{ fill: '#64748b', fontSize: 11 }}
                   axisLine={{ stroke: '#1e293b' }}
@@ -201,8 +346,7 @@ const SPIModal = ({ isOpen, onClose, data, title }) => {
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
                       const point = payload[0]?.payload;
-                      const date = new Date(label);
-                      const formattedDate = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                      const formattedDate = formatTooltipDate(label);
                       return (
                         <div className="remittances-tooltip">
                           <p className="tooltip-date">{formattedDate}</p>

@@ -113,6 +113,11 @@ const InflationPanel = ({ loading: parentLoading }) => {
       subLabel: spiWeeklyData?.latest?.week_ending_formatted || '',
       change: spiWeeklyData?.primary_change_pct,
       description: 'Combined Sensitivity Price Index (WoW)',
+      movement: {
+        increase: spiWeeklyData?.latest?.increase,
+        decrease: spiWeeklyData?.latest?.decrease,
+        stable: spiWeeklyData?.latest?.stable
+      },
       clickable: true,
       modalKey: 'spiWeekly',
       isLive: spiWeeklyData !== null,
@@ -239,6 +244,52 @@ const InflationPanel = ({ loading: parentLoading }) => {
                 <div className="inflation-description">
                   {item.description}
                 </div>
+                {item.movement && (
+                  <div
+                    style={{ display: 'flex', gap: '0.3rem', marginTop: '0.35rem', flexWrap: 'wrap' }}
+                    data-testid={`inflation-item-movement-${index}`}
+                  >
+                    <span
+                      style={{
+                        fontSize: '0.58rem',
+                        color: '#ef4444',
+                        background: 'rgba(239, 68, 68, 0.12)',
+                        border: '1px solid rgba(239, 68, 68, 0.35)',
+                        padding: '0.12rem 0.32rem',
+                        borderRadius: '999px'
+                      }}
+                      data-testid={`inflation-item-increase-count-${index}`}
+                    >
+                      ↑ {item.movement.increase ?? 0}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '0.58rem',
+                        color: '#22C55E',
+                        background: 'rgba(34, 197, 94, 0.12)',
+                        border: '1px solid rgba(34, 197, 94, 0.35)',
+                        padding: '0.12rem 0.32rem',
+                        borderRadius: '999px'
+                      }}
+                      data-testid={`inflation-item-decrease-count-${index}`}
+                    >
+                      ↓ {item.movement.decrease ?? 0}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '0.58rem',
+                        color: '#94A3B8',
+                        background: 'rgba(148, 163, 184, 0.12)',
+                        border: '1px solid rgba(148, 163, 184, 0.35)',
+                        padding: '0.12rem 0.32rem',
+                        borderRadius: '999px'
+                      }}
+                      data-testid={`inflation-item-stable-count-${index}`}
+                    >
+                      = {item.movement.stable ?? 0}
+                    </span>
+                  </div>
+                )}
               </div>
             );
           })}

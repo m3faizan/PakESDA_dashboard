@@ -1071,23 +1071,76 @@ async def fetch_spi_weekly_data():
         csv_text = await fetch_google_sheet_csv(SPI_WEEKLY_SHEET_NAME)
         reader = csv.DictReader(io.StringIO(csv_text))
 
+        if not reader.fieldnames:
+            return None
+
+        field_map = {}
+        for field in reader.fieldnames:
+            if not field:
+                continue
+
+            clean_field = field.strip()
+            lower_field = clean_field.lower()
+            if lower_field.startswith("week #"):
+                field_map["week"] = clean_field
+            elif lower_field.startswith("week ending"):
+                field_map["week_ending"] = clean_field
+            elif lower_field.startswith("q1"):
+                field_map["q1"] = clean_field
+            elif lower_field.startswith("q2"):
+                field_map["q2"] = clean_field
+            elif lower_field.startswith("q3"):
+                field_map["q3"] = clean_field
+            elif lower_field.startswith("q4"):
+                field_map["q4"] = clean_field
+            elif lower_field.startswith("q5"):
+                field_map["q5"] = clean_field
+            elif lower_field.startswith("combined"):
+                field_map["combined"] = clean_field
+            elif lower_field.startswith("items"):
+                field_map["items"] = clean_field
+            elif lower_field.startswith("increase"):
+                field_map["increase"] = clean_field
+            elif lower_field.startswith("decrease"):
+                field_map["decrease"] = clean_field
+            elif lower_field.startswith("stable"):
+                field_map["stable"] = clean_field
+
         history = []
         for row in reader:
-            date_obj = _parse_date_by_formats(row.get("Week Ending"), ["%m/%d/%Y", "%Y-%m-%d"])
-            combined_value = _safe_float(row.get("Combined"))
+            date_obj = _parse_date_by_formats(
+                row.get(field_map.get("week_ending", "Week Ending")),
+                ["%m/%d/%Y", "%m/%d/%y", "%Y-%m-%d", "%d/%m/%Y", "%d-%b-%Y"]
+            )
+            combined_value = _safe_float(row.get(field_map.get("combined", "Combined")))
 
             if not date_obj or combined_value is None:
                 continue
 
+            q1 = _safe_float(row.get(field_map.get("q1")))
+            q2 = _safe_float(row.get(field_map.get("q2")))
+            q3 = _safe_float(row.get(field_map.get("q3")))
+            q4 = _safe_float(row.get(field_map.get("q4")))
+            q5 = _safe_float(row.get(field_map.get("q5")))
+
+            week_label = (row.get(field_map.get("week", "Week #")) or "").strip()
+            if week_label and not str(week_label).upper().startswith("W"):
+                week_label = f"W{week_label}"
+
             history.append({
                 "date": date_obj.strftime("%Y-%m-%d"),
-                "week": (row.get("Week #") or "").strip(),
+                "week": week_label,
                 "week_ending_formatted": date_obj.strftime("%b %d, %Y"),
                 "value": round(combined_value, 2),
-                "items_tracked": int(_safe_float(row.get("Items")) or 0),
-                "increase": int(_safe_float(row.get("Increase")) or 0),
-                "decrease": int(_safe_float(row.get("Decrease")) or 0),
-                "stable": int(_safe_float(row.get("Stable")) or 0)
+                "q1": round(q1, 2) if q1 is not None else None,
+                "q2": round(q2, 2) if q2 is not None else None,
+                "q3": round(q3, 2) if q3 is not None else None,
+                "q4": round(q4, 2) if q4 is not None else None,
+                "q5": round(q5, 2) if q5 is not None else None,
+                "items_tracked": int(_safe_float(row.get(field_map.get("items", "Items"))) or 0),
+                "increase": int(_safe_float(row.get(field_map.get("increase", "Increase"))) or 0),
+                "decrease": int(_safe_float(row.get(field_map.get("decrease", "Decrease"))) or 0),
+                "stable": int(_safe_float(row.get(field_map.get("stable", "Stable"))) or 0)
             })
 
         history.sort(key=lambda x: x["date"])
@@ -1113,6 +1166,15 @@ async def fetch_spi_weekly_data():
                 "week": latest["week"],
                 "date": latest["date"],
                 "week_ending_formatted": latest["week_ending_formatted"],
+                "q1": latest.get("q1"),
+                "q2": latest.get("q2"),
+                "q3": latest.get("q3"),
+                "q4": latest.get("q4"),
+                "q5": latest.get("q5"),
+                "items_tracked": latest.get("items_tracked", 0),
+                "increase": latest.get("increase", 0),
+                "decrease": latest.get("decrease", 0),
+                "stable": latest.get("stable", 0),
                 "unit": "Index Points"
             },
             "previous": {
@@ -1126,6 +1188,15 @@ async def fetch_spi_weekly_data():
             "wow_change": round(wow_change, 2) if wow_change is not None else None,
             "wow_change_pct": round(wow_change_pct, 2) if wow_change_pct is not None else None,
             "history": history,
+            "available_series": ["value", "q1", "q2", "q3", "q4", "q5"],
+            "series_labels": {
+                "value": "Combined",
+                "q1": "Q1",
+                "q2": "Q2",
+                "q3": "Q3",
+                "q4": "Q4",
+                "q5": "Q5"
+            },
             "total_data_points": len(history),
             "date_range": f"{history[0]['date']} to {history[-1]['date']}",
             "source": "PakESDA SPI Dashboard (Google Sheet)",
