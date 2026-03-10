@@ -87,7 +87,8 @@ const SPIModal = ({ isOpen, onClose, data, title, frequency = 'Weekly' }) => {
   const primaryChange = data?.primary_change;
   const primaryChangePct = data?.primary_change_pct;
   const primaryLabel = data?.primary_change_label || 'Change';
-  const isPositive = (primaryChange || 0) >= 0;
+  const isIncrease = (primaryChange || 0) >= 0;
+  const isFavorable = (primaryChange || 0) <= 0;
 
   const formatTickDate = (dateStr) => {
     const date = new Date(dateStr);
@@ -146,11 +147,11 @@ const SPIModal = ({ isOpen, onClose, data, title, frequency = 'Weekly' }) => {
 
           {(primaryChange !== null && primaryChange !== undefined) && (
             <div className="summary-changes">
-              <div className={`summary-change ${isPositive ? 'positive' : 'negative'}`} data-testid="spi-summary-change">
-                {isPositive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                <span>{isPositive ? '+' : ''}{primaryChange.toFixed(2)} pts</span>
+              <div className={`summary-change ${isFavorable ? 'positive' : 'negative'}`} data-testid="spi-summary-change">
+                {isIncrease ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                <span>{isIncrease ? '+' : ''}{primaryChange.toFixed(2)} pts</span>
                 {(primaryChangePct !== null && primaryChangePct !== undefined) && (
-                  <span className="change-label">({isPositive ? '+' : ''}{primaryChangePct.toFixed(2)}%) {primaryLabel}</span>
+                  <span className="change-label">({isIncrease ? '+' : ''}{primaryChangePct.toFixed(2)}%) {primaryLabel}</span>
                 )}
               </div>
             </div>
@@ -236,10 +237,11 @@ const SPIModal = ({ isOpen, onClose, data, title, frequency = 'Weekly' }) => {
                     if (active && payload && payload.length) {
                       const formattedDate = formatTooltipDate(label);
                       const pct = payload[0].value || 0;
+                      const pctColor = pct >= 0 ? '#EF4444' : '#22C55E';
                       return (
                         <div className="remittances-tooltip">
                           <p className="tooltip-date">{formattedDate}</p>
-                          <p className="tooltip-value" style={{ color: pct >= 0 ? '#22C55E' : '#EF4444' }}>
+                          <p className="tooltip-value" style={{ color: pctColor }}>
                             {pct >= 0 ? '+' : ''}{pct.toFixed(2)}%
                           </p>
                         </div>
@@ -250,7 +252,7 @@ const SPIModal = ({ isOpen, onClose, data, title, frequency = 'Weekly' }) => {
                 />
                 <Bar dataKey="pct_change" radius={[2, 2, 0, 0]}>
                   {filteredData.map((entry, index) => (
-                    <Cell key={`spi-pct-cell-${index}`} fill={entry.pct_change >= 0 ? '#22C55E' : '#EF4444'} fillOpacity={0.85} />
+                    <Cell key={`spi-pct-cell-${index}`} fill={entry.pct_change >= 0 ? '#EF4444' : '#22C55E'} fillOpacity={0.85} />
                   ))}
                 </Bar>
               </BarChart>
@@ -352,7 +354,7 @@ const SPIModal = ({ isOpen, onClose, data, title, frequency = 'Weekly' }) => {
                           <p className="tooltip-date">{formattedDate}</p>
                           <p className="tooltip-value" style={{ color: '#22C55E' }}>{(point?.value || 0).toFixed(2)}</p>
                           {(point?.pct_change !== null && point?.pct_change !== undefined) && (
-                            <p style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '4px' }}>
+                            <p style={{ fontSize: '0.72rem', color: point.pct_change >= 0 ? '#EF4444' : '#22C55E', marginTop: '4px' }}>
                               {point.pct_change >= 0 ? '+' : ''}{point.pct_change.toFixed(2)}%
                             </p>
                           )}
@@ -369,7 +371,18 @@ const SPIModal = ({ isOpen, onClose, data, title, frequency = 'Weekly' }) => {
         </div>
 
         <div className="modal-footer" data-testid="spi-modal-footer">
-          <span className="data-source">Source: {data?.source || 'PakESDA SPI Sheet'}</span>
+          <span className="data-source">
+            Source:{' '}
+            <a
+              href="https://spi.pakesda.com/"
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: 'var(--color-primary)', textDecoration: 'none' }}
+              data-testid="spi-source-link"
+            >
+              spi.pakesda.com
+            </a>
+          </span>
           <span className="data-updated">
             Last updated: {new Date(data?.updated || Date.now()).toLocaleDateString()}
           </span>

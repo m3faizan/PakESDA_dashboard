@@ -1199,7 +1199,7 @@ async def fetch_spi_weekly_data():
             },
             "total_data_points": len(history),
             "date_range": f"{history[0]['date']} to {history[-1]['date']}",
-            "source": "PakESDA SPI Dashboard (Google Sheet)",
+            "source": "SPI Pakistan Dashboard",
             "name": "SPI (Weekly Combined)",
             "frequency": "Weekly",
             "updated": datetime.now(timezone.utc).isoformat()
@@ -1278,7 +1278,7 @@ async def fetch_spi_monthly_data():
             "history": history,
             "total_data_points": len(history),
             "date_range": f"{history[0]['date']} to {history[-1]['date']}",
-            "source": "PakESDA SPI Dashboard (Google Sheet)",
+            "source": "SPI Pakistan Dashboard",
             "name": "SPI Monthly (Q1)",
             "frequency": "Monthly",
             "updated": datetime.now(timezone.utc).isoformat()

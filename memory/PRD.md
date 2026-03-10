@@ -43,6 +43,9 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
   - Weekly chart now includes **Combined + Quintile series (Q1–Q5)** with select/deselect controls
   - Tooltip now shows full **week-ending date** (month + day + year)
   - Inflation panel now shows item movement chips for Weekly SPI: **↑ increase, ↓ decrease, = stable**
+- [x] SPI sentiment and source polish:
+  - SPI increases are now treated visually as **negative** (red), while decreases are **positive** (green)
+  - Modal source now links directly to **spi.pakesda.com** (without Google Sheet wording)
 - [x] Completed **Liquid FX modal breakdown flow** end-to-end:
   - Breakdown toggle now cleanly switches between total and stacked breakdown views
   - `% Change` and `Breakdown` toggles now reset each other to avoid conflicting chart states
