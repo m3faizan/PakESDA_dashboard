@@ -32,7 +32,17 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 9. Dark theme with Pakistan green accents
 10. Responsive design
 
-## What's Been Implemented (Mar 8, 2026)
+## What's Been Implemented (Mar 8-10, 2026)
+
+### Latest Updates (Mar 10, 2026)
+- [x] Completed **Liquid FX modal breakdown flow** end-to-end:
+  - Breakdown toggle now cleanly switches between total and stacked breakdown views
+  - `% Change` and `Breakdown` toggles now reset each other to avoid conflicting chart states
+  - Breakdown legend labels now match Liquid FX semantics: **Net Reserves with SBP / Net Reserves with Banks**
+- [x] Fixed Liquid FX summary metadata in modal:
+  - Shows latest weekly date (`dateFormatted`) instead of `N/A`
+  - Uses **WoW** change label/value (instead of MoM)
+- [x] Verified in browser smoke test with interactive modal checks (open, toggle, labels, summary)
 
 ### Backend (FastAPI)
 - [x] `/api/health` - Health check endpoint
@@ -65,7 +75,7 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] News ticker (scrolling headlines)
 - [x] Bento grid layout with responsive panels (10 bottom panels)
 - [x] NewsPanel - Latest news with category tabs and infinite scroll
-- [x] EconomicPanel - 8 indicators with all **LIVE** (PSX, PKR/USD, Current A/C, Gold, Forex, Imports, Exports, Remittances)
+- [x] EconomicPanel - 9 indicators with all **LIVE** (PSX, PKR/USD, Current A/C, Gold, Forex, Imports, Exports, Remittances, Liquid FX)
 - [x] **InflationPanel** - CPI YoY (7%) and CPI MoM (0.3%) with clickable chart modals, 60+ year history
 - [x] **SBPDataModal** - Reusable chart modal with MoM%, YoY%, time range selectors
 - [x] **PSXDataModal** - KSE-100 modal with Day High/Low, Volume, Previous Close, YTD/YoY changes
@@ -140,9 +150,9 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 
 ## Next Tasks
 1. Make Governance Panel dynamic
-2. Add OpenWeatherMap API for real weather data
-3. Implement WebSocket for real-time data updates
-4. Add intraday PSX charts
+2. Implement real-time data for Security & Politics panel
+3. Improve SBP initial-load resilience (parallel fetch/caching tuning)
+4. Add OpenWeatherMap API for real weather data
 
 ## Technical Notes
 - Preview URL may show "unavailable" due to gateway warm-up; app runs correctly locally

@@ -30,6 +30,17 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
   const [selectedRange, setSelectedRange] = useState('1Y');
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [showPctChange, setShowPctChange] = useState(false);
+  const isBreakdownSeries = isForexReserves || isLiquidForex;
+
+  const breakdownLabels = isLiquidForex
+    ? {
+        sbp: 'Net Reserves with SBP',
+        bank: 'Net Reserves with Banks'
+      }
+    : {
+        sbp: 'SBP Reserves',
+        bank: 'Bank Reserves'
+      };
 
   const filteredData = useMemo(() => {
     if (!data?.history) return [];
@@ -108,7 +119,7 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
       const date = new Date(label);
       const formattedDate = date.toLocaleDateString('en-US', { 
         month: 'long', 
-        day: isPkrUsd ? 'numeric' : undefined,
+        day: (isPkrUsd || isLiquidForex) ? 'numeric' : undefined,
         year: 'numeric' 
       });
       const value = payload[0].value;
@@ -128,9 +139,14 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
 
   const latest = data?.latest;
   const latestValue = latest?.value || 0;
-  const momChange = isPkrUsd ? data?.daily_change : data?.mom_change || 0;
+  const momChange = isPkrUsd
+    ? data?.daily_change
+    : isLiquidForex
+      ? data?.wow_change_pct
+      : data?.mom_change;
   const yoyChange = data?.yoy_change;
-  const isMomPositive = momChange >= 0;
+  const hasMomChange = momChange !== null && momChange !== undefined;
+  const isMomPositive = (momChange || 0) >= 0;
   const isYoyPositive = yoyChange >= 0;
 
   // Calculate Y-axis domain
@@ -166,15 +182,17 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
             </div>
             <div className="summary-period">
               <Calendar size={14} />
-              {isPkrUsd ? latest?.dateFormatted : latest?.month || 'N/A'}
+              {(isPkrUsd || isLiquidForex) ? latest?.dateFormatted : latest?.month || 'N/A'}
             </div>
           </div>
           <div className="summary-changes">
-            <div className={`summary-change ${isMomPositive ? 'positive' : 'negative'}`}>
-              {isMomPositive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-              <span>{formatChange(momChange)}</span>
-              <span className="change-label">{isPkrUsd ? 'Daily' : 'MoM'}</span>
-            </div>
+            {hasMomChange && (
+              <div className={`summary-change ${isMomPositive ? 'positive' : 'negative'}`} data-testid="primary-change-summary">
+                {isMomPositive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                <span>{formatChange(momChange)}</span>
+                <span className="change-label">{isPkrUsd ? 'Daily' : isLiquidForex ? 'WoW' : 'MoM'}</span>
+              </div>
+            )}
             {yoyChange !== null && yoyChange !== undefined && (
               <div className={`summary-change ${isYoyPositive ? 'positive' : 'negative'}`}>
                 {isYoyPositive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
@@ -277,11 +295,17 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
             </button>
           ))}
           
-          {/* Chart type toggle for Forex Reserves */}
-          {isForexReserves && (
+          {/* Chart type toggle for Forex Reserves or Liquid Forex */}
+          {isBreakdownSeries && (
             <button
               className={`range-btn ${showBreakdown ? 'active' : ''}`}
-              onClick={() => setShowBreakdown(!showBreakdown)}
+              onClick={() => {
+                const nextShowBreakdown = !showBreakdown;
+                setShowBreakdown(nextShowBreakdown);
+                if (nextShowBreakdown) {
+                  setShowPctChange(false);
+                }
+              }}
               style={{ marginLeft: '1rem', borderLeft: '1px solid var(--color-border)', paddingLeft: '1rem' }}
               data-testid="breakdown-toggle"
             >
@@ -293,8 +317,14 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
           {!isCurrentAccount && (
             <button
               className={`range-btn ${showPctChange ? 'active' : ''}`}
-              onClick={() => setShowPctChange(!showPctChange)}
-              style={{ marginLeft: isForexReserves ? '0.5rem' : '1rem', borderLeft: isForexReserves ? 'none' : '1px solid var(--color-border)', paddingLeft: isForexReserves ? '0.5rem' : '1rem' }}
+              onClick={() => {
+                const nextShowPct = !showPctChange;
+                setShowPctChange(nextShowPct);
+                if (nextShowPct && isBreakdownSeries) {
+                  setShowBreakdown(false);
+                }
+              }}
+              style={{ marginLeft: isBreakdownSeries ? '0.5rem' : '1rem', borderLeft: isBreakdownSeries ? 'none' : '1px solid var(--color-border)', paddingLeft: isBreakdownSeries ? '0.5rem' : '1rem' }}
               data-testid="pct-change-toggle"
             >
               {showPctChange ? 'Value' : '% Change'}
@@ -304,7 +334,7 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
 
         <div className="chart-container" data-testid="sbp-chart">
           <ResponsiveContainer width="100%" height={300}>
-            {isForexReserves && showBreakdown ? (
+            {isBreakdownSeries && showBreakdown ? (
               // Stacked bar chart with line for total
               <ComposedChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
@@ -331,7 +361,11 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
                       const date = new Date(label);
-                      const formattedDate = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                      const formattedDate = date.toLocaleDateString('en-US', {
+                        month: 'long',
+                        day: isLiquidForex ? 'numeric' : undefined,
+                        year: 'numeric'
+                      });
                       return (
                         <div className="remittances-tooltip" style={{ minWidth: '180px' }}>
                           <p className="tooltip-date">{formattedDate}</p>
@@ -350,8 +384,8 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
                   wrapperStyle={{ paddingTop: '10px' }}
                   formatter={(value) => <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>{value}</span>}
                 />
-                <Bar dataKey="sbp_reserves" name="SBP Reserves" stackId="a" fill="#22C55E" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="bank_reserves" name="Bank Reserves" stackId="a" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="sbp_reserves" name={breakdownLabels.sbp} stackId="a" fill="#22C55E" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="bank_reserves" name={breakdownLabels.bank} stackId="a" fill="#6366f1" radius={[4, 4, 0, 0]} />
                 <Line 
                   type="monotone" 
                   dataKey="value" 
