@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, DollarSign, ExternalLink, Coins, ArrowLeftRight, ArrowDownToLine, ArrowUpFromLine, Banknote, BarChart3 } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, ExternalLink, Coins, ArrowLeftRight, ArrowDownToLine, ArrowUpFromLine, Banknote, BarChart3, Droplets } from 'lucide-react';
 import axios from 'axios';
 import SBPDataModal from './SBPDataModal';
 import PSXDataModal from './PSXDataModal';
@@ -15,6 +15,7 @@ const EconomicPanel = ({ data, loading }) => {
   const [exportsData, setExportsData] = useState(null);
   const [pkrUsdData, setPkrUsdData] = useState(null);
   const [psxData, setPsxData] = useState(null);
+  const [liquidForexData, setLiquidForexData] = useState(null);
   const [dataLoading, setDataLoading] = useState(true);
   
   const [activeModal, setActiveModal] = useState(null);
@@ -22,7 +23,7 @@ const EconomicPanel = ({ data, loading }) => {
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const [remittancesRes, goldRes, forexRes, currentAccountRes, importsRes, exportsRes, pkrUsdRes, psxRes] = await Promise.allSettled([
+        const [remittancesRes, goldRes, forexRes, currentAccountRes, importsRes, exportsRes, pkrUsdRes, psxRes, liquidForexRes] = await Promise.allSettled([
           axios.get(`${API_BASE}/api/remittances`),
           axios.get(`${API_BASE}/api/gold-reserves`),
           axios.get(`${API_BASE}/api/forex-reserves`),
@@ -30,7 +31,8 @@ const EconomicPanel = ({ data, loading }) => {
           axios.get(`${API_BASE}/api/imports`),
           axios.get(`${API_BASE}/api/exports`),
           axios.get(`${API_BASE}/api/pkr-usd`),
-          axios.get(`${API_BASE}/api/psx-data`)
+          axios.get(`${API_BASE}/api/psx-data`),
+          axios.get(`${API_BASE}/api/liquid-forex`)
         ]);
 
         if (remittancesRes.status === 'fulfilled') {
@@ -56,6 +58,9 @@ const EconomicPanel = ({ data, loading }) => {
         }
         if (psxRes.status === 'fulfilled') {
           setPsxData(psxRes.value.data.data);
+        }
+        if (liquidForexRes.status === 'fulfilled') {
+          setLiquidForexData(liquidForexRes.value.data.data);
         }
       } catch (error) {
         console.error('Error fetching economic data:', error);
@@ -185,6 +190,17 @@ const EconomicPanel = ({ data, loading }) => {
       modalKey: 'remittances',
       isLive: !dataLoading && remittancesData
     },
+    { 
+      label: 'Liquid FX', 
+      value: formatBillions(liquidForexData?.latest?.value),
+      subLabel: liquidForexData?.latest?.dateFormatted || '',
+      change: liquidForexData?.wow_change_pct,
+      prefix: '',
+      clickable: true,
+      modalKey: 'liquidForex',
+      isLive: !dataLoading && liquidForexData,
+      isWeekly: true
+    },
   ];
 
   const handleItemClick = (item) => {
@@ -211,6 +227,8 @@ const EconomicPanel = ({ data, loading }) => {
         return { data: pkrUsdData, title: "PKR/USD Exchange Rate", icon: Banknote, isPkrUsd: true };
       case 'psx':
         return { data: psxData, title: "KSE-100 Index", icon: BarChart3, isPsx: true };
+      case 'liquidForex':
+        return { data: liquidForexData, title: "Liquid Foreign Exchange Reserves", icon: Droplets, isLiquidForex: true };
       default:
         return null;
     }
@@ -228,7 +246,7 @@ const EconomicPanel = ({ data, loading }) => {
         <span className="panel-badge">LIVE</span>
       </div>
       <div className="panel-content">
-        <div className="economic-grid economic-grid-8">
+        <div className="economic-grid economic-grid-9">
           {indicators.map((item, index) => (
             <div 
               key={index} 
@@ -301,6 +319,7 @@ const EconomicPanel = ({ data, loading }) => {
           isCurrentAccount={modalInfo.isCurrentAccount}
           isPkrUsd={modalInfo.isPkrUsd}
           isForexReserves={modalInfo.isForexReserves}
+          isLiquidForex={modalInfo.isLiquidForex}
         />
       )}
 

@@ -26,9 +26,10 @@ const TIME_RANGES = [
   { key: 'ALL', label: 'All', months: null }
 ];
 
-const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, isCurrentAccount = false, isPkrUsd = false, isForexReserves = false }) => {
+const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, isCurrentAccount = false, isPkrUsd = false, isForexReserves = false, isLiquidForex = false }) => {
   const [selectedRange, setSelectedRange] = useState('1Y');
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [showPctChange, setShowPctChange] = useState(false);
 
   const filteredData = useMemo(() => {
     if (!data?.history) return [];
@@ -39,21 +40,36 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
     
     const range = TIME_RANGES.find(r => r.key === selectedRange);
     
+    let filtered;
     if (selectedRange === 'YTD') {
-      return history.filter(item => {
+      filtered = history.filter(item => {
         const itemDate = new Date(item.date);
         return itemDate.getFullYear() === currentYear;
       });
+    } else if (selectedRange === 'ALL' || !range?.months) {
+      filtered = history;
+    } else {
+      const cutoffDate = new Date();
+      cutoffDate.setMonth(cutoffDate.getMonth() - range.months);
+      filtered = history.filter(item => new Date(item.date) >= cutoffDate);
     }
     
-    if (selectedRange === 'ALL' || !range?.months) {
-      return history;
-    }
+    // Calculate % change for each data point
+    const withPctChange = filtered.map((item, idx) => {
+      let pctChange = 0;
+      if (idx > 0) {
+        const prevValue = filtered[idx - 1].value;
+        if (prevValue && prevValue !== 0) {
+          pctChange = ((item.value - prevValue) / Math.abs(prevValue)) * 100;
+        }
+      }
+      return {
+        ...item,
+        pct_change: parseFloat(pctChange.toFixed(2))
+      };
+    });
     
-    const cutoffDate = new Date();
-    cutoffDate.setMonth(cutoffDate.getMonth() - range.months);
-    
-    return history.filter(item => new Date(item.date) >= cutoffDate);
+    return withPctChange;
   }, [data, selectedRange]);
 
   const formatValue = (value) => {
@@ -209,6 +225,46 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
           </div>
         )}
 
+        {/* Liquid Forex Reserves Breakdown */}
+        {isLiquidForex && data?.breakdown && (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: '0.75rem',
+            padding: '0.75rem',
+            background: 'rgba(15, 23, 42, 0.5)',
+            borderRadius: '8px',
+            marginBottom: '1rem'
+          }}>
+            <div style={{
+              padding: '0.75rem',
+              background: 'var(--color-background)',
+              borderRadius: '6px',
+              borderLeft: '3px solid #22C55E'
+            }}>
+              <div style={{ fontSize: '0.65rem', color: 'var(--color-muted)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
+                Net Reserves with SBP
+              </div>
+              <div style={{ fontSize: '1.1rem', fontWeight: '600', color: 'var(--color-text)', fontFamily: "'JetBrains Mono', monospace" }}>
+                ${(data.breakdown.sbp_reserves?.latest_value / 1000).toFixed(2)}B
+              </div>
+            </div>
+            <div style={{
+              padding: '0.75rem',
+              background: 'var(--color-background)',
+              borderRadius: '6px',
+              borderLeft: '3px solid #6366f1'
+            }}>
+              <div style={{ fontSize: '0.65rem', color: 'var(--color-muted)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
+                Net Reserves with Banks
+              </div>
+              <div style={{ fontSize: '1.1rem', fontWeight: '600', color: 'var(--color-text)', fontFamily: "'JetBrains Mono', monospace" }}>
+                ${(data.breakdown.bank_reserves?.latest_value / 1000).toFixed(2)}B
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="time-range-selector" data-testid="time-range-selector">
           {TIME_RANGES.map((range) => (
             <button
@@ -230,6 +286,18 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
               data-testid="breakdown-toggle"
             >
               {showBreakdown ? 'Total' : 'Breakdown'}
+            </button>
+          )}
+          
+          {/* % Change toggle for all charts */}
+          {!isCurrentAccount && (
+            <button
+              className={`range-btn ${showPctChange ? 'active' : ''}`}
+              onClick={() => setShowPctChange(!showPctChange)}
+              style={{ marginLeft: isForexReserves ? '0.5rem' : '1rem', borderLeft: isForexReserves ? 'none' : '1px solid var(--color-border)', paddingLeft: isForexReserves ? '0.5rem' : '1rem' }}
+              data-testid="pct-change-toggle"
+            >
+              {showPctChange ? 'Value' : '% Change'}
             </button>
           )}
         </div>
@@ -326,6 +394,60 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
                     <Cell 
                       key={`cell-${index}`} 
                       fill={entry.value >= 0 ? '#22C55E' : '#EF4444'} 
+                      fillOpacity={0.8}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            ) : showPctChange ? (
+              // % Change Bar Chart
+              <BarChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <XAxis 
+                  dataKey="date" 
+                  tickFormatter={formatDate}
+                  stroke="#64748b"
+                  tick={{ fill: '#64748b', fontSize: 11 }}
+                  axisLine={{ stroke: '#1e293b' }}
+                  tickLine={{ stroke: '#1e293b' }}
+                  interval="preserveStartEnd"
+                  minTickGap={50}
+                />
+                <YAxis 
+                  tickFormatter={(val) => `${val >= 0 ? '+' : ''}${val.toFixed(1)}%`}
+                  stroke="#64748b"
+                  tick={{ fill: '#64748b', fontSize: 11 }}
+                  axisLine={{ stroke: '#1e293b' }}
+                  tickLine={{ stroke: '#1e293b' }}
+                  domain={['auto', 'auto']}
+                  width={50}
+                />
+                <ReferenceLine y={0} stroke="#64748b" strokeDasharray="3 3" />
+                <Tooltip 
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      const date = new Date(label);
+                      const formattedDate = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                      const pctChange = payload[0].value;
+                      return (
+                        <div className="remittances-tooltip">
+                          <p className="tooltip-date">{formattedDate}</p>
+                          <p className="tooltip-value" style={{ 
+                            color: pctChange >= 0 ? '#22C55E' : '#EF4444'
+                          }}>
+                            {pctChange >= 0 ? '+' : ''}{pctChange.toFixed(2)}%
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Bar dataKey="pct_change" radius={[2, 2, 0, 0]}>
+                  {filteredData.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={entry.pct_change >= 0 ? '#22C55E' : '#EF4444'} 
                       fillOpacity={0.8}
                     />
                   ))}
