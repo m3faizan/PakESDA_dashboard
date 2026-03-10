@@ -2,23 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Percent, ExternalLink } from 'lucide-react';
 import axios from 'axios';
 import CPIDataModal from './CPIDataModal';
+import SPIModal from './SPIModal';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 
 const InflationPanel = ({ loading: parentLoading }) => {
   const [cpiYoyData, setCpiYoyData] = useState(null);
   const [cpiMomData, setCpiMomData] = useState(null);
+  const [spiWeeklyData, setSpiWeeklyData] = useState(null);
+  const [spiMonthlyData, setSpiMonthlyData] = useState(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [activeModal, setActiveModal] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [yoyRes, momRes, yoyHistRes, momHistRes] = await Promise.allSettled([
+        const [yoyRes, momRes, yoyHistRes, momHistRes, spiWeeklyRes, spiMonthlyRes] = await Promise.allSettled([
           axios.get(`${API_BASE}/api/cpi-yoy`),
           axios.get(`${API_BASE}/api/cpi-mom`),
           axios.get(`${API_BASE}/api/cpi-yoy-historical`),
-          axios.get(`${API_BASE}/api/cpi-mom-historical`)
+          axios.get(`${API_BASE}/api/cpi-mom-historical`),
+          axios.get(`${API_BASE}/api/spi-weekly`),
+          axios.get(`${API_BASE}/api/spi-monthly`)
         ]);
 
         if (yoyRes.status === 'fulfilled') {
@@ -42,6 +47,12 @@ const InflationPanel = ({ loading: parentLoading }) => {
             ...momHistRes.value.data.data,
             latest: prev?.latest || momHistRes.value.data.data.latest
           }));
+        }
+        if (spiWeeklyRes.status === 'fulfilled') {
+          setSpiWeeklyData(spiWeeklyRes.value.data.data);
+        }
+        if (spiMonthlyRes.status === 'fulfilled') {
+          setSpiMonthlyData(spiMonthlyRes.value.data.data);
         }
       } catch (error) {
         console.error('Error fetching CPI data:', error);
@@ -80,7 +91,9 @@ const InflationPanel = ({ loading: parentLoading }) => {
       description: 'Year-on-Year Inflation',
       clickable: true,
       modalKey: 'yoy',
-      isLive: cpiYoyData !== null
+      isLive: cpiYoyData !== null,
+      isPercent: true,
+      changeIsPercent: false
     },
     {
       label: 'CPI (MoM)',
@@ -90,7 +103,33 @@ const InflationPanel = ({ loading: parentLoading }) => {
       description: 'Month-on-Month Inflation',
       clickable: true,
       modalKey: 'mom',
-      isLive: cpiMomData !== null
+      isLive: cpiMomData !== null,
+      isPercent: true,
+      changeIsPercent: false
+    },
+    {
+      label: 'SPI (Weekly)',
+      value: spiWeeklyData?.latest?.value,
+      subLabel: spiWeeklyData?.latest?.week_ending_formatted || '',
+      change: spiWeeklyData?.primary_change_pct,
+      description: 'Combined Sensitivity Price Index (WoW)',
+      clickable: true,
+      modalKey: 'spiWeekly',
+      isLive: spiWeeklyData !== null,
+      isPercent: false,
+      changeIsPercent: true
+    },
+    {
+      label: 'SPI (Monthly)',
+      value: spiMonthlyData?.latest?.value,
+      subLabel: spiMonthlyData?.latest?.month || '',
+      change: spiMonthlyData?.primary_change_pct,
+      description: 'Monthly SPI (Q1) Index',
+      clickable: true,
+      modalKey: 'spiMonthly',
+      isLive: spiMonthlyData !== null,
+      isPercent: false,
+      changeIsPercent: true
     }
   ];
 
@@ -106,12 +145,28 @@ const InflationPanel = ({ loading: parentLoading }) => {
         return { data: cpiYoyData, title: 'CPI Inflation (Year-on-Year)', type: 'yoy' };
       case 'mom':
         return { data: cpiMomData, title: 'CPI Inflation (Month-on-Month)', type: 'mom' };
+      case 'spiWeekly':
+        return { data: spiWeeklyData, title: 'SPI Weekly (Combined)', type: 'spi', frequency: 'Weekly', isSpi: true };
+      case 'spiMonthly':
+        return { data: spiMonthlyData, title: 'SPI Monthly (Q1)', type: 'spi', frequency: 'Monthly', isSpi: true };
       default:
         return null;
     }
   };
 
   const modalInfo = getModalData();
+
+  const formatDisplayValue = (item) => {
+    if (item.value === null || item.value === undefined) {
+      return '--';
+    }
+
+    if (item.isPercent) {
+      return `${Number(item.value).toFixed(1)}%`;
+    }
+
+    return Number(item.value).toFixed(2);
+  };
 
   // Determine if inflation is high (above 10% is concerning)
   const getInflationStatus = (value) => {
@@ -169,16 +224,12 @@ const InflationPanel = ({ loading: parentLoading }) => {
                       color: 'var(--color-text)'
                     }}
                   >
-                    {item.value !== null && item.value !== undefined ? (
-                      <>
-                        {item.value >= 0 ? '' : ''}{item.value}%
-                      </>
-                    ) : '--'}
+                    {formatDisplayValue(item)}
                   </span>
                   {item.change !== null && item.change !== undefined && (
                     <span className={`inflation-change ${item.change >= 0 ? 'up' : 'down'}`}>
                       {item.change >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                      {item.change >= 0 ? '+' : ''}{item.change.toFixed(1)}
+                      {item.change >= 0 ? '+' : ''}{item.change.toFixed(item.changeIsPercent ? 2 : 1)}{item.changeIsPercent ? '%' : ''}
                     </span>
                   )}
                 </div>
@@ -194,13 +245,23 @@ const InflationPanel = ({ loading: parentLoading }) => {
         </div>
       </div>
 
-      {modalInfo && (
+      {modalInfo && !modalInfo.isSpi && (
         <CPIDataModal
           isOpen={!!activeModal}
           onClose={() => setActiveModal(null)}
           data={modalInfo.data}
           title={modalInfo.title}
           type={modalInfo.type}
+        />
+      )}
+
+      {modalInfo && modalInfo.isSpi && (
+        <SPIModal
+          isOpen={!!activeModal}
+          onClose={() => setActiveModal(null)}
+          data={modalInfo.data}
+          title={modalInfo.title}
+          frequency={modalInfo.frequency}
         />
       )}
     </div>

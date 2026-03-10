@@ -4,6 +4,8 @@ Real-time intelligence dashboard for Pakistan-related information
 """
 import os
 import asyncio
+import csv
+import io
 from datetime import datetime, timezone, timedelta
 from contextlib import asynccontextmanager
 from typing import Optional
@@ -89,6 +91,8 @@ data_cache = {
     "cpi_mom": {"data": {}, "updated": None},
     "cpi_yoy_historical": {"data": {}, "updated": None},
     "cpi_mom_historical": {"data": {}, "updated": None},
+    "spi_weekly": {"data": {}, "updated": None},
+    "spi_monthly": {"data": {}, "updated": None},
     "liquid_forex": {"data": {}, "updated": None}
 }
 
@@ -113,6 +117,11 @@ SBP_LIQUID_FX_PDF_URL = "https://www.sbp.org.pk/ecodata/forex.pdf"
 # CPI API endpoints (2016-present - latest base year)
 SBP_CPI_YOY_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_PT_CPI_M.P00011516/data"
 SBP_CPI_MOM_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_PT_CPI_M.P00461516/data"
+
+# SPI Google Sheet (user-provided)
+SPI_GOOGLE_SHEET_ID = "1q2ixfzKUMx9Y5yX_jPUx5B1wda7bY3hefKAiae5Io1k"
+SPI_WEEKLY_SHEET_NAME = "main raw data"
+SPI_MONTHLY_SHEET_NAME = "monthly_spi"
 
 # Historical CPI API endpoints by base year period
 CPI_HISTORICAL_APIS = [
@@ -800,6 +809,9 @@ async def fetch_liquid_forex_data():
         traceback.print_exc()
     
     return None
+
+
+async def fetch_cpi_data(cpi_type: str = "yoy"):
     """Fetch CPI inflation data from State Bank of Pakistan API
     
     Args:
@@ -999,6 +1011,210 @@ async def fetch_cpi_historical_data(cpi_type: str = "yoy"):
         import traceback
         traceback.print_exc()
     
+    return None
+
+
+def _safe_float(value):
+    if value is None:
+        return None
+
+    text = str(value).strip().replace(",", "").replace("%", "")
+    if not text:
+        return None
+
+    try:
+        return float(text)
+    except (ValueError, TypeError):
+        return None
+
+
+def _parse_date_by_formats(date_text: str, formats):
+    if not date_text:
+        return None
+
+    cleaned = str(date_text).strip()
+    for fmt in formats:
+        try:
+            return datetime.strptime(cleaned, fmt)
+        except ValueError:
+            continue
+
+    return None
+
+
+async def fetch_google_sheet_csv(sheet_name: str):
+    """Fetch public CSV from Google Sheets tab"""
+    sheet_url = f"https://docs.google.com/spreadsheets/d/{SPI_GOOGLE_SHEET_ID}/gviz/tq"
+
+    async with httpx.AsyncClient(timeout=45.0) as client:
+        response = await client.get(
+            sheet_url,
+            params={"tqx": "out:csv", "sheet": sheet_name},
+            headers={
+                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+            }
+        )
+
+    if response.status_code != 200:
+        raise ValueError(f"Google Sheet fetch failed ({sheet_name}) with status {response.status_code}")
+
+    content_type = (response.headers.get("content-type") or "").lower()
+    if "text/csv" not in content_type and response.text.lstrip().startswith("<!DOCTYPE html>"):
+        raise ValueError(f"Google Sheet response for {sheet_name} is not accessible CSV")
+
+    return response.text
+
+
+async def fetch_spi_weekly_data():
+    """Fetch weekly SPI combined index history from Google Sheet (main raw data tab)"""
+    try:
+        csv_text = await fetch_google_sheet_csv(SPI_WEEKLY_SHEET_NAME)
+        reader = csv.DictReader(io.StringIO(csv_text))
+
+        history = []
+        for row in reader:
+            date_obj = _parse_date_by_formats(row.get("Week Ending"), ["%m/%d/%Y", "%Y-%m-%d"])
+            combined_value = _safe_float(row.get("Combined"))
+
+            if not date_obj or combined_value is None:
+                continue
+
+            history.append({
+                "date": date_obj.strftime("%Y-%m-%d"),
+                "week": (row.get("Week #") or "").strip(),
+                "week_ending_formatted": date_obj.strftime("%b %d, %Y"),
+                "value": round(combined_value, 2),
+                "items_tracked": int(_safe_float(row.get("Items")) or 0),
+                "increase": int(_safe_float(row.get("Increase")) or 0),
+                "decrease": int(_safe_float(row.get("Decrease")) or 0),
+                "stable": int(_safe_float(row.get("Stable")) or 0)
+            })
+
+        history.sort(key=lambda x: x["date"])
+        if not history:
+            return None
+
+        for idx, item in enumerate(history):
+            if idx == 0:
+                item["pct_change"] = 0
+            else:
+                prev = history[idx - 1]["value"]
+                item["pct_change"] = round(((item["value"] - prev) / prev) * 100, 2) if prev else 0
+
+        latest = history[-1]
+        previous = history[-2] if len(history) > 1 else None
+
+        wow_change = (latest["value"] - previous["value"]) if previous else None
+        wow_change_pct = (((wow_change / previous["value"]) * 100) if previous and previous["value"] else None)
+
+        return {
+            "latest": {
+                "value": latest["value"],
+                "week": latest["week"],
+                "date": latest["date"],
+                "week_ending_formatted": latest["week_ending_formatted"],
+                "unit": "Index Points"
+            },
+            "previous": {
+                "value": previous["value"] if previous else None,
+                "date": previous["date"] if previous else None,
+                "week": previous["week"] if previous else None
+            },
+            "primary_change": round(wow_change, 2) if wow_change is not None else None,
+            "primary_change_pct": round(wow_change_pct, 2) if wow_change_pct is not None else None,
+            "primary_change_label": "WoW",
+            "wow_change": round(wow_change, 2) if wow_change is not None else None,
+            "wow_change_pct": round(wow_change_pct, 2) if wow_change_pct is not None else None,
+            "history": history,
+            "total_data_points": len(history),
+            "date_range": f"{history[0]['date']} to {history[-1]['date']}",
+            "source": "PakESDA SPI Dashboard (Google Sheet)",
+            "name": "SPI (Weekly Combined)",
+            "frequency": "Weekly",
+            "updated": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        print(f"Error fetching weekly SPI data: {e}")
+
+    return None
+
+
+async def fetch_spi_monthly_data():
+    """Fetch monthly SPI index from Google Sheet (monthly_spi tab)"""
+    try:
+        csv_text = await fetch_google_sheet_csv(SPI_MONTHLY_SHEET_NAME)
+        reader = csv.DictReader(io.StringIO(csv_text))
+
+        if not reader.fieldnames:
+            return None
+
+        normalized_fields = [field.strip() for field in reader.fieldnames if field and field.strip()]
+        month_field = next((field for field in normalized_fields if field.lower() == "month"), normalized_fields[0])
+        spi_field = next((field for field in normalized_fields if field.lower().startswith("spi")), None)
+
+        if not spi_field:
+            return None
+
+        history = []
+        for row in reader:
+            month_label = row.get(month_field)
+            spi_value = _safe_float(row.get(spi_field))
+            month_obj = _parse_date_by_formats(month_label, ["%b-%y", "%b-%Y", "%Y-%m"])
+
+            if not month_obj or spi_value is None:
+                continue
+
+            history.append({
+                "date": month_obj.strftime("%Y-%m-01"),
+                "month": month_obj.strftime("%b %Y"),
+                "value": round(spi_value, 2)
+            })
+
+        history.sort(key=lambda x: x["date"])
+        if not history:
+            return None
+
+        for idx, item in enumerate(history):
+            if idx == 0:
+                item["pct_change"] = 0
+            else:
+                prev = history[idx - 1]["value"]
+                item["pct_change"] = round(((item["value"] - prev) / prev) * 100, 2) if prev else 0
+
+        latest = history[-1]
+        previous = history[-2] if len(history) > 1 else None
+
+        mom_change = (latest["value"] - previous["value"]) if previous else None
+        mom_change_pct = (((mom_change / previous["value"]) * 100) if previous and previous["value"] else None)
+
+        return {
+            "latest": {
+                "value": latest["value"],
+                "month": latest["month"],
+                "date": latest["date"],
+                "unit": "Index Points"
+            },
+            "previous": {
+                "value": previous["value"] if previous else None,
+                "month": previous["month"] if previous else None,
+                "date": previous["date"] if previous else None
+            },
+            "primary_change": round(mom_change, 2) if mom_change is not None else None,
+            "primary_change_pct": round(mom_change_pct, 2) if mom_change_pct is not None else None,
+            "primary_change_label": "MoM",
+            "mom_change": round(mom_change, 2) if mom_change is not None else None,
+            "mom_change_pct": round(mom_change_pct, 2) if mom_change_pct is not None else None,
+            "history": history,
+            "total_data_points": len(history),
+            "date_range": f"{history[0]['date']} to {history[-1]['date']}",
+            "source": "PakESDA SPI Dashboard (Google Sheet)",
+            "name": "SPI Monthly (Q1)",
+            "frequency": "Monthly",
+            "updated": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        print(f"Error fetching monthly SPI data: {e}")
+
     return None
 
 
@@ -1782,6 +1998,44 @@ async def get_cpi_mom_historical():
     return {
         "data": data_cache["cpi_mom_historical"]["data"],
         "updated": data_cache["cpi_mom_historical"]["updated"].isoformat() if data_cache["cpi_mom_historical"]["updated"] else None
+    }
+
+
+@app.get("/api/spi-weekly")
+async def get_spi_weekly():
+    """Get weekly SPI data from Google Sheet (main raw data)"""
+    # Refresh every 12 hours (weekly source; user requested low-frequency refresh)
+    if data_cache["spi_weekly"]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache["spi_weekly"]["updated"]).total_seconds()
+        if age > 43200:
+            data_cache["spi_weekly"]["data"] = await fetch_spi_weekly_data()
+            data_cache["spi_weekly"]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache["spi_weekly"]["data"] = await fetch_spi_weekly_data()
+        data_cache["spi_weekly"]["updated"] = datetime.now(timezone.utc)
+
+    return {
+        "data": data_cache["spi_weekly"]["data"],
+        "updated": data_cache["spi_weekly"]["updated"].isoformat() if data_cache["spi_weekly"]["updated"] else None
+    }
+
+
+@app.get("/api/spi-monthly")
+async def get_spi_monthly():
+    """Get monthly SPI data from Google Sheet (monthly_spi)"""
+    # Refresh every 12 hours (monthly source; user requested low-frequency refresh)
+    if data_cache["spi_monthly"]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache["spi_monthly"]["updated"]).total_seconds()
+        if age > 43200:
+            data_cache["spi_monthly"]["data"] = await fetch_spi_monthly_data()
+            data_cache["spi_monthly"]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache["spi_monthly"]["data"] = await fetch_spi_monthly_data()
+        data_cache["spi_monthly"]["updated"] = datetime.now(timezone.utc)
+
+    return {
+        "data": data_cache["spi_monthly"]["data"],
+        "updated": data_cache["spi_monthly"]["updated"].isoformat() if data_cache["spi_monthly"]["updated"] else None
     }
 
 
