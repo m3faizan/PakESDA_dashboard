@@ -22,6 +22,13 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedSectorView, setSelectedSectorView] = useState('snapshot');
+  const [visibleBciSeries, setVisibleBciSeries] = useState({ bci: true, cbci: true, ebci: true });
+  const [visibleSectorSeries, setVisibleSectorSeries] = useState({
+    manufacturing: true,
+    construction: true,
+    wholesale_retail: true,
+    other_services: true
+  });
 
   useEffect(() => {
     const fetchBusinessEnvironment = async () => {
@@ -41,6 +48,13 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
   const confidenceHistory = useMemo(() => data?.confidence?.history || [], [data]);
   const epuHistory = useMemo(() => data?.epu?.history || [], [data]);
   const sectorTrendHistory = useMemo(() => data?.confidence?.history || [], [data]);
+
+  const formatRange = (history) => {
+    if (!history || history.length === 0) return 'N/A';
+    const start = new Date(history[0].date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    const end = new Date(history[history.length - 1].date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    return `${start} - ${end}`;
+  };
 
   const formatDateTick = (dateStr) => {
     const date = new Date(dateStr);
@@ -79,6 +93,52 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
         ))}
       </div>
     );
+  };
+
+  const InteractiveLegend = ({ payload, seriesState, onToggle, testIdPrefix }) => {
+    if (!payload || payload.length === 0) return null;
+
+    return (
+      <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginTop: '4px' }} data-testid={`${testIdPrefix}-container`}>
+        {payload.map((entry) => {
+          const key = entry.dataKey;
+          const isActive = seriesState[key] !== false;
+          return (
+            <button
+              key={key}
+              onClick={() => onToggle(key)}
+              data-testid={`${testIdPrefix}-${key}`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.3rem',
+                border: '1px solid var(--color-border)',
+                borderRadius: '12px',
+                padding: '0.12rem 0.42rem',
+                background: 'rgba(2, 6, 23, 0.45)',
+                cursor: 'pointer',
+                opacity: isActive ? 1 : 0.42,
+                color: 'var(--color-text)',
+                fontSize: '0.64rem'
+              }}
+            >
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: entry.color, display: 'inline-block' }}></span>
+              <span>{entry.value}</span>
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const toggleSeries = (setter) => (key) => {
+    setter((prev) => {
+      const currentlyActive = Object.values(prev).filter(Boolean).length;
+      if (prev[key] && currentlyActive === 1) {
+        return prev;
+      }
+      return { ...prev, [key]: !prev[key] };
+    });
   };
 
   const getSignal = (change, inverse = false) => {
@@ -121,11 +181,21 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
   };
 
   const selectedSectorLabel = sectorSeriesMap[selectedSectorView] || 'Sector';
+  const sectorTrendAllData = sectorTrendHistory.filter((item) => (
+    item?.manufacturing !== null || item?.construction !== null || item?.wholesale_retail !== null || item?.other_services !== null
+  ));
+
   const selectedSectorHistory = selectedSectorView === 'snapshot'
     ? []
+    : selectedSectorView === 'all_trends'
+      ? sectorTrendAllData
     : sectorTrendHistory
       .filter((item) => item?.[selectedSectorView] !== null && item?.[selectedSectorView] !== undefined)
       .map((item) => ({ date: item.date, value: item[selectedSectorView] }));
+
+  const bciDateRange = formatRange(confidenceHistory);
+  const epuDateRange = formatRange(epuHistory);
+  const sectorDateRange = formatRange(selectedSectorView === 'all_trends' ? sectorTrendAllData : selectedSectorHistory);
 
   const epuSignal = getSignal(epuHeadline?.mom_change, true);
   const currentSignal = getSignal(bciCurrent?.mom_change, false);
@@ -232,16 +302,26 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
         {activeTab === 'overview' && (
           <div style={{ border: '1px solid var(--color-border)', padding: '0.4rem', background: 'rgba(2, 6, 23, 0.45)' }} data-testid="business-overview-view">
             <div style={{ fontSize: '0.62rem', color: 'var(--color-muted)', marginBottom: '0.35rem' }}>Business Confidence Trend (All Data)</div>
+            <div style={{ fontSize: '0.55rem', color: '#94a3b8', marginBottom: '0.2rem' }} data-testid="bci-date-range-label">{bciDateRange}</div>
             <ResponsiveContainer width="100%" height={175}>
               <LineChart data={confidenceHistory} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                 <XAxis dataKey="date" tickFormatter={formatDateTick} tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" minTickGap={35} />
                 <YAxis tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" width={34} domain={['auto', 'auto']} />
                 <Tooltip content={renderCompactTooltip()} />
-                <Legend wrapperStyle={{ fontSize: '0.65rem' }} />
-                <Line type="monotone" dataKey="bci" name="Overall" stroke="#22C55E" dot={false} strokeWidth={2} />
-                <Line type="monotone" dataKey="cbci" name="Current" stroke="#38BDF8" dot={false} strokeWidth={1.8} />
-                <Line type="monotone" dataKey="ebci" name="Expected" stroke="#F59E0B" dot={false} strokeWidth={1.8} />
+                <Legend
+                  content={(props) => (
+                    <InteractiveLegend
+                      {...props}
+                      seriesState={visibleBciSeries}
+                      onToggle={toggleSeries(setVisibleBciSeries)}
+                      testIdPrefix="bci-series-legend"
+                    />
+                  )}
+                />
+                <Line type="monotone" dataKey="bci" name="Overall" stroke="#22C55E" dot={false} strokeWidth={2} hide={!visibleBciSeries.bci} />
+                <Line type="monotone" dataKey="cbci" name="Current" stroke="#38BDF8" dot={false} strokeWidth={1.8} hide={!visibleBciSeries.cbci} />
+                <Line type="monotone" dataKey="ebci" name="Expected" stroke="#F59E0B" dot={false} strokeWidth={1.8} hide={!visibleBciSeries.ebci} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -267,10 +347,15 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
                 }}
               >
                 <option value="snapshot">Current Snapshot (All Sectors)</option>
+                <option value="all_trends">All Sectors Trend</option>
                 {Object.entries(sectorSeriesMap).map(([key, label]) => (
                   <option key={key} value={key}>{label}</option>
                 ))}
               </select>
+            </div>
+
+            <div style={{ fontSize: '0.55rem', color: '#94a3b8', marginBottom: '0.2rem' }} data-testid="sector-date-range-label">
+              {selectedSectorView === 'snapshot' ? 'Current month snapshot' : sectorDateRange}
             </div>
 
             {selectedSectorView === 'snapshot' ? (
@@ -286,6 +371,29 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
                     ))}
                   </Bar>
                 </BarChart>
+              </ResponsiveContainer>
+            ) : selectedSectorView === 'all_trends' ? (
+              <ResponsiveContainer width="100%" height={185}>
+                <LineChart data={selectedSectorHistory} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                  <XAxis dataKey="date" tickFormatter={formatDateTick} tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" minTickGap={35} />
+                  <YAxis tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" width={34} domain={['auto', 'auto']} />
+                  <Tooltip content={renderCompactTooltip()} />
+                  <Legend
+                    content={(props) => (
+                      <InteractiveLegend
+                        {...props}
+                        seriesState={visibleSectorSeries}
+                        onToggle={toggleSeries(setVisibleSectorSeries)}
+                        testIdPrefix="sector-series-legend"
+                      />
+                    )}
+                  />
+                  <Line type="monotone" dataKey="manufacturing" name="Manufacturing" stroke="#22C55E" dot={false} strokeWidth={2} hide={!visibleSectorSeries.manufacturing} />
+                  <Line type="monotone" dataKey="construction" name="Construction" stroke="#38BDF8" dot={false} strokeWidth={1.8} hide={!visibleSectorSeries.construction} />
+                  <Line type="monotone" dataKey="wholesale_retail" name="Wholesale & Retail" stroke="#F59E0B" dot={false} strokeWidth={1.8} hide={!visibleSectorSeries.wholesale_retail} />
+                  <Line type="monotone" dataKey="other_services" name="Other Services" stroke="#A855F7" dot={false} strokeWidth={1.8} hide={!visibleSectorSeries.other_services} />
+                </LineChart>
               </ResponsiveContainer>
             ) : (
               <ResponsiveContainer width="100%" height={185}>
@@ -329,6 +437,7 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
             <div style={{ fontSize: '0.62rem', color: 'var(--color-muted)', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
               <AlertTriangle size={12} /> EPU Trend (All Data)
             </div>
+            <div style={{ fontSize: '0.55rem', color: '#94a3b8', marginBottom: '0.2rem' }} data-testid="epu-date-range-label">{epuDateRange}</div>
             <ResponsiveContainer width="100%" height={175}>
               <LineChart data={epuHistory} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
