@@ -26,7 +26,7 @@ const TIME_RANGES = [
   { key: 'ALL', label: 'All', months: null }
 ];
 
-const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, isCurrentAccount = false, isPkrUsd = false, isForexReserves = false, isLiquidForex = false, isGovDebt = false }) => {
+const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, isCurrentAccount = false, isPkrUsd = false, isForexReserves = false, isLiquidForex = false, isGovDebt = false, isFDI = false }) => {
   const [selectedRange, setSelectedRange] = useState('1Y');
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [showPctChange, setShowPctChange] = useState(false);
@@ -93,6 +93,10 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
   }, [data, selectedRange]);
 
   const formatValue = (value) => {
+    if (isFDI) {
+      const abs = Math.abs(Number(value));
+      return `${value >= 0 ? '+' : '-'}$${abs.toFixed(0)}M`;
+    }
     if (isGovDebt) {
       return `₨${Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 })}B`;
     }
@@ -506,6 +510,9 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
                     if (isPkrUsd) {
                       return `₨${val.toFixed(0)}`;
                     }
+                    if (isFDI) {
+                      return `$${val.toFixed(0)}M`;
+                    }
                     if (isGovDebt) {
                       return `₨${(val / 1000).toFixed(1)}T`;
                     }
@@ -515,7 +522,7 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
                   tick={{ fill: '#64748b', fontSize: 11 }}
                   axisLine={{ stroke: '#1e293b' }}
                   tickLine={{ stroke: '#1e293b' }}
-                  domain={isPkrUsd ? ['auto', 'auto'] : [0, 'auto']}
+                  domain={(isPkrUsd || isFDI) ? ['auto', 'auto'] : [0, 'auto']}
                   width={60}
                 />
                 <Tooltip content={<CustomTooltip />} />

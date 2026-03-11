@@ -54,6 +54,13 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
   - Added clickable series legend toggles for BCI and All-Sectors trend charts
   - Unselected series now stay in legend but appear **dull** (lower opacity)
   - Verified date span labels in charts show **Oct 2017 - Feb 2026** where available
+- [x] Business Environment date-range correctness hardening:
+  - Confidence/EPU history now filtered to expected window (from Oct 2017 forward)
+  - Cache refresh guard improved to auto-refresh stale range ends (e.g., Jan when Feb is available)
+- [x] Added **FDI** to Economic Indicators:
+  - New endpoint `/api/fdi` from SBP series `TS_GP_FI_SUMFIPK_M.FI00030`
+  - Economic card + modal integrated in existing style
+  - Semantics kept as requested: FDI increase shown green, decrease shown red
 - [x] Debt semantics corrected end-to-end:
   - For Gov. Debt, **increase = red (bad)** and **decrease = green (good)** on card + modal + % change bars
 - [x] Added **Central Government Debt** to Economic Indicators:

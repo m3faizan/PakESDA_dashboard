@@ -17,6 +17,7 @@ const EconomicPanel = ({ data, loading }) => {
   const [psxData, setPsxData] = useState(null);
   const [liquidForexData, setLiquidForexData] = useState(null);
   const [govDebtData, setGovDebtData] = useState(null);
+  const [fdiData, setFdiData] = useState(null);
   const [dataLoading, setDataLoading] = useState(true);
   
   const [activeModal, setActiveModal] = useState(null);
@@ -24,7 +25,7 @@ const EconomicPanel = ({ data, loading }) => {
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const [remittancesRes, goldRes, forexRes, currentAccountRes, importsRes, exportsRes, pkrUsdRes, psxRes, liquidForexRes, govDebtRes] = await Promise.allSettled([
+        const [remittancesRes, goldRes, forexRes, currentAccountRes, importsRes, exportsRes, pkrUsdRes, psxRes, liquidForexRes, govDebtRes, fdiRes] = await Promise.allSettled([
           axios.get(`${API_BASE}/api/remittances`),
           axios.get(`${API_BASE}/api/gold-reserves`),
           axios.get(`${API_BASE}/api/forex-reserves`),
@@ -34,7 +35,8 @@ const EconomicPanel = ({ data, loading }) => {
           axios.get(`${API_BASE}/api/pkr-usd`),
           axios.get(`${API_BASE}/api/psx-data`),
           axios.get(`${API_BASE}/api/liquid-forex`),
-          axios.get(`${API_BASE}/api/gov-debt`)
+          axios.get(`${API_BASE}/api/gov-debt`),
+          axios.get(`${API_BASE}/api/fdi`)
         ]);
 
         if (remittancesRes.status === 'fulfilled') {
@@ -66,6 +68,9 @@ const EconomicPanel = ({ data, loading }) => {
         }
         if (govDebtRes.status === 'fulfilled') {
           setGovDebtData(govDebtRes.value.data.data);
+        }
+        if (fdiRes.status === 'fulfilled') {
+          setFdiData(fdiRes.value.data.data);
         }
       } catch (error) {
         console.error('Error fetching economic data:', error);
@@ -114,6 +119,15 @@ const EconomicPanel = ({ data, loading }) => {
   const formatDebtBillions = (value) => {
     if (value === null || value === undefined) return '₨--';
     return `₨${Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 })}B`;
+  };
+
+  const formatFDIValue = (value) => {
+    if (value === null || value === undefined) return '$--';
+    const abs = Math.abs(Number(value));
+    if (abs >= 1000) {
+      return `${value >= 0 ? '+' : '-'}$${(abs / 1000).toFixed(2)}B`;
+    }
+    return `${value >= 0 ? '+' : '-'}$${abs.toFixed(0)}M`;
   };
 
   const indicators = [
@@ -212,6 +226,16 @@ const EconomicPanel = ({ data, loading }) => {
       isGovDebt: true
     },
     {
+      label: 'FDI',
+      value: formatFDIValue(fdiData?.latest?.value),
+      subLabel: fdiData?.latest?.month || '',
+      change: fdiData?.mom_change,
+      prefix: '',
+      clickable: true,
+      modalKey: 'fdi',
+      isLive: !dataLoading && fdiData
+    },
+    {
       label: 'Liquid FX', 
       value: formatBillions(liquidForexData?.latest?.value),
       subLabel: liquidForexData?.latest?.dateFormatted || '',
@@ -252,6 +276,8 @@ const EconomicPanel = ({ data, loading }) => {
         return { data: liquidForexData, title: "Liquid Foreign Exchange Reserves", icon: Droplets, isLiquidForex: true };
       case 'govDebt':
         return { data: govDebtData, title: "Central Government Debt", icon: Landmark, isGovDebt: true };
+      case 'fdi':
+        return { data: fdiData, title: "Foreign Direct Investment", icon: DollarSign, isFDI: true };
       default:
         return null;
     }
@@ -351,6 +377,7 @@ const EconomicPanel = ({ data, loading }) => {
           isForexReserves={modalInfo.isForexReserves}
           isLiquidForex={modalInfo.isLiquidForex}
           isGovDebt={modalInfo.isGovDebt}
+          isFDI={modalInfo.isFDI}
         />
       )}
 

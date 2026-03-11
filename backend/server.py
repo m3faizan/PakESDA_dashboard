@@ -85,6 +85,7 @@ data_cache = {
     "current_account": {"data": {}, "updated": None},
     "imports": {"data": {}, "updated": None},
     "exports": {"data": {}, "updated": None},
+    "fdi": {"data": {}, "updated": None},
     "gov_debt": {"data": {}, "updated": None},
     "business_environment": {"data": {}, "updated": None},
     "road_advisory": {"data": [], "updated": None},
@@ -113,6 +114,7 @@ SBP_CURRENT_ACCOUNT_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BOP_B
 SBP_IMPORTS_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BOP_XMGS_M.P00320/data"
 SBP_EXPORTS_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BOP_XMGS_M.P00170/data"
 SBP_PKR_USD_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_ES_FADERPKR_M.XRDAVG0220/data"
+SBP_FDI_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_FI_SUMFIPK_M.FI00030/data"
 SBP_GOV_DEBT_TOTAL_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BAM_CENGOVTD_M.CGD00490/data"
 SBP_GOV_DEBT_INTERNAL_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BAM_CENGOVTD_M.CGD00010/data"
 SBP_GOV_DEBT_EXTERNAL_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BAM_CENGOVTD_M.CGD00460/data"
@@ -662,6 +664,88 @@ async def fetch_exports_data():
     return await fetch_sbp_reserves_data(SBP_EXPORTS_URL, "Exports", "1990-01-01")
 
 
+async def fetch_fdi_data():
+    """Fetch net foreign direct investment in Pakistan"""
+    try:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            response = await client.get(
+                SBP_FDI_URL,
+                params={
+                    "api_key": SBP_API_KEY,
+                    "start_date": "2010-01-01",
+                    "end_date": datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                }
+            )
+
+        if response.status_code != 200:
+            return None
+
+        rows = response.json().get("rows", [])
+        if len(rows) < 2:
+            return None
+
+        history = []
+        for row in rows:
+            try:
+                if not row[3] or row[4] is None:
+                    continue
+                history.append({
+                    "date": row[3],
+                    "value": float(row[4]),
+                    "unit": row[5] if len(row) > 5 else "Million USD"
+                })
+            except (ValueError, TypeError, IndexError):
+                continue
+
+        if len(history) < 2:
+            return None
+
+        latest = history[0]
+        previous = history[1]
+        latest_date = datetime.strptime(latest["date"], "%Y-%m-%d")
+        month_name = latest_date.strftime("%B %Y")
+
+        value_diff = latest["value"] - previous["value"]
+        denominator = abs(previous["value"]) if previous["value"] else None
+        mom_change = (value_diff / denominator) * 100 if denominator else None
+
+        yoy_value = None
+        for item in history:
+            item_date = datetime.strptime(item["date"], "%Y-%m-%d")
+            months_diff = (latest_date.year - item_date.year) * 12 + (latest_date.month - item_date.month)
+            if months_diff == 12:
+                yoy_value = item["value"]
+                break
+
+        yoy_change = None
+        if yoy_value is not None and yoy_value != 0:
+            yoy_change = ((latest["value"] - yoy_value) / abs(yoy_value)) * 100
+
+        return {
+            "latest": {
+                "value": round(latest["value"], 2),
+                "month": month_name,
+                "date": latest["date"],
+                "unit": "Million USD"
+            },
+            "previous": {
+                "value": round(previous["value"], 2),
+                "date": previous["date"]
+            },
+            "mom_change": round(mom_change, 2) if mom_change is not None else None,
+            "yoy_change": round(yoy_change, 2) if yoy_change is not None else None,
+            "flow_direction": "inflow" if latest["value"] >= 0 else "outflow",
+            "history": history,
+            "source": "State Bank of Pakistan",
+            "name": "Foreign Direct Investment",
+            "updated": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        print(f"Error fetching FDI data: {e}")
+
+    return None
+
+
 async def fetch_gov_debt_data():
     """Fetch Central Government Debt (total + internal + external) from SBP EasyData"""
     try:
@@ -909,6 +993,38 @@ async def fetch_business_environment_data():
 
         merged_history = sorted(history_map.values(), key=lambda item: item["date"])
 
+        min_confidence_date = "2017-10-01"
+        max_confidence_date = cbci_summary["latest"]["date"] if cbci_summary.get("latest") else (
+            bci_summary["latest"]["date"] if bci_summary.get("latest") else None
+        )
+
+        confidence_history = [
+            {
+                "date": item["date"],
+                "bci": item.get("bci"),
+                "cbci": item.get("cbci"),
+                "ebci": item.get("ebci"),
+                "manufacturing": item.get("manufacturing"),
+                "construction": item.get("construction"),
+                "wholesale_retail": item.get("wholesale_retail"),
+                "other_services": item.get("other_services")
+            }
+            for item in merged_history
+            if (item.get("bci") is not None or item.get("cbci") is not None or item.get("ebci") is not None)
+            and item["date"] >= min_confidence_date
+            and (max_confidence_date is None or item["date"] <= max_confidence_date)
+        ]
+
+        epu_history = [
+            {
+                "date": item["date"],
+                "epu4": item.get("epu4"),
+                "epu2": item.get("epu2")
+            }
+            for item in merged_history
+            if item.get("epu4") is not None and item["date"] >= min_confidence_date
+        ]
+
         sector_mappings = [
             ("Manufacturing", "sector_manufacturing"),
             ("Construction", "sector_construction"),
@@ -953,14 +1069,8 @@ async def fetch_business_environment_data():
                 "headline": epu4_summary,
                 "comparison_2_newspapers": epu2_summary,
                 "description": "Policy uncertainty index based on Economy, Policy, and Uncertainty coverage in leading Pakistani newspapers. Higher values imply higher uncertainty.",
-                "history": [
-                    {
-                        "date": item["date"],
-                        "epu4": item.get("epu4"),
-                        "epu2": item.get("epu2")
-                    }
-                    for item in merged_history if item.get("epu4") is not None
-                ]
+                "history": epu_history,
+                "date_range": f"{epu_history[0]['date']} to {epu_history[-1]['date']}" if epu_history else None
             },
             "confidence": {
                 "headline": {
@@ -972,20 +1082,8 @@ async def fetch_business_environment_data():
                     "latest": sectors_latest
                 },
                 "drivers": drivers,
-                "history": [
-                    {
-                        "date": item["date"],
-                        "bci": item.get("bci"),
-                        "cbci": item.get("cbci"),
-                        "ebci": item.get("ebci"),
-                        "manufacturing": item.get("manufacturing"),
-                        "construction": item.get("construction"),
-                        "wholesale_retail": item.get("wholesale_retail"),
-                        "other_services": item.get("other_services")
-                    }
-                    for item in merged_history
-                    if item.get("bci") is not None or item.get("cbci") is not None or item.get("ebci") is not None
-                ]
+                "history": confidence_history,
+                "date_range": f"{confidence_history[0]['date']} to {confidence_history[-1]['date']}" if confidence_history else None
             },
             "latest_month": latest_month,
             "coverage": {
@@ -2350,6 +2448,25 @@ async def get_exports():
     }
 
 
+@app.get("/api/fdi")
+async def get_fdi():
+    """Get Foreign Direct Investment data"""
+    # Refresh every 6 hours
+    if data_cache["fdi"]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache["fdi"]["updated"]).total_seconds()
+        if age > 21600:
+            data_cache["fdi"]["data"] = await fetch_fdi_data()
+            data_cache["fdi"]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache["fdi"]["data"] = await fetch_fdi_data()
+        data_cache["fdi"]["updated"] = datetime.now(timezone.utc)
+
+    return {
+        "data": data_cache["fdi"]["data"],
+        "updated": data_cache["fdi"]["updated"].isoformat() if data_cache["fdi"]["updated"] else None
+    }
+
+
 @app.get("/api/gov-debt")
 async def get_gov_debt():
     """Get Central Government Debt data (total + internal + external)"""
@@ -2381,7 +2498,18 @@ async def get_business_environment():
         age = (datetime.now(timezone.utc) - data_cache["business_environment"]["updated"]).total_seconds()
         history = cached_data.get("confidence", {}).get("history", []) if isinstance(cached_data, dict) else []
         earliest_date = history[0].get("date") if history else None
-        should_refresh = age > 21600 or (earliest_date and earliest_date > "2017-10-01")
+        latest_date = history[-1].get("date") if history else None
+
+        now_utc = datetime.now(timezone.utc)
+        prev_month_year = now_utc.year if now_utc.month > 1 else now_utc.year - 1
+        prev_month = now_utc.month - 1 if now_utc.month > 1 else 12
+        expected_latest_min = f"{prev_month_year}-{prev_month:02d}-01"
+
+        should_refresh = (
+            age > 21600
+            or (earliest_date is not None and earliest_date != "2017-10-01")
+            or (latest_date is not None and latest_date < expected_latest_min)
+        )
 
     if should_refresh:
         data_cache["business_environment"]["data"] = await fetch_business_environment_data()
