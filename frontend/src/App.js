@@ -23,6 +23,7 @@ import MarineTrafficPanel from './components/MarineTrafficPanel';
 import GovernancePanel from './components/GovernancePanel';
 import RoadAdvisoryPanel from './components/RoadAdvisoryPanel';
 import InflationPanel from './components/InflationPanel';
+import BusinessEnvironmentPanel from './components/BusinessEnvironmentPanel';
 import MapSection from './components/MapSection';
 import NewsTicker from './components/NewsTicker';
 
@@ -171,6 +172,7 @@ function App() {
           <div className="bottom-panels">
             <EconomicPanel data={economic} loading={loading} />
             <InflationPanel loading={loading} />
+            <BusinessEnvironmentPanel loading={loading} />
             <WeatherPanel cities={weather} loading={loading} />
             <RegionalPanel relations={regional} loading={loading} />
             <InfrastructurePanel data={infrastructure} loading={loading} />

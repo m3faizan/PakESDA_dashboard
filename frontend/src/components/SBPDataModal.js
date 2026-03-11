@@ -162,8 +162,10 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
       : data?.mom_change;
   const yoyChange = data?.yoy_change;
   const hasMomChange = momChange !== null && momChange !== undefined;
-  const isMomPositive = (momChange || 0) >= 0;
-  const isYoyPositive = yoyChange >= 0;
+  const isMomIncrease = (momChange || 0) >= 0;
+  const isYoyIncrease = (yoyChange || 0) >= 0;
+  const isMomPositive = isGovDebt ? !isMomIncrease : isMomIncrease;
+  const isYoyPositive = isGovDebt ? !isYoyIncrease : isYoyIncrease;
 
   const formatBreakdownValue = (value) => {
     if (value === null || value === undefined) {
@@ -216,14 +218,14 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
           <div className="summary-changes">
             {hasMomChange && (
               <div className={`summary-change ${isMomPositive ? 'positive' : 'negative'}`} data-testid="primary-change-summary">
-                {isMomPositive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                {isMomIncrease ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
                 <span>{formatChange(momChange)}</span>
                 <span className="change-label">{isPkrUsd ? 'Daily' : isLiquidForex ? 'WoW' : 'MoM'}</span>
               </div>
             )}
             {yoyChange !== null && yoyChange !== undefined && (
               <div className={`summary-change ${isYoyPositive ? 'positive' : 'negative'}`}>
-                {isYoyPositive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                {isYoyIncrease ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
                 <span>{formatChange(yoyChange)}</span>
                 <span className="change-label">YoY</span>
               </div>
@@ -459,7 +461,7 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
                         <div className="remittances-tooltip">
                           <p className="tooltip-date">{formattedDate}</p>
                           <p className="tooltip-value" style={{ 
-                            color: pctChange >= 0 ? '#22C55E' : '#EF4444'
+                            color: isGovDebt ? (pctChange >= 0 ? '#EF4444' : '#22C55E') : (pctChange >= 0 ? '#22C55E' : '#EF4444')
                           }}>
                             {pctChange >= 0 ? '+' : ''}{pctChange.toFixed(2)}%
                           </p>
@@ -473,7 +475,7 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
                   {filteredData.map((entry, index) => (
                     <Cell 
                       key={`cell-${index}`} 
-                      fill={entry.pct_change >= 0 ? '#22C55E' : '#EF4444'} 
+                      fill={isGovDebt ? (entry.pct_change >= 0 ? '#EF4444' : '#22C55E') : (entry.pct_change >= 0 ? '#22C55E' : '#EF4444')} 
                       fillOpacity={0.8}
                     />
                   ))}

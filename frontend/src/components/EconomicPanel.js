@@ -208,7 +208,8 @@ const EconomicPanel = ({ data, loading }) => {
       prefix: '',
       clickable: true,
       modalKey: 'govDebt',
-      isLive: !dataLoading && govDebtData
+      isLive: !dataLoading && govDebtData,
+      isGovDebt: true
     },
     {
       label: 'Liquid FX', 
@@ -299,6 +300,8 @@ const EconomicPanel = ({ data, loading }) => {
                 <div className={`economic-change ${
                   item.isImports 
                     ? (item.change <= 0 ? 'positive' : 'negative')  // Imports: decrease is good
+                    : item.isGovDebt
+                      ? (item.change <= 0 ? 'positive' : 'negative')  // Gov debt: decrease is good
                     : item.isCurrentAccount 
                       ? (item.change >= 0 ? 'positive' : 'negative')
                       : (item.change >= 0 ? 'positive' : 'negative')
@@ -311,6 +314,11 @@ const EconomicPanel = ({ data, loading }) => {
                   ) : item.isImports ? (
                     <>
                       {item.change <= 0 ? <TrendingDown size={12} /> : <TrendingUp size={12} />}
+                      {Math.abs(item.change).toFixed(2)}%
+                    </>
+                  ) : item.isGovDebt ? (
+                    <>
+                      {item.change >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                       {Math.abs(item.change).toFixed(2)}%
                     </>
                   ) : (

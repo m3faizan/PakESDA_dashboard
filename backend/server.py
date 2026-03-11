@@ -86,6 +86,7 @@ data_cache = {
     "imports": {"data": {}, "updated": None},
     "exports": {"data": {}, "updated": None},
     "gov_debt": {"data": {}, "updated": None},
+    "business_environment": {"data": {}, "updated": None},
     "road_advisory": {"data": [], "updated": None},
     "pkr_usd": {"data": {}, "updated": None},
     "psx_data": {"data": {}, "updated": None},
@@ -115,6 +116,25 @@ SBP_PKR_USD_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_ES_FADERPKR_M
 SBP_GOV_DEBT_TOTAL_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BAM_CENGOVTD_M.CGD00490/data"
 SBP_GOV_DEBT_INTERNAL_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BAM_CENGOVTD_M.CGD00010/data"
 SBP_GOV_DEBT_EXTERNAL_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BAM_CENGOVTD_M.CGD00460/data"
+
+BUSINESS_ENV_SERIES = {
+    "epu_4": "TS_GP_MFS_EPUI_M.EPUI4",
+    "epu_2": "TS_GP_MFS_EPUI_M.EPUI2",
+    "bci": "TS_GP_RL_BCSIND_M.BCI",
+    "cbci": "TS_GP_RL_BCSIND_M.CBCI",
+    "ebci": "TS_GP_RL_BCSIND_M.EBCI",
+    "sector_manufacturing": "TS_GP_RL_BCSIND_M.BCI_IM",
+    "sector_construction": "TS_GP_RL_BCSIND_M.BCI_IC",
+    "sector_wholesale_retail": "TS_GP_RL_BCSIND_M.BCI_ST",
+    "sector_other_services": "TS_GP_RL_BCSIND_M.BCI_SOS",
+    "driver_general_current": "TS_GP_RL_BCSIND_M.BCI_O1",
+    "driver_general_expected": "TS_GP_RL_BCSIND_M.BCI_O2",
+    "driver_inflation_expected": "TS_GP_RL_BCSIND_M.BCI_O4",
+    "driver_employment_current": "TS_GP_RL_BCSIND_M.BCI_O7",
+    "driver_employment_expected": "TS_GP_RL_BCSIND_M.BCI_O8",
+    "driver_credit_current": "TS_GP_RL_BCSIND_M.BCI_O9",
+    "driver_credit_expected": "TS_GP_RL_BCSIND_M.BCI_O10"
+}
 
 # Liquid Foreign Exchange Reserves (weekly data scraped from PDF)
 SBP_LIQUID_FX_PDF_URL = "https://www.sbp.org.pk/ecodata/forex.pdf"
@@ -774,6 +794,213 @@ async def fetch_gov_debt_data():
         print(f"Error fetching government debt data: {e}")
 
     return None
+
+
+async def fetch_sbp_series_data(series_code: str, start_date: str = "2018-01-01"):
+    """Fetch one SBP series and return ascending monthly history."""
+    url = f"https://easydata.sbp.org.pk/api/v1/series/{series_code}/data"
+    try:
+        async with httpx.AsyncClient(timeout=25.0) as client:
+            response = await client.get(
+                url,
+                params={
+                    "api_key": SBP_API_KEY,
+                    "start_date": start_date,
+                    "end_date": datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                }
+            )
+
+        if response.status_code != 200:
+            return []
+
+        rows = response.json().get("rows", [])
+        history = []
+        for row in rows:
+            try:
+                if not row[3] or row[4] is None:
+                    continue
+                history.append({
+                    "date": row[3],
+                    "value": float(row[4])
+                })
+            except (IndexError, ValueError, TypeError):
+                continue
+
+        history.sort(key=lambda item: item["date"])
+        return history
+    except Exception as e:
+        print(f"Error fetching SBP series {series_code}: {e}")
+        return []
+
+
+def summarize_monthly_series(history, inverse_good=False):
+    if not history:
+        return {
+            "latest": None,
+            "previous": None,
+            "mom_change": None,
+            "trend_signal": "neutral"
+        }
+
+    latest = history[-1]
+    previous = history[-2] if len(history) > 1 else None
+    mom_change = None
+    trend_signal = "neutral"
+
+    if previous and previous["value"]:
+        mom_change = ((latest["value"] - previous["value"]) / previous["value"]) * 100
+        if inverse_good:
+            trend_signal = "positive" if mom_change <= 0 else "negative"
+        else:
+            trend_signal = "positive" if mom_change >= 0 else "negative"
+
+    latest_date = datetime.strptime(latest["date"], "%Y-%m-%d")
+
+    return {
+        "latest": {
+            "value": round(latest["value"], 2),
+            "date": latest["date"],
+            "month": latest_date.strftime("%B %Y")
+        },
+        "previous": {
+            "value": round(previous["value"], 2),
+            "date": previous["date"]
+        } if previous else None,
+        "mom_change": round(mom_change, 2) if mom_change is not None else None,
+        "trend_signal": trend_signal
+    }
+
+
+async def fetch_business_environment_data():
+    """Fetch EPU + Business Confidence dataset slices for Business Environment panel."""
+    try:
+        fetch_tasks = [
+            fetch_sbp_series_data(series_code, "2019-01-01")
+            for series_code in BUSINESS_ENV_SERIES.values()
+        ]
+        results = await asyncio.gather(*fetch_tasks)
+        series_histories = {
+            key: results[idx]
+            for idx, key in enumerate(BUSINESS_ENV_SERIES.keys())
+        }
+
+        epu4_summary = summarize_monthly_series(series_histories["epu_4"], inverse_good=True)
+        epu2_summary = summarize_monthly_series(series_histories["epu_2"], inverse_good=True)
+        bci_summary = summarize_monthly_series(series_histories["bci"])
+        cbci_summary = summarize_monthly_series(series_histories["cbci"])
+        ebci_summary = summarize_monthly_series(series_histories["ebci"])
+
+        history_map = {}
+
+        def merge_series(series_key, output_key):
+            for item in series_histories.get(series_key, []):
+                row = history_map.setdefault(item["date"], {"date": item["date"]})
+                row[output_key] = round(item["value"], 2)
+
+        merge_series("bci", "bci")
+        merge_series("cbci", "cbci")
+        merge_series("ebci", "ebci")
+        merge_series("epu_4", "epu4")
+        merge_series("epu_2", "epu2")
+        merge_series("sector_manufacturing", "manufacturing")
+        merge_series("sector_construction", "construction")
+        merge_series("sector_wholesale_retail", "wholesale_retail")
+        merge_series("sector_other_services", "other_services")
+
+        merged_history = sorted(history_map.values(), key=lambda item: item["date"])
+
+        sector_mappings = [
+            ("Manufacturing", "sector_manufacturing"),
+            ("Construction", "sector_construction"),
+            ("Wholesale & Retail", "sector_wholesale_retail"),
+            ("Other Services", "sector_other_services")
+        ]
+
+        sectors_latest = []
+        for label, key in sector_mappings:
+            summary = summarize_monthly_series(series_histories[key])
+            sectors_latest.append({
+                "name": label,
+                "value": summary["latest"]["value"] if summary["latest"] else None,
+                "mom_change": summary["mom_change"],
+                "trend_signal": summary["trend_signal"]
+            })
+
+        drivers = {
+            "general_economic": {
+                "current": summarize_monthly_series(series_histories["driver_general_current"]),
+                "expected": summarize_monthly_series(series_histories["driver_general_expected"])
+            },
+            "employment": {
+                "current": summarize_monthly_series(series_histories["driver_employment_current"]),
+                "expected": summarize_monthly_series(series_histories["driver_employment_expected"])
+            },
+            "demand_for_credit": {
+                "current": summarize_monthly_series(series_histories["driver_credit_current"]),
+                "expected": summarize_monthly_series(series_histories["driver_credit_expected"])
+            },
+            "inflation_expectation": {
+                "expected": summarize_monthly_series(series_histories["driver_inflation_expected"], inverse_good=True)
+            }
+        }
+
+        latest_month = cbci_summary["latest"]["month"] if cbci_summary["latest"] else (
+            epu4_summary["latest"]["month"] if epu4_summary["latest"] else "N/A"
+        )
+
+        return {
+            "epu": {
+                "headline": epu4_summary,
+                "comparison_2_newspapers": epu2_summary,
+                "description": "Policy uncertainty index based on Economy, Policy, and Uncertainty coverage in leading Pakistani newspapers. Higher values imply higher uncertainty.",
+                "history": [
+                    {
+                        "date": item["date"],
+                        "epu4": item.get("epu4"),
+                        "epu2": item.get("epu2")
+                    }
+                    for item in merged_history if item.get("epu4") is not None
+                ]
+            },
+            "confidence": {
+                "headline": {
+                    "overall": bci_summary,
+                    "current": cbci_summary,
+                    "expected": ebci_summary
+                },
+                "sectors": {
+                    "latest": sectors_latest
+                },
+                "drivers": drivers,
+                "history": [
+                    {
+                        "date": item["date"],
+                        "bci": item.get("bci"),
+                        "cbci": item.get("cbci"),
+                        "ebci": item.get("ebci"),
+                        "manufacturing": item.get("manufacturing"),
+                        "construction": item.get("construction"),
+                        "wholesale_retail": item.get("wholesale_retail"),
+                        "other_services": item.get("other_services")
+                    }
+                    for item in merged_history
+                    if item.get("bci") is not None or item.get("cbci") is not None or item.get("ebci") is not None
+                ]
+            },
+            "latest_month": latest_month,
+            "coverage": {
+                "epu_series_available": 2,
+                "bci_series_available": 107,
+                "series_used_in_panel": len(BUSINESS_ENV_SERIES)
+            },
+            "source": "State Bank of Pakistan",
+            "methodology_url": "https://www.sbp.org.pk/research/BCS-m.asp",
+            "surveys_info_url": "https://www.sbp.org.pk/research/intro.asp",
+            "updated": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        print(f"Error fetching business environment data: {e}")
+        return None
 
 async def fetch_pkr_usd_data():
     """Fetch PKR/USD exchange rate data from State Bank of Pakistan"""
@@ -2139,6 +2366,25 @@ async def get_gov_debt():
     return {
         "data": data_cache["gov_debt"]["data"],
         "updated": data_cache["gov_debt"]["updated"].isoformat() if data_cache["gov_debt"]["updated"] else None
+    }
+
+
+@app.get("/api/business-environment")
+async def get_business_environment():
+    """Get EPU + Business Confidence composite dataset for Business Environment panel"""
+    # Refresh every 6 hours (monthly survey/index data)
+    if data_cache["business_environment"]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache["business_environment"]["updated"]).total_seconds()
+        if age > 21600:
+            data_cache["business_environment"]["data"] = await fetch_business_environment_data()
+            data_cache["business_environment"]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache["business_environment"]["data"] = await fetch_business_environment_data()
+        data_cache["business_environment"]["updated"] = datetime.now(timezone.utc)
+
+    return {
+        "data": data_cache["business_environment"]["data"],
+        "updated": data_cache["business_environment"]["updated"].isoformat() if data_cache["business_environment"]["updated"] else None
     }
 
 
