@@ -875,7 +875,7 @@ async def fetch_business_environment_data():
     """Fetch EPU + Business Confidence dataset slices for Business Environment panel."""
     try:
         fetch_tasks = [
-            fetch_sbp_series_data(series_code, "2019-01-01")
+            fetch_sbp_series_data(series_code, "2017-10-01")
             for series_code in BUSINESS_ENV_SERIES.values()
         ]
         results = await asyncio.gather(*fetch_tasks)
@@ -2373,12 +2373,17 @@ async def get_gov_debt():
 async def get_business_environment():
     """Get EPU + Business Confidence composite dataset for Business Environment panel"""
     # Refresh every 6 hours (monthly survey/index data)
-    if data_cache["business_environment"]["updated"]:
-        age = (datetime.now(timezone.utc) - data_cache["business_environment"]["updated"]).total_seconds()
-        if age > 21600:
-            data_cache["business_environment"]["data"] = await fetch_business_environment_data()
-            data_cache["business_environment"]["updated"] = datetime.now(timezone.utc)
+    should_refresh = False
+    cached_data = data_cache["business_environment"]["data"]
+    if not data_cache["business_environment"]["updated"] or not cached_data:
+        should_refresh = True
     else:
+        age = (datetime.now(timezone.utc) - data_cache["business_environment"]["updated"]).total_seconds()
+        history = cached_data.get("confidence", {}).get("history", []) if isinstance(cached_data, dict) else []
+        earliest_date = history[0].get("date") if history else None
+        should_refresh = age > 21600 or (earliest_date and earliest_date > "2017-10-01")
+
+    if should_refresh:
         data_cache["business_environment"]["data"] = await fetch_business_environment_data()
         data_cache["business_environment"]["updated"] = datetime.now(timezone.utc)
 

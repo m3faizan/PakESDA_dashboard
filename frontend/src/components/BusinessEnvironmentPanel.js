@@ -38,8 +38,8 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
     fetchBusinessEnvironment();
   }, []);
 
-  const confidenceHistory = useMemo(() => (data?.confidence?.history || []).slice(-24), [data]);
-  const epuHistory = useMemo(() => (data?.epu?.history || []).slice(-24), [data]);
+  const confidenceHistory = useMemo(() => data?.confidence?.history || [], [data]);
+  const epuHistory = useMemo(() => data?.epu?.history || [], [data]);
   const sectorTrendHistory = useMemo(() => data?.confidence?.history || [], [data]);
 
   const formatDateTick = (dateStr) => {
@@ -224,14 +224,14 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
                 background: activeTab === tab ? 'rgba(34, 197, 94, 0.15)' : 'transparent'
               }}
             >
-              {tab}
+              {tab === 'epu' ? 'EPU' : tab}
             </button>
           ))}
         </div>
 
         {activeTab === 'overview' && (
           <div style={{ border: '1px solid var(--color-border)', padding: '0.4rem', background: 'rgba(2, 6, 23, 0.45)' }} data-testid="business-overview-view">
-            <div style={{ fontSize: '0.62rem', color: 'var(--color-muted)', marginBottom: '0.35rem' }}>Business Confidence Trend (24M)</div>
+            <div style={{ fontSize: '0.62rem', color: 'var(--color-muted)', marginBottom: '0.35rem' }}>Business Confidence Trend (All Data)</div>
             <ResponsiveContainer width="100%" height={175}>
               <LineChart data={confidenceHistory} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
@@ -327,7 +327,7 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
         {activeTab === 'epu' && (
           <div style={{ border: '1px solid var(--color-border)', padding: '0.4rem', background: 'rgba(2, 6, 23, 0.45)' }} data-testid="business-epu-view">
             <div style={{ fontSize: '0.62rem', color: 'var(--color-muted)', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-              <AlertTriangle size={12} /> Economic Policy Uncertainty Trend (24M)
+              <AlertTriangle size={12} /> EPU Trend (All Data)
             </div>
             <ResponsiveContainer width="100%" height={175}>
               <LineChart data={epuHistory} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>

@@ -47,6 +47,9 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
   - Overview now shows **BCI trend only**
   - Added dedicated **EPU** block/tab beside Drivers to view EPU trend chart on click
   - Sectors view now includes a selector: default snapshot (all sectors current month) + per-sector full historical trend
+- [x] Business Environment history depth update:
+  - BCI trend, EPU trend, and sector trend views now use **all available historical data** (starting around Oct 2017 where available)
+  - Updated tab label casing from "Epu" to **"EPU"**
 - [x] Debt semantics corrected end-to-end:
   - For Gov. Debt, **increase = red (bad)** and **decrease = green (good)** on card + modal + % change bars
 - [x] Added **Central Government Debt** to Economic Indicators:
