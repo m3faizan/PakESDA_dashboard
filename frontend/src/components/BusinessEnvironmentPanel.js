@@ -45,6 +45,40 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
     return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
   };
 
+  const renderCompactTooltip = (unit = '') => ({ active, payload, label }) => {
+    if (!active || !payload || payload.length === 0) return null;
+
+    const date = new Date(label);
+    const formattedDate = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+    return (
+      <div
+        data-testid="business-chart-tooltip"
+        style={{
+          background: 'rgba(11, 18, 32, 0.96)',
+          border: '1px solid rgba(51, 65, 85, 0.9)',
+          borderRadius: '8px',
+          padding: '8px 10px',
+          minWidth: '130px',
+          boxShadow: '0 6px 18px rgba(2, 6, 23, 0.45)'
+        }}
+      >
+        <div style={{ fontSize: '0.63rem', color: '#cbd5e1', marginBottom: '5px' }}>{formattedDate}</div>
+        {payload.map((entry) => (
+          <div
+            key={`${entry.dataKey}-${entry.value}`}
+            style={{ display: 'flex', justifyContent: 'space-between', gap: '0.45rem', fontSize: '0.7rem', color: '#e2e8f0' }}
+          >
+            <span style={{ color: entry.color }}>{entry.name || entry.dataKey}</span>
+            <span style={{ fontFamily: 'var(--font-mono)' }}>
+              {Number(entry.value || 0).toFixed(2)}{unit}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   const getSignal = (change, inverse = false) => {
     if (change === null || change === undefined) return { cls: 'neutral', good: false, increase: false };
     const increase = change >= 0;
@@ -188,7 +222,7 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                   <XAxis dataKey="date" tickFormatter={formatDateTick} tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" minTickGap={35} />
                   <YAxis tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" width={34} domain={['auto', 'auto']} />
-                  <Tooltip />
+                  <Tooltip content={renderCompactTooltip()} />
                   <Legend wrapperStyle={{ fontSize: '0.65rem' }} />
                   <Line type="monotone" dataKey="bci" name="Overall" stroke="#22C55E" dot={false} strokeWidth={2} />
                   <Line type="monotone" dataKey="cbci" name="Current" stroke="#38BDF8" dot={false} strokeWidth={1.8} />
@@ -206,7 +240,7 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                   <XAxis dataKey="date" tickFormatter={formatDateTick} tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" minTickGap={35} />
                   <YAxis tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" width={34} domain={['auto', 'auto']} />
-                  <Tooltip />
+                  <Tooltip content={renderCompactTooltip()} />
                   <Line type="monotone" dataKey="epu4" name="4 Newspapers" stroke="#EF4444" dot={false} strokeWidth={2} />
                   <Line type="monotone" dataKey="epu2" name="2 Newspapers" stroke="#A855F7" dot={false} strokeWidth={1.6} />
                 </LineChart>
@@ -223,7 +257,7 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                 <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" interval={0} angle={-10} textAnchor="end" height={40} />
                 <YAxis tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" width={34} domain={['auto', 'auto']} />
-                <Tooltip />
+                <Tooltip content={renderCompactTooltip()} />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                   {sectors.map((entry, idx) => (
                     <Cell key={`sector-cell-${idx}`} fill={(entry.value || 0) >= 50 ? '#22C55E' : '#F59E0B'} />

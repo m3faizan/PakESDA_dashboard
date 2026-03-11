@@ -40,6 +40,9 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
   - KPI cards: EPU (4 newspapers), Current BCI, Expected BCI
   - Tabbed analysis views: **Overview** (trend lines), **Sectors** (bar chart), **Drivers** (current vs expected metrics)
   - Coverage metadata included (selected series vs available BCI series)
+- [x] Business Environment tooltip readability pass:
+  - Replaced default large white tooltips with compact dark tooltip cards
+  - Improved contrast and tighter spacing for easier chart reading
 - [x] Debt semantics corrected end-to-end:
   - For Gov. Debt, **increase = red (bad)** and **decrease = green (good)** on card + modal + % change bars
 - [x] Added **Central Government Debt** to Economic Indicators:
