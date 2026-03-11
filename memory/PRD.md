@@ -43,6 +43,10 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] Business Environment tooltip readability pass:
   - Replaced default large white tooltips with compact dark tooltip cards
   - Improved contrast and tighter spacing for easier chart reading
+- [x] Business Environment interaction refinements:
+  - Overview now shows **BCI trend only**
+  - Added dedicated **EPU** block/tab beside Drivers to view EPU trend chart on click
+  - Sectors view now includes a selector: default snapshot (all sectors current month) + per-sector full historical trend
 - [x] Debt semantics corrected end-to-end:
   - For Gov. Debt, **increase = red (bad)** and **decrease = green (good)** on card + modal + % change bars
 - [x] Added **Central Government Debt** to Economic Indicators:

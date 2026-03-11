@@ -21,6 +21,7 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [selectedSectorView, setSelectedSectorView] = useState('snapshot');
 
   useEffect(() => {
     const fetchBusinessEnvironment = async () => {
@@ -39,6 +40,7 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
 
   const confidenceHistory = useMemo(() => (data?.confidence?.history || []).slice(-24), [data]);
   const epuHistory = useMemo(() => (data?.epu?.history || []).slice(-24), [data]);
+  const sectorTrendHistory = useMemo(() => data?.confidence?.history || [], [data]);
 
   const formatDateTick = (dateStr) => {
     const date = new Date(dateStr);
@@ -110,6 +112,20 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
   const bciExpected = data?.confidence?.headline?.expected || {};
   const sectors = data?.confidence?.sectors?.latest || [];
   const drivers = data?.confidence?.drivers || {};
+
+  const sectorSeriesMap = {
+    manufacturing: 'Manufacturing',
+    construction: 'Construction',
+    wholesale_retail: 'Wholesale & Retail',
+    other_services: 'Other Services'
+  };
+
+  const selectedSectorLabel = sectorSeriesMap[selectedSectorView] || 'Sector';
+  const selectedSectorHistory = selectedSectorView === 'snapshot'
+    ? []
+    : sectorTrendHistory
+      .filter((item) => item?.[selectedSectorView] !== null && item?.[selectedSectorView] !== undefined)
+      .map((item) => ({ date: item.date, value: item[selectedSectorView] }));
 
   const epuSignal = getSignal(epuHeadline?.mom_change, true);
   const currentSignal = getSignal(bciCurrent?.mom_change, false);
@@ -195,7 +211,7 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
         </div>
 
         <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }} data-testid="business-tabs">
-          {['overview', 'sectors', 'drivers'].map((tab) => (
+          {['overview', 'sectors', 'drivers', 'epu'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -214,57 +230,74 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
         </div>
 
         {activeTab === 'overview' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0.6rem' }} data-testid="business-overview-view">
-            <div style={{ border: '1px solid var(--color-border)', padding: '0.4rem', background: 'rgba(2, 6, 23, 0.45)' }}>
-              <div style={{ fontSize: '0.62rem', color: 'var(--color-muted)', marginBottom: '0.35rem' }}>Business Confidence Trend (24M)</div>
-              <ResponsiveContainer width="100%" height={170}>
-                <LineChart data={confidenceHistory} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                  <XAxis dataKey="date" tickFormatter={formatDateTick} tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" minTickGap={35} />
-                  <YAxis tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" width={34} domain={['auto', 'auto']} />
-                  <Tooltip content={renderCompactTooltip()} />
-                  <Legend wrapperStyle={{ fontSize: '0.65rem' }} />
-                  <Line type="monotone" dataKey="bci" name="Overall" stroke="#22C55E" dot={false} strokeWidth={2} />
-                  <Line type="monotone" dataKey="cbci" name="Current" stroke="#38BDF8" dot={false} strokeWidth={1.8} />
-                  <Line type="monotone" dataKey="ebci" name="Expected" stroke="#F59E0B" dot={false} strokeWidth={1.8} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div style={{ border: '1px solid var(--color-border)', padding: '0.4rem', background: 'rgba(2, 6, 23, 0.45)' }}>
-              <div style={{ fontSize: '0.62rem', color: 'var(--color-muted)', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                <AlertTriangle size={12} /> EPU Trend (24M)
-              </div>
-              <ResponsiveContainer width="100%" height={170}>
-                <LineChart data={epuHistory} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                  <XAxis dataKey="date" tickFormatter={formatDateTick} tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" minTickGap={35} />
-                  <YAxis tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" width={34} domain={['auto', 'auto']} />
-                  <Tooltip content={renderCompactTooltip()} />
-                  <Line type="monotone" dataKey="epu4" name="4 Newspapers" stroke="#EF4444" dot={false} strokeWidth={2} />
-                  <Line type="monotone" dataKey="epu2" name="2 Newspapers" stroke="#A855F7" dot={false} strokeWidth={1.6} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+          <div style={{ border: '1px solid var(--color-border)', padding: '0.4rem', background: 'rgba(2, 6, 23, 0.45)' }} data-testid="business-overview-view">
+            <div style={{ fontSize: '0.62rem', color: 'var(--color-muted)', marginBottom: '0.35rem' }}>Business Confidence Trend (24M)</div>
+            <ResponsiveContainer width="100%" height={175}>
+              <LineChart data={confidenceHistory} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <XAxis dataKey="date" tickFormatter={formatDateTick} tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" minTickGap={35} />
+                <YAxis tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" width={34} domain={['auto', 'auto']} />
+                <Tooltip content={renderCompactTooltip()} />
+                <Legend wrapperStyle={{ fontSize: '0.65rem' }} />
+                <Line type="monotone" dataKey="bci" name="Overall" stroke="#22C55E" dot={false} strokeWidth={2} />
+                <Line type="monotone" dataKey="cbci" name="Current" stroke="#38BDF8" dot={false} strokeWidth={1.8} />
+                <Line type="monotone" dataKey="ebci" name="Expected" stroke="#F59E0B" dot={false} strokeWidth={1.8} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         )}
 
         {activeTab === 'sectors' && (
           <div style={{ border: '1px solid var(--color-border)', padding: '0.4rem', background: 'rgba(2, 6, 23, 0.45)' }} data-testid="business-sectors-view">
-            <div style={{ fontSize: '0.62rem', color: 'var(--color-muted)', marginBottom: '0.35rem' }}>Sector Confidence Snapshot</div>
-            <ResponsiveContainer width="100%" height={185}>
-              <BarChart data={sectors} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" interval={0} angle={-10} textAnchor="end" height={40} />
-                <YAxis tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" width={34} domain={['auto', 'auto']} />
-                <Tooltip content={renderCompactTooltip()} />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                  {sectors.map((entry, idx) => (
-                    <Cell key={`sector-cell-${idx}`} fill={(entry.value || 0) >= 50 ? '#22C55E' : '#F59E0B'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem', gap: '0.5rem' }}>
+              <div style={{ fontSize: '0.62rem', color: 'var(--color-muted)' }}>
+                {selectedSectorView === 'snapshot' ? 'Sector Confidence Snapshot (Current Month)' : `${selectedSectorLabel} Trend (All Data)`}
+              </div>
+              <select
+                value={selectedSectorView}
+                onChange={(e) => setSelectedSectorView(e.target.value)}
+                data-testid="sector-series-selector"
+                style={{
+                  background: 'rgba(11, 18, 32, 0.92)',
+                  border: '1px solid var(--color-border)',
+                  color: 'var(--color-text)',
+                  fontSize: '0.68rem',
+                  padding: '0.25rem 0.4rem',
+                  borderRadius: '4px'
+                }}
+              >
+                <option value="snapshot">Current Snapshot (All Sectors)</option>
+                {Object.entries(sectorSeriesMap).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </div>
+
+            {selectedSectorView === 'snapshot' ? (
+              <ResponsiveContainer width="100%" height={185}>
+                <BarChart data={sectors} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" interval={0} angle={-10} textAnchor="end" height={40} />
+                  <YAxis tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" width={34} domain={['auto', 'auto']} />
+                  <Tooltip content={renderCompactTooltip()} />
+                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                    {sectors.map((entry, idx) => (
+                      <Cell key={`sector-cell-${idx}`} fill={(entry.value || 0) >= 50 ? '#22C55E' : '#F59E0B'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <ResponsiveContainer width="100%" height={185}>
+                <LineChart data={selectedSectorHistory} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                  <XAxis dataKey="date" tickFormatter={formatDateTick} tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" minTickGap={35} />
+                  <YAxis tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" width={34} domain={['auto', 'auto']} />
+                  <Tooltip content={renderCompactTooltip()} />
+                  <Line type="monotone" dataKey="value" name={selectedSectorLabel} stroke="#22C55E" dot={false} strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         )}
 
@@ -288,6 +321,25 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {activeTab === 'epu' && (
+          <div style={{ border: '1px solid var(--color-border)', padding: '0.4rem', background: 'rgba(2, 6, 23, 0.45)' }} data-testid="business-epu-view">
+            <div style={{ fontSize: '0.62rem', color: 'var(--color-muted)', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              <AlertTriangle size={12} /> Economic Policy Uncertainty Trend (24M)
+            </div>
+            <ResponsiveContainer width="100%" height={175}>
+              <LineChart data={epuHistory} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <XAxis dataKey="date" tickFormatter={formatDateTick} tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" minTickGap={35} />
+                <YAxis tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" width={34} domain={['auto', 'auto']} />
+                <Tooltip content={renderCompactTooltip()} />
+                <Legend wrapperStyle={{ fontSize: '0.65rem' }} />
+                <Line type="monotone" dataKey="epu4" name="4 Newspapers" stroke="#EF4444" dot={false} strokeWidth={2} />
+                <Line type="monotone" dataKey="epu2" name="2 Newspapers" stroke="#A855F7" dot={false} strokeWidth={1.6} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         )}
 
