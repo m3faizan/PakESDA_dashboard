@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, DollarSign, ExternalLink, Coins, ArrowLeftRight, ArrowDownToLine, ArrowUpFromLine, Banknote, BarChart3, Droplets } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, ExternalLink, Coins, ArrowLeftRight, ArrowDownToLine, ArrowUpFromLine, Banknote, BarChart3, Droplets, Landmark } from 'lucide-react';
 import axios from 'axios';
 import SBPDataModal from './SBPDataModal';
 import PSXDataModal from './PSXDataModal';
@@ -16,6 +16,7 @@ const EconomicPanel = ({ data, loading }) => {
   const [pkrUsdData, setPkrUsdData] = useState(null);
   const [psxData, setPsxData] = useState(null);
   const [liquidForexData, setLiquidForexData] = useState(null);
+  const [govDebtData, setGovDebtData] = useState(null);
   const [dataLoading, setDataLoading] = useState(true);
   
   const [activeModal, setActiveModal] = useState(null);
@@ -23,7 +24,7 @@ const EconomicPanel = ({ data, loading }) => {
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const [remittancesRes, goldRes, forexRes, currentAccountRes, importsRes, exportsRes, pkrUsdRes, psxRes, liquidForexRes] = await Promise.allSettled([
+        const [remittancesRes, goldRes, forexRes, currentAccountRes, importsRes, exportsRes, pkrUsdRes, psxRes, liquidForexRes, govDebtRes] = await Promise.allSettled([
           axios.get(`${API_BASE}/api/remittances`),
           axios.get(`${API_BASE}/api/gold-reserves`),
           axios.get(`${API_BASE}/api/forex-reserves`),
@@ -32,7 +33,8 @@ const EconomicPanel = ({ data, loading }) => {
           axios.get(`${API_BASE}/api/exports`),
           axios.get(`${API_BASE}/api/pkr-usd`),
           axios.get(`${API_BASE}/api/psx-data`),
-          axios.get(`${API_BASE}/api/liquid-forex`)
+          axios.get(`${API_BASE}/api/liquid-forex`),
+          axios.get(`${API_BASE}/api/gov-debt`)
         ]);
 
         if (remittancesRes.status === 'fulfilled') {
@@ -61,6 +63,9 @@ const EconomicPanel = ({ data, loading }) => {
         }
         if (liquidForexRes.status === 'fulfilled') {
           setLiquidForexData(liquidForexRes.value.data.data);
+        }
+        if (govDebtRes.status === 'fulfilled') {
+          setGovDebtData(govDebtRes.value.data.data);
         }
       } catch (error) {
         console.error('Error fetching economic data:', error);
@@ -104,6 +109,11 @@ const EconomicPanel = ({ data, loading }) => {
     if (value === null || value === undefined) return '$--';
     const prefix = value >= 0 ? '+' : '';
     return `${prefix}$${value.toFixed(0)}M`;
+  };
+
+  const formatDebtBillions = (value) => {
+    if (value === null || value === undefined) return '₨--';
+    return `₨${Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 })}B`;
   };
 
   const indicators = [
@@ -191,6 +201,16 @@ const EconomicPanel = ({ data, loading }) => {
       isLive: !dataLoading && remittancesData
     },
     { 
+      label: 'Gov. Debt',
+      value: formatDebtBillions(govDebtData?.latest?.value),
+      subLabel: govDebtData?.latest?.month || '',
+      change: govDebtData?.mom_change,
+      prefix: '',
+      clickable: true,
+      modalKey: 'govDebt',
+      isLive: !dataLoading && govDebtData
+    },
+    {
       label: 'Liquid FX', 
       value: formatBillions(liquidForexData?.latest?.value),
       subLabel: liquidForexData?.latest?.dateFormatted || '',
@@ -229,6 +249,8 @@ const EconomicPanel = ({ data, loading }) => {
         return { data: psxData, title: "KSE-100 Index", icon: BarChart3, isPsx: true };
       case 'liquidForex':
         return { data: liquidForexData, title: "Liquid Foreign Exchange Reserves", icon: Droplets, isLiquidForex: true };
+      case 'govDebt':
+        return { data: govDebtData, title: "Central Government Debt", icon: Landmark, isGovDebt: true };
       default:
         return null;
     }
@@ -320,6 +342,7 @@ const EconomicPanel = ({ data, loading }) => {
           isPkrUsd={modalInfo.isPkrUsd}
           isForexReserves={modalInfo.isForexReserves}
           isLiquidForex={modalInfo.isLiquidForex}
+          isGovDebt={modalInfo.isGovDebt}
         />
       )}
 

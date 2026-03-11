@@ -26,21 +26,30 @@ const TIME_RANGES = [
   { key: 'ALL', label: 'All', months: null }
 ];
 
-const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, isCurrentAccount = false, isPkrUsd = false, isForexReserves = false, isLiquidForex = false }) => {
+const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, isCurrentAccount = false, isPkrUsd = false, isForexReserves = false, isLiquidForex = false, isGovDebt = false }) => {
   const [selectedRange, setSelectedRange] = useState('1Y');
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [showPctChange, setShowPctChange] = useState(false);
-  const isBreakdownSeries = isForexReserves || isLiquidForex;
+  const isBreakdownSeries = isForexReserves || isLiquidForex || isGovDebt;
 
-  const breakdownLabels = isLiquidForex
+  const breakdownLabels = isGovDebt
     ? {
-        sbp: 'Net Reserves with SBP',
-        bank: 'Net Reserves with Banks'
+        primary: 'Internal Debt',
+        secondary: 'External Debt'
       }
-    : {
-        sbp: 'SBP Reserves',
-        bank: 'Bank Reserves'
-      };
+    : isLiquidForex
+      ? {
+          primary: 'Net Reserves with SBP',
+          secondary: 'Net Reserves with Banks'
+        }
+      : {
+          primary: 'SBP Reserves',
+          secondary: 'Bank Reserves'
+        };
+
+  const breakdownKeys = isGovDebt
+    ? { primary: 'internal_debt', secondary: 'external_debt' }
+    : { primary: 'sbp_reserves', secondary: 'bank_reserves' };
 
   const filteredData = useMemo(() => {
     if (!data?.history) return [];
@@ -84,6 +93,9 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
   }, [data, selectedRange]);
 
   const formatValue = (value) => {
+    if (isGovDebt) {
+      return `₨${Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 })}B`;
+    }
     if (isPkrUsd) {
       return `₨${value.toFixed(2)}`;
     }
@@ -101,6 +113,10 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
   };
 
   const formatChange = (value) => {
+    if (isGovDebt) {
+      const prefix = value >= 0 ? '+' : '';
+      return `${prefix}${value.toFixed(2)}%`;
+    }
     if (isCurrentAccount) {
       const prefix = value >= 0 ? '+' : '';
       return `${prefix}$${value.toFixed(0)}M`;
@@ -148,6 +164,18 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
   const hasMomChange = momChange !== null && momChange !== undefined;
   const isMomPositive = (momChange || 0) >= 0;
   const isYoyPositive = yoyChange >= 0;
+
+  const formatBreakdownValue = (value) => {
+    if (value === null || value === undefined) {
+      return isGovDebt ? '₨--' : '$--';
+    }
+
+    if (isGovDebt) {
+      return `₨${Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 })}B`;
+    }
+
+    return `$${(value / 1000).toFixed(2)}B`;
+  };
 
   // Calculate Y-axis domain
   const values = filteredData.map(d => d.value);
@@ -203,8 +231,7 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
           </div>
         </div>
 
-        {/* Forex Reserves Breakdown */}
-        {isForexReserves && data?.breakdown && (
+        {isBreakdownSeries && data?.breakdown && (
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(2, 1fr)',
@@ -221,10 +248,10 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
               borderLeft: '3px solid #22C55E'
             }}>
               <div style={{ fontSize: '0.65rem', color: 'var(--color-muted)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
-                SBP Reserves
+                {breakdownLabels.primary}
               </div>
               <div style={{ fontSize: '1.1rem', fontWeight: '600', color: 'var(--color-text)', fontFamily: "'JetBrains Mono', monospace" }}>
-                ${(data.breakdown.sbp_reserves?.latest_value / 1000).toFixed(2)}B
+                {formatBreakdownValue(data.breakdown[breakdownKeys.primary]?.latest_value)}
               </div>
             </div>
             <div style={{
@@ -234,50 +261,10 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
               borderLeft: '3px solid #6366f1'
             }}>
               <div style={{ fontSize: '0.65rem', color: 'var(--color-muted)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
-                Bank Reserves
+                {breakdownLabels.secondary}
               </div>
               <div style={{ fontSize: '1.1rem', fontWeight: '600', color: 'var(--color-text)', fontFamily: "'JetBrains Mono', monospace" }}>
-                ${(data.breakdown.bank_reserves?.latest_value / 1000).toFixed(2)}B
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Liquid Forex Reserves Breakdown */}
-        {isLiquidForex && data?.breakdown && (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: '0.75rem',
-            padding: '0.75rem',
-            background: 'rgba(15, 23, 42, 0.5)',
-            borderRadius: '8px',
-            marginBottom: '1rem'
-          }}>
-            <div style={{
-              padding: '0.75rem',
-              background: 'var(--color-background)',
-              borderRadius: '6px',
-              borderLeft: '3px solid #22C55E'
-            }}>
-              <div style={{ fontSize: '0.65rem', color: 'var(--color-muted)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
-                Net Reserves with SBP
-              </div>
-              <div style={{ fontSize: '1.1rem', fontWeight: '600', color: 'var(--color-text)', fontFamily: "'JetBrains Mono', monospace" }}>
-                ${(data.breakdown.sbp_reserves?.latest_value / 1000).toFixed(2)}B
-              </div>
-            </div>
-            <div style={{
-              padding: '0.75rem',
-              background: 'var(--color-background)',
-              borderRadius: '6px',
-              borderLeft: '3px solid #6366f1'
-            }}>
-              <div style={{ fontSize: '0.65rem', color: 'var(--color-muted)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
-                Net Reserves with Banks
-              </div>
-              <div style={{ fontSize: '1.1rem', fontWeight: '600', color: 'var(--color-text)', fontFamily: "'JetBrains Mono', monospace" }}>
-                ${(data.breakdown.bank_reserves?.latest_value / 1000).toFixed(2)}B
+                {formatBreakdownValue(data.breakdown[breakdownKeys.secondary]?.latest_value)}
               </div>
             </div>
           </div>
@@ -349,7 +336,12 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
                   minTickGap={50}
                 />
                 <YAxis 
-                  tickFormatter={(val) => `$${(val/1000).toFixed(0)}B`}
+                  tickFormatter={(val) => {
+                    if (isGovDebt) {
+                      return `₨${(val / 1000).toFixed(0)}T`;
+                    }
+                    return `$${(val / 1000).toFixed(0)}B`;
+                  }}
                   stroke="#64748b"
                   tick={{ fill: '#64748b', fontSize: 11 }}
                   axisLine={{ stroke: '#1e293b' }}
@@ -371,7 +363,7 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
                           <p className="tooltip-date">{formattedDate}</p>
                           {payload.map((entry, idx) => (
                             <p key={idx} style={{ color: entry.color, fontSize: '0.85rem', margin: '0.25rem 0' }}>
-                              {entry.name}: ${(entry.value / 1000).toFixed(2)}B
+                              {entry.name}: {isGovDebt ? `₨${Number(entry.value).toLocaleString(undefined, { maximumFractionDigits: 0 })}B` : `$${(entry.value / 1000).toFixed(2)}B`}
                             </p>
                           ))}
                         </div>
@@ -384,12 +376,12 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
                   wrapperStyle={{ paddingTop: '10px' }}
                   formatter={(value) => <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>{value}</span>}
                 />
-                <Bar dataKey="sbp_reserves" name={breakdownLabels.sbp} stackId="a" fill="#22C55E" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="bank_reserves" name={breakdownLabels.bank} stackId="a" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                <Bar dataKey={breakdownKeys.primary} name={breakdownLabels.primary} stackId="a" fill="#22C55E" radius={[0, 0, 0, 0]} />
+                <Bar dataKey={breakdownKeys.secondary} name={breakdownLabels.secondary} stackId="a" fill="#6366f1" radius={[4, 4, 0, 0]} />
                 <Line 
                   type="monotone" 
                   dataKey="value" 
-                  name="Total" 
+                  name={isGovDebt ? 'Total Debt' : 'Total'} 
                   stroke="#F59E0B" 
                   strokeWidth={2} 
                   dot={false}
@@ -508,7 +500,15 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
                   minTickGap={50}
                 />
                 <YAxis 
-                  tickFormatter={(val) => isPkrUsd ? `₨${val.toFixed(0)}` : `$${(val/1000).toFixed(1)}B`}
+                  tickFormatter={(val) => {
+                    if (isPkrUsd) {
+                      return `₨${val.toFixed(0)}`;
+                    }
+                    if (isGovDebt) {
+                      return `₨${(val / 1000).toFixed(1)}T`;
+                    }
+                    return `$${(val / 1000).toFixed(1)}B`;
+                  }}
                   stroke="#64748b"
                   tick={{ fill: '#64748b', fontSize: 11 }}
                   axisLine={{ stroke: '#1e293b' }}

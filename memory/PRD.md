@@ -35,6 +35,10 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 ## What's Been Implemented (Mar 8-10, 2026)
 
 ### Latest Updates (Mar 10, 2026)
+- [x] Added **Central Government Debt** to Economic Indicators:
+  - New backend endpoint: `/api/gov-debt` using SBP EasyData series
+  - Card shows latest total debt with MoM change in PKR Billion format
+  - Modal supports breakdown view with **Internal Debt + External Debt** and total overlay
 - [x] Added **SPI integration** in Inflation Monitor using Google Sheet source:
   - Weekly SPI from `main raw data` and Monthly SPI from `monthly_spi`
   - Added new APIs: `/api/spi-weekly` and `/api/spi-monthly` with low-frequency cache (12h)
@@ -81,6 +85,7 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] `/api/cpi-mom-historical` - **LIVE** Complete CPI MoM history (1964-2026, 711 points, 8 base year periods)
 - [x] `/api/spi-weekly` - **LIVE** Weekly SPI (Combined + Q1-Q5 + increase/decrease/stable counts) from Google Sheet
 - [x] `/api/spi-monthly` - **LIVE** Monthly SPI (Q1 index) from Google Sheet
+- [x] `/api/gov-debt` - **LIVE** Central Government Debt (Total + Internal + External) from SBP EasyData
 - [x] `/api/admin/airport-history` - Historical airport traffic data with date/code filters
 - [x] `/api/admin/port-history` - Historical port traffic data with date/code filters
 - [x] `/api/admin/airport-history/summary` - Airport history statistics (avg/max departures, arrivals)
@@ -91,7 +96,7 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] News ticker (scrolling headlines)
 - [x] Bento grid layout with responsive panels (10 bottom panels)
 - [x] NewsPanel - Latest news with category tabs and infinite scroll
-- [x] EconomicPanel - 9 indicators with all **LIVE** (PSX, PKR/USD, Current A/C, Gold, Forex, Imports, Exports, Remittances, Liquid FX)
+- [x] EconomicPanel - 10 indicators with all **LIVE** (PSX, PKR/USD, Current A/C, Gold, Forex, Imports, Exports, Remittances, Gov. Debt, Liquid FX)
 - [x] **InflationPanel** - CPI (YoY/MoM) + SPI (Weekly/Monthly) with clickable chart modals and movement summary chips
 - [x] **SBPDataModal** - Reusable chart modal with MoM%, YoY%, time range selectors
 - [x] **PSXDataModal** - KSE-100 modal with Day High/Low, Volume, Previous Close, YTD/YoY changes
@@ -125,6 +130,7 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - **Imports/Exports**: **LIVE** - State Bank of Pakistan EasyData API
 - **CPI Inflation (YoY/MoM)**: **LIVE** - State Bank of Pakistan EasyData API (1964-2026, 8 base year periods combined)
 - **SPI (Weekly/Monthly)**: **LIVE** - Google Sheet source (`main raw data`, `monthly_spi`)
+- **Central Government Debt**: **LIVE** - SBP EasyData (`TS_GP_BAM_CENGOVTD_M` dataset via total/internal/external series)
 - **Weather**: MOCKED (ready for OpenWeatherMap integration)
 - **Security**: MOCKED (ready for API integration)
 - **Regional**: MOCKED (ready for API integration)

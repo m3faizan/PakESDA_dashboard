@@ -85,6 +85,7 @@ data_cache = {
     "current_account": {"data": {}, "updated": None},
     "imports": {"data": {}, "updated": None},
     "exports": {"data": {}, "updated": None},
+    "gov_debt": {"data": {}, "updated": None},
     "road_advisory": {"data": [], "updated": None},
     "pkr_usd": {"data": {}, "updated": None},
     "psx_data": {"data": {}, "updated": None},
@@ -111,6 +112,9 @@ SBP_CURRENT_ACCOUNT_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BOP_B
 SBP_IMPORTS_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BOP_XMGS_M.P00320/data"
 SBP_EXPORTS_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BOP_XMGS_M.P00170/data"
 SBP_PKR_USD_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_ES_FADERPKR_M.XRDAVG0220/data"
+SBP_GOV_DEBT_TOTAL_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BAM_CENGOVTD_M.CGD00490/data"
+SBP_GOV_DEBT_INTERNAL_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BAM_CENGOVTD_M.CGD00010/data"
+SBP_GOV_DEBT_EXTERNAL_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BAM_CENGOVTD_M.CGD00460/data"
 
 # Liquid Foreign Exchange Reserves (weekly data scraped from PDF)
 SBP_LIQUID_FX_PDF_URL = "https://www.sbp.org.pk/ecodata/forex.pdf"
@@ -636,6 +640,140 @@ async def fetch_imports_data():
 async def fetch_exports_data():
     """Fetch exports data from State Bank of Pakistan"""
     return await fetch_sbp_reserves_data(SBP_EXPORTS_URL, "Exports", "1990-01-01")
+
+
+async def fetch_gov_debt_data():
+    """Fetch Central Government Debt (total + internal + external) from SBP EasyData"""
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            total_response, internal_response, external_response = await asyncio.gather(
+                client.get(
+                    SBP_GOV_DEBT_TOTAL_URL,
+                    params={
+                        "api_key": SBP_API_KEY,
+                        "start_date": "2010-01-01",
+                        "end_date": datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                    }
+                ),
+                client.get(
+                    SBP_GOV_DEBT_INTERNAL_URL,
+                    params={
+                        "api_key": SBP_API_KEY,
+                        "start_date": "2010-01-01",
+                        "end_date": datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                    }
+                ),
+                client.get(
+                    SBP_GOV_DEBT_EXTERNAL_URL,
+                    params={
+                        "api_key": SBP_API_KEY,
+                        "start_date": "2010-01-01",
+                        "end_date": datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                    }
+                )
+            )
+
+            if not (total_response.status_code == 200 and internal_response.status_code == 200 and external_response.status_code == 200):
+                return None
+
+            def parse_rows(rows):
+                parsed = []
+                for row in rows:
+                    try:
+                        if not row[3] or row[4] is None:
+                            continue
+                        parsed.append({
+                            "date": row[3],
+                            "value": float(row[4])
+                        })
+                    except (ValueError, IndexError, TypeError):
+                        continue
+                return parsed
+
+            total_data = parse_rows(total_response.json().get("rows", []))
+            internal_data = parse_rows(internal_response.json().get("rows", []))
+            external_data = parse_rows(external_response.json().get("rows", []))
+
+            if not total_data:
+                return None
+
+            total_by_date = {item["date"]: item["value"] for item in total_data}
+            internal_by_date = {item["date"]: item["value"] for item in internal_data}
+            external_by_date = {item["date"]: item["value"] for item in external_data}
+
+            all_dates = sorted(set(total_by_date.keys()) | set(internal_by_date.keys()) | set(external_by_date.keys()), reverse=True)
+
+            history = []
+            for date in all_dates:
+                total_value = total_by_date.get(date)
+                if total_value is None:
+                    continue
+
+                internal_value = internal_by_date.get(date, 0)
+                external_value = external_by_date.get(date, 0)
+
+                history.append({
+                    "date": date,
+                    "value": round(total_value, 2),
+                    "internal_debt": round(internal_value, 2),
+                    "external_debt": round(external_value, 2)
+                })
+
+            if len(history) < 2:
+                return None
+
+            latest = history[0]
+            previous = history[1]
+
+            mom_change = ((latest["value"] - previous["value"]) / previous["value"]) * 100 if previous["value"] else None
+
+            yoy_change = None
+            latest_date = datetime.strptime(latest["date"], "%Y-%m-%d")
+            for item in history:
+                item_date = datetime.strptime(item["date"], "%Y-%m-%d")
+                months_diff = (latest_date.year - item_date.year) * 12 + (latest_date.month - item_date.month)
+                if months_diff == 12 and item["value"]:
+                    yoy_change = ((latest["value"] - item["value"]) / item["value"]) * 100
+                    break
+
+            month_name = latest_date.strftime("%B %Y")
+
+            return {
+                "latest": {
+                    "value": latest["value"],
+                    "internal_debt": latest["internal_debt"],
+                    "external_debt": latest["external_debt"],
+                    "month": month_name,
+                    "date": latest["date"],
+                    "unit": "Billion PKR"
+                },
+                "previous": {
+                    "value": previous["value"],
+                    "date": previous["date"]
+                },
+                "mom_change": round(mom_change, 2) if mom_change is not None else None,
+                "yoy_change": round(yoy_change, 2) if yoy_change is not None else None,
+                "history": history,
+                "breakdown": {
+                    "internal_debt": {
+                        "name": "Internal Debt",
+                        "latest_value": latest["internal_debt"],
+                        "unit": "Billion PKR"
+                    },
+                    "external_debt": {
+                        "name": "External Debt",
+                        "latest_value": latest["external_debt"],
+                        "unit": "Billion PKR"
+                    }
+                },
+                "source": "State Bank of Pakistan",
+                "name": "Central Government Debt",
+                "updated": datetime.now(timezone.utc).isoformat()
+            }
+    except Exception as e:
+        print(f"Error fetching government debt data: {e}")
+
+    return None
 
 async def fetch_pkr_usd_data():
     """Fetch PKR/USD exchange rate data from State Bank of Pakistan"""
@@ -1982,6 +2120,25 @@ async def get_exports():
     return {
         "data": data_cache["exports"]["data"],
         "updated": data_cache["exports"]["updated"].isoformat() if data_cache["exports"]["updated"] else None
+    }
+
+
+@app.get("/api/gov-debt")
+async def get_gov_debt():
+    """Get Central Government Debt data (total + internal + external)"""
+    # Refresh every 6 hours (monthly data)
+    if data_cache["gov_debt"]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache["gov_debt"]["updated"]).total_seconds()
+        if age > 21600:
+            data_cache["gov_debt"]["data"] = await fetch_gov_debt_data()
+            data_cache["gov_debt"]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache["gov_debt"]["data"] = await fetch_gov_debt_data()
+        data_cache["gov_debt"]["updated"] = datetime.now(timezone.utc)
+
+    return {
+        "data": data_cache["gov_debt"]["data"],
+        "updated": data_cache["gov_debt"]["updated"].isoformat() if data_cache["gov_debt"]["updated"] else None
     }
 
 
