@@ -672,7 +672,7 @@ async def fetch_fdi_data():
                 SBP_FDI_URL,
                 params={
                     "api_key": SBP_API_KEY,
-                    "start_date": "2010-01-01",
+                    "start_date": "1997-07-01",
                     "end_date": datetime.now(timezone.utc).strftime("%Y-%m-%d")
                 }
             )
@@ -2452,12 +2452,17 @@ async def get_exports():
 async def get_fdi():
     """Get Foreign Direct Investment data"""
     # Refresh every 6 hours
-    if data_cache["fdi"]["updated"]:
-        age = (datetime.now(timezone.utc) - data_cache["fdi"]["updated"]).total_seconds()
-        if age > 21600:
-            data_cache["fdi"]["data"] = await fetch_fdi_data()
-            data_cache["fdi"]["updated"] = datetime.now(timezone.utc)
+    should_refresh = False
+    cached_data = data_cache["fdi"]["data"]
+    if not data_cache["fdi"]["updated"] or not cached_data:
+        should_refresh = True
     else:
+        age = (datetime.now(timezone.utc) - data_cache["fdi"]["updated"]).total_seconds()
+        history = cached_data.get("history", []) if isinstance(cached_data, dict) else []
+        earliest_date = history[-1].get("date") if history else None
+        should_refresh = age > 21600 or (earliest_date is not None and earliest_date > "1997-07-01")
+
+    if should_refresh:
         data_cache["fdi"]["data"] = await fetch_fdi_data()
         data_cache["fdi"]["updated"] = datetime.now(timezone.utc)
 

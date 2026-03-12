@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { X, TrendingUp, TrendingDown, Calendar, DollarSign } from 'lucide-react';
 import { 
   AreaChart,
@@ -50,6 +50,13 @@ const SBPDataModal = ({ isOpen, onClose, data, title, icon: Icon = DollarSign, i
   const breakdownKeys = isGovDebt
     ? { primary: 'internal_debt', secondary: 'external_debt' }
     : { primary: 'sbp_reserves', secondary: 'bank_reserves' };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setSelectedRange(isFDI ? 'ALL' : '1Y');
+    setShowBreakdown(false);
+    setShowPctChange(false);
+  }, [isOpen, isFDI, title]);
 
   const filteredData = useMemo(() => {
     if (!data?.history) return [];

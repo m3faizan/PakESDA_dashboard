@@ -306,8 +306,8 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
             <ResponsiveContainer width="100%" height={175}>
               <LineChart data={confidenceHistory} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                <XAxis dataKey="date" tickFormatter={formatDateTick} tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" minTickGap={35} />
-                <YAxis tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" width={34} domain={['auto', 'auto']} />
+                <XAxis dataKey="date" tickFormatter={formatDateTick} tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" minTickGap={35} interval="preserveStartEnd" />
+                <YAxis tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" width={34} domain={[0, 100]} />
                 <Tooltip content={renderCompactTooltip()} />
                 <Legend
                   content={(props) => (
@@ -363,7 +363,7 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
                 <BarChart data={sectors} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                   <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" interval={0} angle={-10} textAnchor="end" height={40} />
-                  <YAxis tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" width={34} domain={['auto', 'auto']} />
+                  <YAxis tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" width={34} domain={[0, 100]} />
                   <Tooltip content={renderCompactTooltip()} />
                   <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                     {sectors.map((entry, idx) => (
@@ -376,8 +376,8 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
               <ResponsiveContainer width="100%" height={185}>
                 <LineChart data={selectedSectorHistory} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                  <XAxis dataKey="date" tickFormatter={formatDateTick} tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" minTickGap={35} />
-                  <YAxis tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" width={34} domain={['auto', 'auto']} />
+                  <XAxis dataKey="date" tickFormatter={formatDateTick} tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" minTickGap={35} interval="preserveStartEnd" />
+                  <YAxis tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" width={34} domain={[0, 100]} />
                   <Tooltip content={renderCompactTooltip()} />
                   <Legend
                     content={(props) => (
@@ -399,8 +399,8 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
               <ResponsiveContainer width="100%" height={185}>
                 <LineChart data={selectedSectorHistory} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                  <XAxis dataKey="date" tickFormatter={formatDateTick} tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" minTickGap={35} />
-                  <YAxis tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" width={34} domain={['auto', 'auto']} />
+                  <XAxis dataKey="date" tickFormatter={formatDateTick} tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" minTickGap={35} interval="preserveStartEnd" />
+                  <YAxis tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" width={34} domain={[0, 100]} />
                   <Tooltip content={renderCompactTooltip()} />
                   <Line type="monotone" dataKey="value" name={selectedSectorLabel} stroke="#22C55E" dot={false} strokeWidth={2} />
                 </LineChart>
