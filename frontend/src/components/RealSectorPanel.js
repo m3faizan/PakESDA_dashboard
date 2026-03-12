@@ -4,24 +4,28 @@ import axios from 'axios';
 import LSMDataModal from './LSMDataModal';
 import AutoVehiclesModal from './AutoVehiclesModal';
 import TwoThreeWheelersModal from './TwoThreeWheelersModal';
+import FertilizerModal from './FertilizerModal';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 
 const RealSectorPanel = ({ loading: parentLoading }) => {
   const [lsmData, setLsmData] = useState(null);
   const [autoVehiclesData, setAutoVehiclesData] = useState(null);
+  const [fertilizerData, setFertilizerData] = useState(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAutoModalOpen, setIsAutoModalOpen] = useState(false);
   const [isTwoThreeModalOpen, setIsTwoThreeModalOpen] = useState(false);
+  const [isFertilizerModalOpen, setIsFertilizerModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [lsmRes, lsmHistRes, autoVehiclesRes] = await Promise.allSettled([
+        const [lsmRes, lsmHistRes, autoVehiclesRes, fertilizerRes] = await Promise.allSettled([
           axios.get(`${API_BASE}/api/lsm`),
           axios.get(`${API_BASE}/api/lsm-historical`),
-          axios.get(`${API_BASE}/api/auto-vehicles`)
+          axios.get(`${API_BASE}/api/auto-vehicles`),
+          axios.get(`${API_BASE}/api/fertilizer`)
         ]);
 
         if (lsmRes.status === 'fulfilled') {
@@ -38,6 +42,10 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
 
         if (autoVehiclesRes.status === 'fulfilled') {
           setAutoVehiclesData(autoVehiclesRes.value.data.data);
+        }
+
+        if (fertilizerRes.status === 'fulfilled') {
+          setFertilizerData(fertilizerRes.value.data.data);
         }
       } catch (error) {
         console.error('Error fetching LSM data:', error);
@@ -114,6 +122,10 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
       history: salesTwoThreeHist.map((item) => ({ date: item.date, total: item.two_three_wheelers || 0 }))
     }
   };
+
+  const fertilizerLatest = fertilizerData?.latest?.total;
+  const fertilizerChange = fertilizerData?.mom_change_pct;
+  const fertilizerMonth = fertilizerData?.latest?.month || '';
 
   const formatCount = (val) => {
     if (val === null || val === undefined) return '--';
@@ -267,6 +279,34 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
 
             <div className="economic-sublabel" style={{ marginTop: '0.3rem' }} data-testid="real-sector-two-three-month">{autoMonth}</div>
           </div>
+
+          <div
+            className="economic-item clickable"
+            data-testid="real-sector-item-fertilizer"
+            onClick={() => setIsFertilizerModalOpen(true)}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="economic-label" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              <span>Fertilizer</span>
+              <ExternalLink size={10} style={{ opacity: 0.6 }} />
+            </div>
+
+            <div className="economic-value" data-testid="real-sector-fertilizer-value">
+              {formatCount(fertilizerLatest)}
+            </div>
+
+            {fertilizerChange !== null && fertilizerChange !== undefined && (
+              <div className={`economic-change ${fertilizerChange >= 0 ? 'positive' : 'negative'}`} data-testid="real-sector-fertilizer-change">
+                {fertilizerChange >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                {fertilizerChange >= 0 ? '+' : ''}{fertilizerChange.toFixed(2)}%
+              </div>
+            )}
+
+            <div className="economic-sublabel" data-testid="real-sector-fertilizer-month">{fertilizerMonth}</div>
+            <div className="economic-label" style={{ marginTop: '0.15rem' }}>
+              Total Sales/Offtake
+            </div>
+          </div>
         </div>
       </div>
 
@@ -289,6 +329,13 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
         onClose={() => setIsTwoThreeModalOpen(false)}
         data={twoThreeModalData}
         title="2/3 Wheelers"
+      />
+
+      <FertilizerModal
+        isOpen={isFertilizerModalOpen}
+        onClose={() => setIsFertilizerModalOpen(false)}
+        data={fertilizerData}
+        title="Fertilizer Sales/Offtake"
       />
     </div>
   );

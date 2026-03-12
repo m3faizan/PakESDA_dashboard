@@ -98,6 +98,7 @@ data_cache = {
     "lsm": {"data": {}, "updated": None},
     "lsm_historical": {"data": {}, "updated": None},
     "auto_vehicles": {"data": {}, "updated": None},
+    "fertilizer": {"data": {}, "updated": None},
     "spi_weekly": {"data": {}, "updated": None},
     "spi_monthly": {"data": {}, "updated": None},
     "liquid_forex": {"data": {}, "updated": None}
@@ -351,6 +352,12 @@ AUTO_VEHICLE_SERIES = {
         "tractors": "TS_GP_RLS_PSAUTO_M.AS_001006",
         "two_three_wheelers": "TS_GP_RLS_PSAUTO_M.AS_001002"
     }
+}
+
+FERTILIZER_SERIES = {
+    "total": "TS_GP_RLS_SALEFERT_M.F_001000",
+    "urea": "TS_GP_RLS_SALEFERT_M.U_002000",
+    "dap": "TS_GP_RLS_SALEFERT_M.D_003000"
 }
 
 # RSS feeds for Pakistan news - comprehensive list
@@ -1874,6 +1881,77 @@ async def fetch_auto_vehicle_data():
         return None
 
 
+async def fetch_fertilizer_data():
+    """Fetch fertilizer offtake/sales data with stacked categories and total."""
+    try:
+        total_history, urea_history, dap_history = await asyncio.gather(
+            fetch_sbp_series_data(FERTILIZER_SERIES["total"], "2010-01-01"),
+            fetch_sbp_series_data(FERTILIZER_SERIES["urea"], "2010-01-01"),
+            fetch_sbp_series_data(FERTILIZER_SERIES["dap"], "2010-01-01")
+        )
+
+        total_by_date = {item["date"]: item["value"] for item in total_history}
+        urea_by_date = {item["date"]: item["value"] for item in urea_history}
+        dap_by_date = {item["date"]: item["value"] for item in dap_history}
+
+        all_dates = sorted(set(total_by_date.keys()) | set(urea_by_date.keys()) | set(dap_by_date.keys()))
+        if not all_dates:
+            return None
+
+        history = []
+        for date in all_dates:
+            urea_val = urea_by_date.get(date, 0)
+            dap_val = dap_by_date.get(date, 0)
+            total_val = total_by_date.get(date, urea_val + dap_val)
+            history.append({
+                "date": date,
+                "urea": round(urea_val, 2),
+                "dap": round(dap_val, 2),
+                "total": round(total_val, 2)
+            })
+
+        for idx, item in enumerate(history):
+            if idx == 0:
+                item["pct_change"] = 0
+            else:
+                prev = history[idx - 1]["total"]
+                item["pct_change"] = round(((item["total"] - prev) / prev) * 100, 2) if prev else 0
+
+        latest = history[-1]
+        previous = history[-2] if len(history) > 1 else None
+        latest_date = datetime.strptime(latest["date"], "%Y-%m-%d")
+
+        mom_change_pct = (((latest["total"] - previous["total"]) / previous["total"]) * 100) if previous and previous["total"] else None
+
+        return {
+            "latest": {
+                "total": latest["total"],
+                "urea": latest["urea"],
+                "dap": latest["dap"],
+                "month": latest_date.strftime("%B %Y"),
+                "date": latest["date"],
+                "unit": "Metric Tons"
+            },
+            "previous": {
+                "total": previous["total"],
+                "date": previous["date"]
+            } if previous else None,
+            "mom_change_pct": round(mom_change_pct, 2) if mom_change_pct is not None else None,
+            "history": history,
+            "categories": [
+                {"key": "urea", "label": "Urea"},
+                {"key": "dap", "label": "DAP"}
+            ],
+            "date_range": f"{history[0]['date']} to {history[-1]['date']}",
+            "source": "State Bank of Pakistan / PBS",
+            "name": "Fertilizer Sales/Offtake",
+            "updated": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        print(f"Error fetching fertilizer data: {e}")
+        return None
+
+
 def _safe_float(value):
     if value is None:
         return None
@@ -3049,6 +3127,17 @@ async def get_auto_vehicles():
     return {
         "data": data_cache["auto_vehicles"]["data"],
         "updated": data_cache["auto_vehicles"]["updated"].isoformat() if data_cache["auto_vehicles"]["updated"] else None
+    }
+
+
+@app.get("/api/fertilizer")
+async def get_fertilizer():
+    """Get fertilizer sales/offtake data"""
+    await refresh_cache_with_persistence("fertilizer", 21600, fetch_fertilizer_data)
+
+    return {
+        "data": data_cache["fertilizer"]["data"],
+        "updated": data_cache["fertilizer"]["updated"].isoformat() if data_cache["fertilizer"]["updated"] else None
     }
 
 
