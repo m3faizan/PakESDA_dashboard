@@ -97,6 +97,7 @@ data_cache = {
     "cpi_mom_historical": {"data": {}, "updated": None},
     "lsm": {"data": {}, "updated": None},
     "lsm_historical": {"data": {}, "updated": None},
+    "auto_vehicles": {"data": {}, "updated": None},
     "spi_weekly": {"data": {}, "updated": None},
     "spi_monthly": {"data": {}, "updated": None},
     "liquid_forex": {"data": {}, "updated": None}
@@ -330,6 +331,27 @@ LSM_HISTORICAL_APIS = [
         "end_date": "1981-06-30"
     }
 ]
+
+AUTO_VEHICLE_SERIES = {
+    "production_total": "TS_GP_RLS_PSAUTO_M.TAP_001000",
+    "sales_total": "TS_GP_RLS_PSAUTO_M.TAS_001000",
+    "production": {
+        "cars": "TS_GP_RLS_PSAUTO_M.AP_001001",
+        "trucks": "TS_GP_RLS_PSAUTO_M.AP_001003",
+        "buses": "TS_GP_RLS_PSAUTO_M.AP_001004",
+        "jeeps_pickups": "TS_GP_RLS_PSAUTO_M.AP_001005",
+        "tractors": "TS_GP_RLS_PSAUTO_M.AP_001006",
+        "two_three_wheelers": "TS_GP_RLS_PSAUTO_M.AP_001002"
+    },
+    "sales": {
+        "cars": "TS_GP_RLS_PSAUTO_M.AS_001001",
+        "trucks": "TS_GP_RLS_PSAUTO_M.AS_001003",
+        "buses": "TS_GP_RLS_PSAUTO_M.AS_001004",
+        "jeeps_pickups": "TS_GP_RLS_PSAUTO_M.AS_001005",
+        "tractors": "TS_GP_RLS_PSAUTO_M.AS_001006",
+        "two_three_wheelers": "TS_GP_RLS_PSAUTO_M.AS_001002"
+    }
+}
 
 # RSS feeds for Pakistan news - comprehensive list
 PAKISTAN_NEWS_FEEDS = [
@@ -1744,6 +1766,114 @@ async def fetch_lsm_data():
     return build_lsm_summary_from_historical(historical)
 
 
+async def fetch_auto_vehicle_data():
+    """Fetch production and sales of auto vehicles with category breakdowns."""
+    try:
+        fetch_map = {
+            "production_total": AUTO_VEHICLE_SERIES["production_total"],
+            "sales_total": AUTO_VEHICLE_SERIES["sales_total"]
+        }
+        fetch_map.update({f"production_{k}": v for k, v in AUTO_VEHICLE_SERIES["production"].items()})
+        fetch_map.update({f"sales_{k}": v for k, v in AUTO_VEHICLE_SERIES["sales"].items()})
+
+        tasks = [fetch_sbp_series_data(series_code, "2010-01-01") for series_code in fetch_map.values()]
+        results = await asyncio.gather(*tasks)
+        series_data = {key: results[idx] for idx, key in enumerate(fetch_map.keys())}
+
+        category_labels = {
+            "cars": "Cars",
+            "trucks": "Trucks",
+            "buses": "Buses",
+            "jeeps_pickups": "Jeeps & Pickups",
+            "tractors": "Tractors",
+            "two_three_wheelers": "2 & 3 Wheelers"
+        }
+
+        def build_mode(mode: str):
+            total_key = f"{mode}_total"
+            total_history = series_data.get(total_key, [])
+            category_keys = list(AUTO_VEHICLE_SERIES[mode].keys())
+            category_histories = {cat: series_data.get(f"{mode}_{cat}", []) for cat in category_keys}
+
+            total_by_date = {item["date"]: item["value"] for item in total_history}
+            date_set = set(total_by_date.keys())
+            for cat in category_keys:
+                date_set.update([item["date"] for item in category_histories[cat]])
+
+            merged = []
+            for date in sorted(date_set):
+                row = {"date": date}
+                category_sum = 0
+                for cat in category_keys:
+                    val = next((item["value"] for item in category_histories[cat] if item["date"] == date), 0)
+                    row[cat] = round(val, 2)
+                    category_sum += (val or 0)
+
+                row["total"] = round(total_by_date.get(date, category_sum), 2)
+                merged.append(row)
+
+            if not merged:
+                return None
+
+            for idx, item in enumerate(merged):
+                if idx == 0:
+                    item["pct_change"] = 0
+                else:
+                    prev = merged[idx - 1]["total"]
+                    item["pct_change"] = round(((item["total"] - prev) / prev) * 100, 2) if prev else 0
+
+            latest = merged[-1]
+            previous = merged[-2] if len(merged) > 1 else None
+            latest_date = datetime.strptime(latest["date"], "%Y-%m-%d")
+            month_label = latest_date.strftime("%B %Y")
+            mom_change_pct = (((latest["total"] - previous["total"]) / previous["total"]) * 100) if previous and previous["total"] else None
+
+            return {
+                "latest": {
+                    "total": latest["total"],
+                    "month": month_label,
+                    "date": latest["date"]
+                },
+                "previous": {
+                    "total": previous["total"],
+                    "date": previous["date"]
+                } if previous else None,
+                "mom_change_pct": round(mom_change_pct, 2) if mom_change_pct is not None else None,
+                "history": merged,
+                "categories": [{"key": cat, "label": category_labels[cat]} for cat in category_keys],
+                "date_range": f"{merged[0]['date']} to {merged[-1]['date']}"
+            }
+
+        production = build_mode("production")
+        sales = build_mode("sales")
+
+        if not production and not sales:
+            return None
+
+        latest_date = None
+        if production and sales:
+            latest_date = max(production["latest"]["date"], sales["latest"]["date"])
+        elif production:
+            latest_date = production["latest"]["date"]
+        elif sales:
+            latest_date = sales["latest"]["date"]
+
+        latest_month = datetime.strptime(latest_date, "%Y-%m-%d").strftime("%B %Y") if latest_date else "N/A"
+
+        return {
+            "latest_month": latest_month,
+            "latest_date": latest_date,
+            "production": production,
+            "sales": sales,
+            "source": "State Bank of Pakistan / PBS",
+            "name": "Production and Sale of Auto Vehicles",
+            "updated": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        print(f"Error fetching auto vehicle data: {e}")
+        return None
+
+
 def _safe_float(value):
     if value is None:
         return None
@@ -2908,6 +3038,17 @@ async def get_lsm_historical():
     return {
         "data": data_cache["lsm_historical"]["data"],
         "updated": data_cache["lsm_historical"]["updated"].isoformat() if data_cache["lsm_historical"]["updated"] else None
+    }
+
+
+@app.get("/api/auto-vehicles")
+async def get_auto_vehicles():
+    """Get production and sales of auto vehicles with category breakdowns"""
+    await refresh_cache_with_persistence("auto_vehicles", 21600, fetch_auto_vehicle_data)
+
+    return {
+        "data": data_cache["auto_vehicles"]["data"],
+        "updated": data_cache["auto_vehicles"]["updated"].isoformat() if data_cache["auto_vehicles"]["updated"] else None
     }
 
 
