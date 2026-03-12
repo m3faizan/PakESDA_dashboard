@@ -40,6 +40,14 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
   - Historical stitching across 6 base-year series (1969-70, 1975-76, 1980-81, 1999-2000, 2005-06, 2015-16)
   - New `LSMDataModal` with multi-range chart and base-year transition markers
   - Positive change semantics implemented as requested: increase = good (green), decrease = bad (red)
+- [x] Real Sector UX refinement pass:
+  - LSM tile now visually matches Economic Indicator cards (sharp edge style)
+  - Removed “increase is good” phrasing from tile text
+  - LSM modal now uses base-year dropdown selection (default `Base 2015-16`) instead of plotting mixed base-year lines together
+  - LSM modal summary number color aligned with Economic indicator value styling
+- [x] PSX modal market status fix:
+  - Replaced timestamp string heuristic with Karachi market-hours logic (Mon-Fri, 09:30-15:30 PKT)
+  - Corrected false “Market Closed” reports during open sessions
 - [x] LSM backend resilience improvements:
   - Added handling for SBP rate-limit responses that return HTTP 200 with `{ "error": ... }`
   - Avoids clobbering last good cached LSM data on fetch failure

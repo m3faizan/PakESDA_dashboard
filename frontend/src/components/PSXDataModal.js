@@ -17,6 +17,18 @@ const PSXDataModal = ({ isOpen, onClose, data }) => {
     return vol.toLocaleString();
   };
 
+  const isMarketOpenNow = () => {
+    const karachiNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Karachi' }));
+    const day = karachiNow.getDay();
+    const minutes = karachiNow.getHours() * 60 + karachiNow.getMinutes();
+    const marketOpenMinutes = 9 * 60 + 30;
+    const marketCloseMinutes = 15 * 60 + 30;
+    const isWeekday = day >= 1 && day <= 5;
+    return isWeekday && minutes >= marketOpenMinutes && minutes <= marketCloseMinutes;
+  };
+
+  const marketOpen = isMarketOpenNow();
+
   return (
     <div className="modal-overlay" onClick={onClose} data-testid="psx-modal-overlay">
       <div 
@@ -134,13 +146,13 @@ const PSXDataModal = ({ isOpen, onClose, data }) => {
           justifyContent: 'center',
           gap: '0.5rem',
           padding: '0.75rem',
-          background: 'rgba(34, 197, 94, 0.1)',
+          background: marketOpen ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
           borderRadius: '8px',
           marginBottom: '1rem'
         }}>
-          <Activity size={16} style={{ color: '#22C55E' }} />
+          <Activity size={16} style={{ color: marketOpen ? '#22C55E' : '#EF4444' }} />
           <span style={{ fontSize: '0.85rem', color: 'var(--color-text)' }}>
-            Market {data.timestamp?.includes('12:') || data.timestamp?.includes('13:') || data.timestamp?.includes('14:') ? 'Open' : 'Closed'}
+            Market {marketOpen ? 'Open' : 'Closed'}
           </span>
         </div>
 

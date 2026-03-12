@@ -71,45 +71,40 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
         <span className="panel-badge">LIVE</span>
       </div>
       <div className="panel-content">
-        <div className="inflation-grid" data-testid="real-sector-grid">
+        <div className="economic-grid" data-testid="real-sector-grid">
           <div
-            className="inflation-item clickable"
+            className="economic-item clickable"
             data-testid="real-sector-item-lsm"
             onClick={() => setIsModalOpen(true)}
             style={{ cursor: 'pointer' }}
           >
-            <div className="inflation-header">
-              <span className="inflation-label">
-                LSM Quantum Index
-                <ExternalLink size={10} style={{ marginLeft: '4px', opacity: 0.6 }} />
-                <span
-                  className="live-dot"
-                  style={{
-                    width: '6px',
-                    height: '6px',
-                    backgroundColor: '#22C55E',
-                    borderRadius: '50%',
-                    display: 'inline-block',
-                    marginLeft: '6px',
-                    animation: 'pulse 2s infinite'
-                  }}
-                ></span>
-              </span>
+            <div className="economic-label" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              <span>LSM Quantum Index</span>
+              <ExternalLink size={10} style={{ opacity: 0.6 }} />
+              <span
+                className="live-dot"
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  backgroundColor: '#22C55E',
+                  borderRadius: '50%',
+                  display: 'inline-block',
+                  animation: 'pulse 2s infinite'
+                }}
+              ></span>
             </div>
-            <div className="inflation-value-container">
-              <span className="inflation-value" style={{ color: 'var(--color-text)' }} data-testid="real-sector-lsm-value">
+            <div className="economic-value" data-testid="real-sector-lsm-value">
                 {latestValue !== null && latestValue !== undefined ? Number(latestValue).toFixed(2) : '--'}
-              </span>
-              {momChangePct !== null && momChangePct !== undefined && (
-                <span className={`inflation-change ${momChangePct >= 0 ? 'up' : 'down'}`} data-testid="real-sector-lsm-change">
-                  {momChangePct >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                  {momChangePct >= 0 ? '+' : ''}{momChangePct.toFixed(2)}%
-                </span>
-              )}
             </div>
-            <div className="inflation-sublabel" data-testid="real-sector-lsm-month">{latestMonth}</div>
-            <div className="inflation-description">
-              Quantum Index of Large-scale Manufacturing (Increase is good)
+            {momChangePct !== null && momChangePct !== undefined && (
+              <div className={`economic-change ${momChangePct >= 0 ? 'positive' : 'negative'}`} data-testid="real-sector-lsm-change">
+                {momChangePct >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                {momChangePct >= 0 ? '+' : ''}{momChangePct.toFixed(2)}%
+              </div>
+            )}
+            <div className="economic-sublabel" data-testid="real-sector-lsm-month">{latestMonth}</div>
+            <div className="economic-label" style={{ marginTop: '0.15rem' }}>
+              Quantum Index of Large-scale Manufacturing
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { X, TrendingUp, TrendingDown, Calendar, Factory } from 'lucide-react';
 import {
   AreaChart,
@@ -7,8 +7,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
-  ReferenceLine
+  ResponsiveContainer
 } from 'recharts';
 
 const TIME_RANGES = [
@@ -21,13 +20,36 @@ const TIME_RANGES = [
   { key: 'ALL', label: 'All', months: null }
 ];
 
+const BASE_OPTIONS = [
+  'Base 2015-16',
+  'Base 2005-06',
+  'Base 1999-2000',
+  'Base 1980-81',
+  'Base 1975-76',
+  'Base 1969-70'
+];
+
 const LSMDataModal = ({ isOpen, onClose, data, title }) => {
-  const [selectedRange, setSelectedRange] = useState('10Y');
+  const [selectedRange, setSelectedRange] = useState('ALL');
+  const [selectedBase, setSelectedBase] = useState('Base 2015-16');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setSelectedBase('Base 2015-16');
+    setSelectedRange('ALL');
+  }, [isOpen]);
+
+  const baseHistory = useMemo(() => {
+    if (!data?.history) return [];
+    return data.history
+      .filter((item) => item.base_year === selectedBase)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+  }, [data, selectedBase]);
 
   const filteredData = useMemo(() => {
-    if (!data?.history) return [];
+    if (!baseHistory.length) return [];
 
-    const history = [...data.history].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const history = baseHistory;
     const now = new Date();
     const currentYear = now.getFullYear();
     const range = TIME_RANGES.find((r) => r.key === selectedRange);
@@ -43,42 +65,33 @@ const LSMDataModal = ({ isOpen, onClose, data, title }) => {
     const cutoffDate = new Date();
     cutoffDate.setMonth(cutoffDate.getMonth() - range.months);
     return history.filter((item) => new Date(item.date) >= cutoffDate);
-  }, [data, selectedRange]);
-
-  const baseYearMarkers = useMemo(() => {
-    if (!data?.base_year_markers || filteredData.length === 0) return [];
-
-    const startDate = new Date(filteredData[0].date);
-    const endDate = new Date(filteredData[filteredData.length - 1].date);
-
-    return data.base_year_markers
-      .filter((marker) => {
-        const markerDate = new Date(marker.date);
-        return markerDate >= startDate && markerDate <= endDate;
-      })
-      .map((marker) => {
-        const markerTime = new Date(marker.date).getTime();
-        let closestDate = filteredData[0].date;
-        let minDiff = Math.abs(new Date(filteredData[0].date).getTime() - markerTime);
-
-        for (const point of filteredData) {
-          const diff = Math.abs(new Date(point.date).getTime() - markerTime);
-          if (diff < minDiff) {
-            minDiff = diff;
-            closestDate = point.date;
-          }
-        }
-
-        return { ...marker, chartDate: closestDate };
-      });
-  }, [data, filteredData]);
+  }, [baseHistory, selectedRange]);
 
   if (!isOpen) return null;
 
-  const latest = data?.latest;
+  const latest = baseHistory.length ? baseHistory[baseHistory.length - 1] : null;
+  const previous = baseHistory.length > 1 ? baseHistory[baseHistory.length - 2] : null;
   const latestValue = latest?.value || 0;
-  const momChangePct = data?.mom_change_pct;
-  const yoyChange = data?.yoy_change;
+
+  const momChangePct = previous && previous.value
+    ? ((latestValue - previous.value) / previous.value) * 100
+    : null;
+
+  const latestDate = latest ? new Date(latest.date) : null;
+  const yoyRef = latestDate
+    ? baseHistory.find((item) => {
+        const itemDate = new Date(item.date);
+        const monthsDiff = (latestDate.getFullYear() - itemDate.getFullYear()) * 12 + (latestDate.getMonth() - itemDate.getMonth());
+        return monthsDiff === 12;
+      })
+    : null;
+  const yoyChange = yoyRef && yoyRef.value
+    ? ((latestValue - yoyRef.value) / yoyRef.value) * 100
+    : null;
+
+  const latestMonth = latestDate
+    ? latestDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    : 'N/A';
 
   const values = filteredData.map((d) => d.value);
   const minValue = values.length ? Math.min(...values) : 0;
@@ -124,12 +137,12 @@ const LSMDataModal = ({ isOpen, onClose, data, title }) => {
 
         <div className="modal-summary">
           <div className="summary-main">
-            <div className="summary-value" style={{ color: '#22C55E' }} data-testid="lsm-summary-value">
+            <div className="summary-value" style={{ color: 'var(--color-text)' }} data-testid="lsm-summary-value">
               {latestValue.toFixed(2)}
             </div>
             <div className="summary-period" data-testid="lsm-summary-period">
               <Calendar size={14} />
-              {latest?.month || 'N/A'}
+              {latestMonth}
             </div>
           </div>
           <div className="summary-changes">
@@ -148,6 +161,27 @@ const LSMDataModal = ({ isOpen, onClose, data, title }) => {
               </div>
             )}
           </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.55rem' }}>
+          <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Base Year:</span>
+          <select
+            value={selectedBase}
+            onChange={(e) => setSelectedBase(e.target.value)}
+            data-testid="lsm-base-selector"
+            style={{
+              background: 'rgba(11, 18, 32, 0.92)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text)',
+              fontSize: '0.72rem',
+              padding: '0.22rem 0.45rem',
+              borderRadius: '4px'
+            }}
+          >
+            {BASE_OPTIONS.map((base) => (
+              <option key={base} value={base}>{base}</option>
+            ))}
+          </select>
         </div>
 
         <div className="time-range-selector" data-testid="lsm-time-range-selector">
@@ -192,22 +226,6 @@ const LSMDataModal = ({ isOpen, onClose, data, title }) => {
                 domain={[Math.max(0, minValue * 0.95), maxValue * 1.05]}
                 width={45}
               />
-              {baseYearMarkers.map((marker, idx) => (
-                <ReferenceLine
-                  key={`lsm-base-${idx}`}
-                  x={marker.chartDate}
-                  stroke="#6366f1"
-                  strokeDasharray="5 5"
-                  strokeWidth={2}
-                  label={{
-                    value: marker.base_year,
-                    fill: '#6366f1',
-                    fontSize: 10,
-                    position: 'insideTopRight',
-                    offset: 5
-                  }}
-                />
-              ))}
               <Tooltip content={<CustomTooltip />} />
               <Area type="monotone" dataKey="value" stroke="#22C55E" strokeWidth={2} fillOpacity={1} fill="url(#colorLSM)" />
             </AreaChart>
@@ -217,9 +235,9 @@ const LSMDataModal = ({ isOpen, onClose, data, title }) => {
         <div className="modal-footer" data-testid="lsm-modal-footer">
           <span className="data-source">Source: {data?.source || 'State Bank of Pakistan / PBS'}</span>
           <span className="data-updated">
-            {data?.total_data_points && (
+            {filteredData?.length > 0 && (
               <span style={{ marginRight: '1rem', color: '#64748b' }}>
-                {data.total_data_points} data points
+                {filteredData.length} data points
               </span>
             )}
             Last updated: {new Date(data?.updated || Date.now()).toLocaleDateString()}
