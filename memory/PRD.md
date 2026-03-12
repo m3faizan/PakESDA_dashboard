@@ -57,6 +57,11 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
   - Real Sector card now shows both **Production** and **Sales** with MoM changes
   - Click opens modal with **stacked column chart** and Production/Sales toggle
   - Category stacks include Cars, Trucks, Buses, Jeeps & Pickups, Tractors, and 2 & 3 Wheelers
+- [x] Auto Vehicles + 2/3 Wheeler refinements:
+  - Production/Sales selector moved to same control row as time-range buttons
+  - Auto chart now supports per-series deselect with dimmed state (dull) while preserving chart layout
+  - Removed 2/3 Wheelers from Auto Vehicles stacked chart categories
+  - Added separate **2/3 Wheelers** Real Sector data point with dedicated modal (Production/Sales + trend chart)
 - [x] LSM backend resilience improvements:
   - Added handling for SBP rate-limit responses that return HTTP 200 with `{ "error": ... }`
   - Avoids clobbering last good cached LSM data on fetch failure
