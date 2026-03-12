@@ -3,6 +3,7 @@ import { Factory, TrendingUp, TrendingDown, ExternalLink } from 'lucide-react';
 import axios from 'axios';
 import LSMDataModal from './LSMDataModal';
 import AutoVehiclesModal from './AutoVehiclesModal';
+import TwoThreeWheelersModal from './TwoThreeWheelersModal';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -12,6 +13,7 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
   const [dataLoading, setDataLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAutoModalOpen, setIsAutoModalOpen] = useState(false);
+  const [isTwoThreeModalOpen, setIsTwoThreeModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -74,6 +76,44 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
   const salesLatest = autoVehiclesData?.sales?.latest?.total;
   const productionChange = autoVehiclesData?.production?.mom_change_pct;
   const salesChange = autoVehiclesData?.sales?.mom_change_pct;
+
+  const prodTwoThreeHist = autoVehiclesData?.production?.history || [];
+  const salesTwoThreeHist = autoVehiclesData?.sales?.history || [];
+  const prodTwoThreeLatest = prodTwoThreeHist.length ? prodTwoThreeHist[prodTwoThreeHist.length - 1]?.two_three_wheelers : null;
+  const prodTwoThreePrev = prodTwoThreeHist.length > 1 ? prodTwoThreeHist[prodTwoThreeHist.length - 2]?.two_three_wheelers : null;
+  const salesTwoThreeLatest = salesTwoThreeHist.length ? salesTwoThreeHist[salesTwoThreeHist.length - 1]?.two_three_wheelers : null;
+  const salesTwoThreePrev = salesTwoThreeHist.length > 1 ? salesTwoThreeHist[salesTwoThreeHist.length - 2]?.two_three_wheelers : null;
+
+  const prodTwoThreeChange = (prodTwoThreePrev && prodTwoThreePrev !== 0)
+    ? ((prodTwoThreeLatest - prodTwoThreePrev) / prodTwoThreePrev) * 100
+    : null;
+  const salesTwoThreeChange = (salesTwoThreePrev && salesTwoThreePrev !== 0)
+    ? ((salesTwoThreeLatest - salesTwoThreePrev) / salesTwoThreePrev) * 100
+    : null;
+
+  const twoThreeModalData = {
+    source: autoVehiclesData?.source,
+    updated: autoVehiclesData?.updated,
+    latest_month: autoVehiclesData?.latest_month,
+    production: {
+      latest: {
+        total: prodTwoThreeLatest,
+        month: autoVehiclesData?.production?.latest?.month,
+        date: autoVehiclesData?.production?.latest?.date
+      },
+      mom_change_pct: prodTwoThreeChange,
+      history: prodTwoThreeHist.map((item) => ({ date: item.date, total: item.two_three_wheelers || 0 }))
+    },
+    sales: {
+      latest: {
+        total: salesTwoThreeLatest,
+        month: autoVehiclesData?.sales?.latest?.month,
+        date: autoVehiclesData?.sales?.latest?.date
+      },
+      mom_change_pct: salesTwoThreeChange,
+      history: salesTwoThreeHist.map((item) => ({ date: item.date, total: item.two_three_wheelers || 0 }))
+    }
+  };
 
   const formatCount = (val) => {
     if (val === null || val === undefined) return '--';
@@ -183,6 +223,50 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
 
             <div className="economic-sublabel" style={{ marginTop: '0.3rem' }} data-testid="real-sector-auto-month">{autoMonth}</div>
           </div>
+
+          <div
+            className="economic-item clickable"
+            data-testid="real-sector-item-two-three"
+            onClick={() => setIsTwoThreeModalOpen(true)}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="economic-label" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              <span>2/3 Wheelers</span>
+              <ExternalLink size={10} style={{ opacity: 0.6 }} />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.5rem' }}>
+              <div>
+                <div className="economic-sublabel" style={{ marginBottom: '0.08rem' }}>Production</div>
+                <div className="economic-value" style={{ fontSize: '1.1rem' }} data-testid="real-sector-two-three-production-value">
+                  {formatCount(prodTwoThreeLatest)}
+                </div>
+              </div>
+              {prodTwoThreeChange !== null && prodTwoThreeChange !== undefined && (
+                <div className={`economic-change ${prodTwoThreeChange >= 0 ? 'positive' : 'negative'}`} data-testid="real-sector-two-three-production-change">
+                  {prodTwoThreeChange >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                  {prodTwoThreeChange >= 0 ? '+' : ''}{prodTwoThreeChange.toFixed(2)}%
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.5rem', marginTop: '0.3rem' }}>
+              <div>
+                <div className="economic-sublabel" style={{ marginBottom: '0.08rem' }}>Sales</div>
+                <div className="economic-value" style={{ fontSize: '1.1rem' }} data-testid="real-sector-two-three-sales-value">
+                  {formatCount(salesTwoThreeLatest)}
+                </div>
+              </div>
+              {salesTwoThreeChange !== null && salesTwoThreeChange !== undefined && (
+                <div className={`economic-change ${salesTwoThreeChange >= 0 ? 'positive' : 'negative'}`} data-testid="real-sector-two-three-sales-change">
+                  {salesTwoThreeChange >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                  {salesTwoThreeChange >= 0 ? '+' : ''}{salesTwoThreeChange.toFixed(2)}%
+                </div>
+              )}
+            </div>
+
+            <div className="economic-sublabel" style={{ marginTop: '0.3rem' }} data-testid="real-sector-two-three-month">{autoMonth}</div>
+          </div>
         </div>
       </div>
 
@@ -198,6 +282,13 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
         onClose={() => setIsAutoModalOpen(false)}
         data={autoVehiclesData}
         title="Production and Sale of Auto Vehicles"
+      />
+
+      <TwoThreeWheelersModal
+        isOpen={isTwoThreeModalOpen}
+        onClose={() => setIsTwoThreeModalOpen(false)}
+        data={twoThreeModalData}
+        title="2/3 Wheelers"
       />
     </div>
   );

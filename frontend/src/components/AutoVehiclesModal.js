@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { X, Car, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -8,7 +8,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   Line
 } from 'recharts';
 
@@ -24,8 +23,21 @@ const COLORS = ['#22C55E', '#38BDF8', '#F59E0B', '#A855F7', '#EC4899', '#14B8A6'
 const AutoVehiclesModal = ({ isOpen, onClose, data, title }) => {
   const [mode, setMode] = useState('production');
   const [selectedRange, setSelectedRange] = useState('2Y');
+  const [visibleSeries, setVisibleSeries] = useState({});
 
   const modeData = data?.[mode];
+  const stackCategories = useMemo(
+    () => (modeData?.categories || []).filter((cat) => cat.key !== 'two_three_wheelers'),
+    [modeData]
+  );
+
+  useEffect(() => {
+    const next = {};
+    stackCategories.forEach((cat) => {
+      next[cat.key] = true;
+    });
+    setVisibleSeries(next);
+  }, [mode, stackCategories.length]);
 
   const filteredData = useMemo(() => {
     if (!modeData?.history) return [];
@@ -49,7 +61,13 @@ const AutoVehiclesModal = ({ isOpen, onClose, data, title }) => {
     return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
   };
 
-  const categoryDefs = modeData?.categories || [];
+  const toggleSeries = (key) => {
+    setVisibleSeries((prev) => {
+      const activeCount = Object.values(prev).filter(Boolean).length;
+      if (prev[key] && activeCount === 1) return prev;
+      return { ...prev, [key]: !prev[key] };
+    });
+  };
 
   return (
     <div className="modal-overlay" onClick={onClose} data-testid="auto-vehicles-modal-overlay">
@@ -85,7 +103,7 @@ const AutoVehiclesModal = ({ isOpen, onClose, data, title }) => {
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: '0.45rem', marginBottom: '0.6rem' }} data-testid="auto-vehicles-mode-switch">
+        <div className="time-range-selector" data-testid="auto-vehicles-time-range-selector">
           <button
             className={`range-btn ${mode === 'production' ? 'active' : ''}`}
             onClick={() => setMode('production')}
@@ -100,9 +118,7 @@ const AutoVehiclesModal = ({ isOpen, onClose, data, title }) => {
           >
             Sales
           </button>
-        </div>
-
-        <div className="time-range-selector" data-testid="auto-vehicles-time-range-selector">
+          <div style={{ width: '1px', height: '22px', background: 'var(--color-border)', margin: '0 0.3rem' }}></div>
           {TIME_RANGES.map((range) => (
             <button
               key={range.key}
@@ -113,6 +129,35 @@ const AutoVehiclesModal = ({ isOpen, onClose, data, title }) => {
               {range.label}
             </button>
           ))}
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginBottom: '0.45rem' }} data-testid="auto-vehicles-series-toggle-row">
+          {stackCategories.map((category, idx) => {
+            const active = visibleSeries[category.key] !== false;
+            return (
+              <button
+                key={category.key}
+                onClick={() => toggleSeries(category.key)}
+                data-testid={`auto-vehicles-series-toggle-${category.key}`}
+                style={{
+                  border: '1px solid var(--color-border)',
+                  borderRadius: '12px',
+                  padding: '0.12rem 0.45rem',
+                  background: 'rgba(2, 6, 23, 0.45)',
+                  color: 'var(--color-text)',
+                  fontSize: '0.64rem',
+                  opacity: active ? 1 : 0.42,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.28rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: COLORS[idx % COLORS.length], display: 'inline-block' }}></span>
+                {category.label}
+              </button>
+            );
+          })}
         </div>
 
         <div className="chart-container" data-testid="auto-vehicles-chart-container">
@@ -156,14 +201,14 @@ const AutoVehiclesModal = ({ isOpen, onClose, data, title }) => {
                   return null;
                 }}
               />
-              <Legend wrapperStyle={{ fontSize: '0.7rem' }} />
-              {categoryDefs.map((category, idx) => (
+              {stackCategories.map((category, idx) => (
                 <Bar
                   key={category.key}
                   dataKey={category.key}
                   name={category.label}
                   stackId="a"
                   fill={COLORS[idx % COLORS.length]}
+                  hide={!visibleSeries[category.key]}
                 />
               ))}
               <Line type="monotone" dataKey="total" name="Total" stroke="#F8FAFC" strokeWidth={2} dot={false} />
