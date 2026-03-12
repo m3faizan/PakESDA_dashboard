@@ -61,6 +61,13 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
   - New endpoint `/api/fdi` from SBP series `TS_GP_FI_SUMFIPK_M.FI00030`
   - Economic card + modal integrated in existing style
   - Semantics kept as requested: FDI increase shown green, decrease shown red
+- [x] Final Business Environment chart corrections:
+  - Overview + Sector trend x-axis now preserves latest month (no one-month lag)
+  - Overview + Sector y-axis fixed to **0–100**
+  - Confirmed confidence range is **Oct 2017 to Feb 2026**
+- [x] FDI history depth correction:
+  - FDI source window expanded to **Jul 1997 to Jan 2026** (343 data points)
+  - FDI modal defaults to **All** range to display full historical series on open
 - [x] Debt semantics corrected end-to-end:
   - For Gov. Debt, **increase = red (bad)** and **decrease = green (good)** on card + modal + % change bars
 - [x] Added **Central Government Debt** to Economic Indicators:
