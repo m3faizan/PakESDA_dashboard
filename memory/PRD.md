@@ -52,6 +52,11 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] SBP rate-limit resilience enhancement:
   - Added persisted fallback cache for key SBP indicators (remittances, gold, forex, current account, imports, exports, PKR/USD, FDI, gov debt, business environment, LSM)
   - On fetch failures/rate-limits, app now restores last successful polled values instead of dropping cards to `--` where prior data exists
+- [x] Added **Auto Vehicles (Production & Sales)** to Real Sector:
+  - New endpoint `/api/auto-vehicles` (SBP dataset `TS_GP_RLS_PSAUTO_M`)
+  - Real Sector card now shows both **Production** and **Sales** with MoM changes
+  - Click opens modal with **stacked column chart** and Production/Sales toggle
+  - Category stacks include Cars, Trucks, Buses, Jeeps & Pickups, Tractors, and 2 & 3 Wheelers
 - [x] LSM backend resilience improvements:
   - Added handling for SBP rate-limit responses that return HTTP 200 with `{ "error": ... }`
   - Avoids clobbering last good cached LSM data on fetch failure
