@@ -35,6 +35,15 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 ## What's Been Implemented (Mar 8-10, 2026)
 
 ### Latest Updates (Mar 10, 2026)
+- [x] Added new **Real Sector** panel with LSM Quantum Index (CPI-style historical flow):
+  - New APIs: `/api/lsm` and `/api/lsm-historical`
+  - Historical stitching across 6 base-year series (1969-70, 1975-76, 1980-81, 1999-2000, 2005-06, 2015-16)
+  - New `LSMDataModal` with multi-range chart and base-year transition markers
+  - Positive change semantics implemented as requested: increase = good (green), decrease = bad (red)
+- [x] LSM backend resilience improvements:
+  - Added handling for SBP rate-limit responses that return HTTP 200 with `{ "error": ... }`
+  - Avoids clobbering last good cached LSM data on fetch failure
+  - Shared cache path reduces duplicate calls between `/api/lsm` and `/api/lsm-historical`
 - [x] Added new **Business Environment** panel (EPU + Business Confidence):
   - New endpoint `/api/business-environment` using SBP EasyData datasets `TS_GP_MFS_EPUI_M` and `TS_GP_RL_BCSIND_M`
   - KPI cards: EPU (4 newspapers), Current BCI, Expected BCI

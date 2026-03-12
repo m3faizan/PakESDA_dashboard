@@ -1549,7 +1549,12 @@ async def fetch_lsm_historical_data():
                     if response.status_code != 200:
                         continue
 
-                    rows = response.json().get("rows", [])
+                    payload = response.json()
+                    if isinstance(payload, dict) and payload.get("error"):
+                        print(f"LSM API rate limit/error for {api_config['label']}: {payload.get('error')}")
+                        continue
+
+                    rows = payload.get("rows", [])
                     period_history = []
                     for row in rows:
                         try:
@@ -1649,9 +1654,8 @@ async def fetch_lsm_historical_data():
     return None
 
 
-async def fetch_lsm_data():
-    """Fetch latest LSM summary based on combined historical base-year series."""
-    historical = await fetch_lsm_historical_data()
+def build_lsm_summary_from_historical(historical):
+    """Build latest LSM summary payload from historical response object."""
     if not historical:
         return None
 
@@ -1666,6 +1670,12 @@ async def fetch_lsm_data():
         "name": historical.get("name"),
         "updated": historical.get("updated")
     }
+
+
+async def fetch_lsm_data():
+    """Fetch latest LSM summary based on combined historical base-year series."""
+    historical = await fetch_lsm_historical_data()
+    return build_lsm_summary_from_historical(historical)
 
 
 def _safe_float(value):
@@ -2832,16 +2842,32 @@ async def get_cpi_mom_historical():
     }
 
 
+async def ensure_lsm_historical_cache():
+    """Refresh LSM historical cache safely (without clobbering last good data on API limits)."""
+    should_refresh = False
+    if not data_cache["lsm_historical"]["updated"] or not data_cache["lsm_historical"]["data"]:
+        should_refresh = True
+    else:
+        age = (datetime.now(timezone.utc) - data_cache["lsm_historical"]["updated"]).total_seconds()
+        should_refresh = age > 21600
+
+    if should_refresh:
+        fetched = await fetch_lsm_historical_data()
+        if fetched:
+            data_cache["lsm_historical"]["data"] = fetched
+            data_cache["lsm_historical"]["updated"] = datetime.now(timezone.utc)
+
+
 @app.get("/api/lsm")
 async def get_lsm():
     """Get latest LSM quantum index summary data"""
-    if data_cache["lsm"]["updated"]:
-        age = (datetime.now(timezone.utc) - data_cache["lsm"]["updated"]).total_seconds()
-        if age > 21600:
-            data_cache["lsm"]["data"] = await fetch_lsm_data()
-            data_cache["lsm"]["updated"] = datetime.now(timezone.utc)
-    else:
-        data_cache["lsm"]["data"] = await fetch_lsm_data()
+    await ensure_lsm_historical_cache()
+
+    historical = data_cache["lsm_historical"]["data"]
+    summary = build_lsm_summary_from_historical(historical) if historical else None
+
+    if summary:
+        data_cache["lsm"]["data"] = summary
         data_cache["lsm"]["updated"] = datetime.now(timezone.utc)
 
     return {
@@ -2853,14 +2879,7 @@ async def get_lsm():
 @app.get("/api/lsm-historical")
 async def get_lsm_historical():
     """Get complete historical LSM quantum index data across base periods"""
-    if data_cache["lsm_historical"]["updated"]:
-        age = (datetime.now(timezone.utc) - data_cache["lsm_historical"]["updated"]).total_seconds()
-        if age > 21600:
-            data_cache["lsm_historical"]["data"] = await fetch_lsm_historical_data()
-            data_cache["lsm_historical"]["updated"] = datetime.now(timezone.utc)
-    else:
-        data_cache["lsm_historical"]["data"] = await fetch_lsm_historical_data()
-        data_cache["lsm_historical"]["updated"] = datetime.now(timezone.utc)
+    await ensure_lsm_historical_cache()
 
     return {
         "data": data_cache["lsm_historical"]["data"],
