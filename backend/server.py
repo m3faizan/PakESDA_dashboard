@@ -102,6 +102,72 @@ data_cache = {
     "liquid_forex": {"data": {}, "updated": None}
 }
 
+PERSISTED_CACHE_FILE = "/app/backend/persisted_sbp_cache.json"
+
+
+def load_persisted_cache():
+    try:
+        if os.path.exists(PERSISTED_CACHE_FILE):
+            with open(PERSISTED_CACHE_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"Error loading persisted cache: {e}")
+    return {}
+
+
+def save_persisted_cache(cache_obj):
+    try:
+        with open(PERSISTED_CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(cache_obj, f)
+    except Exception as e:
+        print(f"Error saving persisted cache: {e}")
+
+
+def persist_cache_entry(cache_key: str, data):
+    if data is None:
+        return
+    cache_obj = load_persisted_cache()
+    cache_obj[cache_key] = {
+        "updated": datetime.now(timezone.utc).isoformat(),
+        "data": data
+    }
+    save_persisted_cache(cache_obj)
+
+
+def restore_cache_entry(cache_key: str):
+    cache_obj = load_persisted_cache()
+    entry = cache_obj.get(cache_key)
+    if not entry:
+        return None, None
+    return entry.get("data"), entry.get("updated")
+
+
+async def refresh_cache_with_persistence(cache_key: str, ttl_seconds: int, fetcher):
+    """Refresh in-memory cache safely and restore last persisted value when upstream is rate-limited."""
+    should_refresh = False
+    if not data_cache[cache_key]["updated"] or not data_cache[cache_key]["data"]:
+        should_refresh = True
+    else:
+        age = (datetime.now(timezone.utc) - data_cache[cache_key]["updated"]).total_seconds()
+        should_refresh = age > ttl_seconds
+
+    if should_refresh:
+        fetched = await fetcher()
+        if fetched:
+            data_cache[cache_key]["data"] = fetched
+            data_cache[cache_key]["updated"] = datetime.now(timezone.utc)
+            persist_cache_entry(cache_key, fetched)
+        elif not data_cache[cache_key]["data"]:
+            persisted_data, persisted_updated = restore_cache_entry(cache_key)
+            if persisted_data:
+                data_cache[cache_key]["data"] = persisted_data
+                data_cache[cache_key]["updated"] = datetime.fromisoformat(persisted_updated) if persisted_updated else datetime.now(timezone.utc)
+    elif not data_cache[cache_key]["data"]:
+        persisted_data, persisted_updated = restore_cache_entry(cache_key)
+        if persisted_data:
+            data_cache[cache_key]["data"] = persisted_data
+            data_cache[cache_key]["updated"] = datetime.fromisoformat(persisted_updated) if persisted_updated else datetime.now(timezone.utc)
+
 # NHMP Road Advisory API
 NHMP_ADVISORY_URL = "http://cpo.nhmp.gov.pk:6788/api/TravelAdvisory/FilteredAdvisory"
 
@@ -2527,15 +2593,7 @@ async def get_security_alerts():
 @app.get("/api/remittances")
 async def get_remittances():
     """Get workers' remittances data from State Bank of Pakistan"""
-    # Refresh if older than 1 hour (data updates monthly, so no need for frequent refresh)
-    if data_cache["remittances"]["updated"]:
-        age = (datetime.now(timezone.utc) - data_cache["remittances"]["updated"]).total_seconds()
-        if age > 3600:  # 1 hour
-            data_cache["remittances"]["data"] = await fetch_remittances_data()
-            data_cache["remittances"]["updated"] = datetime.now(timezone.utc)
-    else:
-        data_cache["remittances"]["data"] = await fetch_remittances_data()
-        data_cache["remittances"]["updated"] = datetime.now(timezone.utc)
+    await refresh_cache_with_persistence("remittances", 3600, fetch_remittances_data)
     
     return {
         "data": data_cache["remittances"]["data"],
@@ -2545,14 +2603,7 @@ async def get_remittances():
 @app.get("/api/gold-reserves")
 async def get_gold_reserves():
     """Get gold reserves data from State Bank of Pakistan"""
-    if data_cache["gold_reserves"]["updated"]:
-        age = (datetime.now(timezone.utc) - data_cache["gold_reserves"]["updated"]).total_seconds()
-        if age > 3600:
-            data_cache["gold_reserves"]["data"] = await fetch_gold_reserves_data()
-            data_cache["gold_reserves"]["updated"] = datetime.now(timezone.utc)
-    else:
-        data_cache["gold_reserves"]["data"] = await fetch_gold_reserves_data()
-        data_cache["gold_reserves"]["updated"] = datetime.now(timezone.utc)
+    await refresh_cache_with_persistence("gold_reserves", 3600, fetch_gold_reserves_data)
     
     return {
         "data": data_cache["gold_reserves"]["data"],
@@ -2562,14 +2613,7 @@ async def get_gold_reserves():
 @app.get("/api/forex-reserves")
 async def get_forex_reserves():
     """Get total forex reserves data from State Bank of Pakistan"""
-    if data_cache["forex_reserves"]["updated"]:
-        age = (datetime.now(timezone.utc) - data_cache["forex_reserves"]["updated"]).total_seconds()
-        if age > 3600:
-            data_cache["forex_reserves"]["data"] = await fetch_forex_reserves_data()
-            data_cache["forex_reserves"]["updated"] = datetime.now(timezone.utc)
-    else:
-        data_cache["forex_reserves"]["data"] = await fetch_forex_reserves_data()
-        data_cache["forex_reserves"]["updated"] = datetime.now(timezone.utc)
+    await refresh_cache_with_persistence("forex_reserves", 3600, fetch_forex_reserves_data)
     
     return {
         "data": data_cache["forex_reserves"]["data"],
@@ -2599,14 +2643,7 @@ async def get_liquid_forex():
 @app.get("/api/current-account")
 async def get_current_account():
     """Get current account balance data from State Bank of Pakistan"""
-    if data_cache["current_account"]["updated"]:
-        age = (datetime.now(timezone.utc) - data_cache["current_account"]["updated"]).total_seconds()
-        if age > 3600:
-            data_cache["current_account"]["data"] = await fetch_current_account_data()
-            data_cache["current_account"]["updated"] = datetime.now(timezone.utc)
-    else:
-        data_cache["current_account"]["data"] = await fetch_current_account_data()
-        data_cache["current_account"]["updated"] = datetime.now(timezone.utc)
+    await refresh_cache_with_persistence("current_account", 3600, fetch_current_account_data)
     
     return {
         "data": data_cache["current_account"]["data"],
@@ -2616,14 +2653,7 @@ async def get_current_account():
 @app.get("/api/imports")
 async def get_imports():
     """Get imports data from State Bank of Pakistan"""
-    if data_cache["imports"]["updated"]:
-        age = (datetime.now(timezone.utc) - data_cache["imports"]["updated"]).total_seconds()
-        if age > 3600:
-            data_cache["imports"]["data"] = await fetch_imports_data()
-            data_cache["imports"]["updated"] = datetime.now(timezone.utc)
-    else:
-        data_cache["imports"]["data"] = await fetch_imports_data()
-        data_cache["imports"]["updated"] = datetime.now(timezone.utc)
+    await refresh_cache_with_persistence("imports", 3600, fetch_imports_data)
     
     return {
         "data": data_cache["imports"]["data"],
@@ -2633,14 +2663,7 @@ async def get_imports():
 @app.get("/api/exports")
 async def get_exports():
     """Get exports data from State Bank of Pakistan"""
-    if data_cache["exports"]["updated"]:
-        age = (datetime.now(timezone.utc) - data_cache["exports"]["updated"]).total_seconds()
-        if age > 3600:
-            data_cache["exports"]["data"] = await fetch_exports_data()
-            data_cache["exports"]["updated"] = datetime.now(timezone.utc)
-    else:
-        data_cache["exports"]["data"] = await fetch_exports_data()
-        data_cache["exports"]["updated"] = datetime.now(timezone.utc)
+    await refresh_cache_with_persistence("exports", 3600, fetch_exports_data)
     
     return {
         "data": data_cache["exports"]["data"],
@@ -2651,20 +2674,7 @@ async def get_exports():
 @app.get("/api/fdi")
 async def get_fdi():
     """Get Foreign Direct Investment data"""
-    # Refresh every 6 hours
-    should_refresh = False
-    cached_data = data_cache["fdi"]["data"]
-    if not data_cache["fdi"]["updated"] or not cached_data:
-        should_refresh = True
-    else:
-        age = (datetime.now(timezone.utc) - data_cache["fdi"]["updated"]).total_seconds()
-        history = cached_data.get("history", []) if isinstance(cached_data, dict) else []
-        earliest_date = history[-1].get("date") if history else None
-        should_refresh = age > 21600 or (earliest_date is not None and earliest_date > "1997-07-01")
-
-    if should_refresh:
-        data_cache["fdi"]["data"] = await fetch_fdi_data()
-        data_cache["fdi"]["updated"] = datetime.now(timezone.utc)
+    await refresh_cache_with_persistence("fdi", 21600, fetch_fdi_data)
 
     return {
         "data": data_cache["fdi"]["data"],
@@ -2675,15 +2685,7 @@ async def get_fdi():
 @app.get("/api/gov-debt")
 async def get_gov_debt():
     """Get Central Government Debt data (total + internal + external)"""
-    # Refresh every 6 hours (monthly data)
-    if data_cache["gov_debt"]["updated"]:
-        age = (datetime.now(timezone.utc) - data_cache["gov_debt"]["updated"]).total_seconds()
-        if age > 21600:
-            data_cache["gov_debt"]["data"] = await fetch_gov_debt_data()
-            data_cache["gov_debt"]["updated"] = datetime.now(timezone.utc)
-    else:
-        data_cache["gov_debt"]["data"] = await fetch_gov_debt_data()
-        data_cache["gov_debt"]["updated"] = datetime.now(timezone.utc)
+    await refresh_cache_with_persistence("gov_debt", 21600, fetch_gov_debt_data)
 
     return {
         "data": data_cache["gov_debt"]["data"],
@@ -2717,8 +2719,21 @@ async def get_business_environment():
         )
 
     if should_refresh:
-        data_cache["business_environment"]["data"] = await fetch_business_environment_data()
-        data_cache["business_environment"]["updated"] = datetime.now(timezone.utc)
+        fetched = await fetch_business_environment_data()
+        if fetched:
+            data_cache["business_environment"]["data"] = fetched
+            data_cache["business_environment"]["updated"] = datetime.now(timezone.utc)
+            persist_cache_entry("business_environment", fetched)
+        elif not data_cache["business_environment"]["data"]:
+            persisted_data, persisted_updated = restore_cache_entry("business_environment")
+            if persisted_data:
+                data_cache["business_environment"]["data"] = persisted_data
+                data_cache["business_environment"]["updated"] = datetime.fromisoformat(persisted_updated) if persisted_updated else datetime.now(timezone.utc)
+    elif not data_cache["business_environment"]["data"]:
+        persisted_data, persisted_updated = restore_cache_entry("business_environment")
+        if persisted_data:
+            data_cache["business_environment"]["data"] = persisted_data
+            data_cache["business_environment"]["updated"] = datetime.fromisoformat(persisted_updated) if persisted_updated else datetime.now(timezone.utc)
 
     return {
         "data": data_cache["business_environment"]["data"],
@@ -2750,15 +2765,7 @@ async def get_road_advisory():
 @app.get("/api/pkr-usd")
 async def get_pkr_usd():
     """Get PKR/USD exchange rate from State Bank of Pakistan"""
-    # Refresh every hour (daily data, no need for frequent refresh)
-    if data_cache["pkr_usd"]["updated"]:
-        age = (datetime.now(timezone.utc) - data_cache["pkr_usd"]["updated"]).total_seconds()
-        if age > 3600:
-            data_cache["pkr_usd"]["data"] = await fetch_pkr_usd_data()
-            data_cache["pkr_usd"]["updated"] = datetime.now(timezone.utc)
-    else:
-        data_cache["pkr_usd"]["data"] = await fetch_pkr_usd_data()
-        data_cache["pkr_usd"]["updated"] = datetime.now(timezone.utc)
+    await refresh_cache_with_persistence("pkr_usd", 3600, fetch_pkr_usd_data)
     
     return {
         "data": data_cache["pkr_usd"]["data"],
@@ -2856,6 +2863,17 @@ async def ensure_lsm_historical_cache():
         if fetched:
             data_cache["lsm_historical"]["data"] = fetched
             data_cache["lsm_historical"]["updated"] = datetime.now(timezone.utc)
+            persist_cache_entry("lsm_historical", fetched)
+        elif not data_cache["lsm_historical"]["data"]:
+            persisted_data, persisted_updated = restore_cache_entry("lsm_historical")
+            if persisted_data:
+                data_cache["lsm_historical"]["data"] = persisted_data
+                data_cache["lsm_historical"]["updated"] = datetime.fromisoformat(persisted_updated) if persisted_updated else datetime.now(timezone.utc)
+    elif not data_cache["lsm_historical"]["data"]:
+        persisted_data, persisted_updated = restore_cache_entry("lsm_historical")
+        if persisted_data:
+            data_cache["lsm_historical"]["data"] = persisted_data
+            data_cache["lsm_historical"]["updated"] = datetime.fromisoformat(persisted_updated) if persisted_updated else datetime.now(timezone.utc)
 
 
 @app.get("/api/lsm")
@@ -2869,6 +2887,12 @@ async def get_lsm():
     if summary:
         data_cache["lsm"]["data"] = summary
         data_cache["lsm"]["updated"] = datetime.now(timezone.utc)
+        persist_cache_entry("lsm", summary)
+    elif not data_cache["lsm"]["data"]:
+        persisted_data, persisted_updated = restore_cache_entry("lsm")
+        if persisted_data:
+            data_cache["lsm"]["data"] = persisted_data
+            data_cache["lsm"]["updated"] = datetime.fromisoformat(persisted_updated) if persisted_updated else datetime.now(timezone.utc)
 
     return {
         "data": data_cache["lsm"]["data"],

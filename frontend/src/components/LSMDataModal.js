@@ -16,7 +16,6 @@ const TIME_RANGES = [
   { key: '2Y', label: '2Y', months: 24 },
   { key: '5Y', label: '5Y', months: 60 },
   { key: '10Y', label: '10Y', months: 120 },
-  { key: '20Y', label: '20Y', months: 240 },
   { key: 'ALL', label: 'All', months: null }
 ];
 
@@ -163,27 +162,6 @@ const LSMDataModal = ({ isOpen, onClose, data, title }) => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.55rem' }}>
-          <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Base Year:</span>
-          <select
-            value={selectedBase}
-            onChange={(e) => setSelectedBase(e.target.value)}
-            data-testid="lsm-base-selector"
-            style={{
-              background: 'rgba(11, 18, 32, 0.92)',
-              border: '1px solid var(--color-border)',
-              color: 'var(--color-text)',
-              fontSize: '0.72rem',
-              padding: '0.22rem 0.45rem',
-              borderRadius: '4px'
-            }}
-          >
-            {BASE_OPTIONS.map((base) => (
-              <option key={base} value={base}>{base}</option>
-            ))}
-          </select>
-        </div>
-
         <div className="time-range-selector" data-testid="lsm-time-range-selector">
           {TIME_RANGES.map((range) => (
             <button
@@ -195,6 +173,26 @@ const LSMDataModal = ({ isOpen, onClose, data, title }) => {
               {range.label}
             </button>
           ))}
+          <div style={{ marginLeft: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.45rem' }} data-testid="lsm-base-inline-selector-wrap">
+            <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Base:</span>
+            <select
+              value={selectedBase}
+              onChange={(e) => setSelectedBase(e.target.value)}
+              data-testid="lsm-base-selector"
+              style={{
+                background: 'rgba(11, 18, 32, 0.92)',
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-text)',
+                fontSize: '0.72rem',
+                padding: '0.22rem 0.45rem',
+                borderRadius: '4px'
+              }}
+            >
+              {BASE_OPTIONS.map((base) => (
+                <option key={base} value={base}>{base}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="chart-container" data-testid="lsm-chart-container">

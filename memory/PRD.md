@@ -45,9 +45,13 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
   - Removed “increase is good” phrasing from tile text
   - LSM modal now uses base-year dropdown selection (default `Base 2015-16`) instead of plotting mixed base-year lines together
   - LSM modal summary number color aligned with Economic indicator value styling
+  - Base-year dropdown moved inline next to range controls; `20Y` range option removed
 - [x] PSX modal market status fix:
   - Replaced timestamp string heuristic with Karachi market-hours logic (Mon-Fri, 09:30-15:30 PKT)
   - Corrected false “Market Closed” reports during open sessions
+- [x] SBP rate-limit resilience enhancement:
+  - Added persisted fallback cache for key SBP indicators (remittances, gold, forex, current account, imports, exports, PKR/USD, FDI, gov debt, business environment, LSM)
+  - On fetch failures/rate-limits, app now restores last successful polled values instead of dropping cards to `--` where prior data exists
 - [x] LSM backend resilience improvements:
   - Added handling for SBP rate-limit responses that return HTTP 200 with `{ "error": ... }`
   - Avoids clobbering last good cached LSM data on fetch failure
