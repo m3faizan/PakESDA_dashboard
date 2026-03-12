@@ -1885,9 +1885,9 @@ async def fetch_fertilizer_data():
     """Fetch fertilizer offtake/sales data with stacked categories and total."""
     try:
         total_history, urea_history, dap_history = await asyncio.gather(
-            fetch_sbp_series_data(FERTILIZER_SERIES["total"], "2010-01-01"),
-            fetch_sbp_series_data(FERTILIZER_SERIES["urea"], "2010-01-01"),
-            fetch_sbp_series_data(FERTILIZER_SERIES["dap"], "2010-01-01")
+            fetch_sbp_series_data(FERTILIZER_SERIES["total"], "2006-07-01"),
+            fetch_sbp_series_data(FERTILIZER_SERIES["urea"], "2006-07-01"),
+            fetch_sbp_series_data(FERTILIZER_SERIES["dap"], "2006-07-01")
         )
 
         total_by_date = {item["date"]: item["value"] for item in total_history}
@@ -1930,7 +1930,7 @@ async def fetch_fertilizer_data():
                 "dap": latest["dap"],
                 "month": latest_date.strftime("%B %Y"),
                 "date": latest["date"],
-                "unit": "Metric Tons"
+                "unit": "Thousand Metric Ton"
             },
             "previous": {
                 "total": previous["total"],
@@ -3134,6 +3134,17 @@ async def get_auto_vehicles():
 async def get_fertilizer():
     """Get fertilizer sales/offtake data"""
     await refresh_cache_with_persistence("fertilizer", 21600, fetch_fertilizer_data)
+
+    # Ensure full expected historical window exists (Jul 2006 onward)
+    cached = data_cache["fertilizer"]["data"] if isinstance(data_cache["fertilizer"]["data"], dict) else None
+    history = cached.get("history", []) if cached else []
+    earliest_date = history[0].get("date") if history else None
+    if earliest_date and earliest_date > "2006-07-01":
+        fetched = await fetch_fertilizer_data()
+        if fetched:
+            data_cache["fertilizer"]["data"] = fetched
+            data_cache["fertilizer"]["updated"] = datetime.now(timezone.utc)
+            persist_cache_entry("fertilizer", fetched)
 
     return {
         "data": data_cache["fertilizer"]["data"],

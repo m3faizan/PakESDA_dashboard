@@ -306,6 +306,9 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
             <div className="economic-label" style={{ marginTop: '0.15rem' }}>
               Total Sales/Offtake
             </div>
+            <div className="economic-sublabel" data-testid="real-sector-fertilizer-unit" style={{ marginTop: '0.12rem' }}>
+              Thousand Metric Ton
+            </div>
           </div>
         </div>
       </div>

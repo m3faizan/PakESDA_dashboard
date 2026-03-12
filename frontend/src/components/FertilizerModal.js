@@ -77,6 +77,9 @@ const FertilizerModal = ({ isOpen, onClose, data, title }) => {
               <Calendar size={14} />
               {latest?.month || 'N/A'}
             </div>
+            <div style={{ fontSize: '0.68rem', color: '#94a3b8', marginTop: '0.15rem' }} data-testid="fertilizer-unit-label">
+              Thousand Metric Ton
+            </div>
           </div>
           {momChange !== null && momChange !== undefined && (
             <div className="summary-changes">
@@ -100,9 +103,7 @@ const FertilizerModal = ({ isOpen, onClose, data, title }) => {
               {range.label}
             </button>
           ))}
-        </div>
-
-        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '0.45rem' }} data-testid="fertilizer-series-toggle-row">
+          <div style={{ width: '1px', height: '22px', background: 'var(--color-border)', margin: '0 0.3rem' }}></div>
           {[
             { key: 'total', label: 'Total' },
             { key: 'urea', label: 'Urea' },
@@ -129,7 +130,7 @@ const FertilizerModal = ({ isOpen, onClose, data, title }) => {
             <ComposedChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
               <XAxis dataKey="date" tickFormatter={formatDate} stroke="#64748b" tick={{ fill: '#64748b', fontSize: 11 }} interval="preserveStartEnd" minTickGap={50} />
-              <YAxis tickFormatter={(val) => `${(val / 1000).toFixed(0)}K`} stroke="#64748b" tick={{ fill: '#64748b', fontSize: 11 }} width={45} />
+              <YAxis tickFormatter={(val) => `${val.toFixed(0)}`} stroke="#64748b" tick={{ fill: '#64748b', fontSize: 11 }} width={45} />
               <Tooltip
                 content={({ active, payload, label }) => {
                   if (active && payload && payload.length) {
@@ -139,7 +140,7 @@ const FertilizerModal = ({ isOpen, onClose, data, title }) => {
                         <p className="tooltip-date">{date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
                         {payload.map((entry) => (
                           <p key={entry.dataKey} style={{ color: entry.color, fontSize: '0.8rem', margin: '0.15rem 0' }}>
-                            {entry.name}: {(entry.value || 0).toLocaleString()}
+                            {entry.name}: {(entry.value || 0).toLocaleString()} Thousand Metric Ton
                           </p>
                         ))}
                       </div>
@@ -157,7 +158,10 @@ const FertilizerModal = ({ isOpen, onClose, data, title }) => {
 
         <div className="modal-footer" data-testid="fertilizer-modal-footer">
           <span className="data-source">Source: {data?.source || 'State Bank of Pakistan / PBS'}</span>
-          <span className="data-updated">Last updated: {new Date(data?.updated || Date.now()).toLocaleDateString()}</span>
+          <span className="data-updated">
+            <span style={{ marginRight: '0.8rem', color: '#94a3b8' }}>Unit: Thousand Metric Ton</span>
+            Last updated: {new Date(data?.updated || Date.now()).toLocaleDateString()}
+          </span>
         </div>
       </div>
     </div>

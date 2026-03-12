@@ -70,6 +70,10 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
   - Real Sector tile shows Total Sales/Offtake with MoM change
   - Modal uses stacked chart (Urea + DAP) with Total line overlay
   - All series (Total/Urea/DAP) are toggleable and can be deselected with dimmed state
+- [x] Fertilizer data+UI alignment pass:
+  - Historical range expanded to **Jul 2006 → Jan 2026**
+  - Time-range + series toggles aligned into the same selector row
+  - Unit standardized for fertilizer-only surfaces as **Thousand Metric Ton**
 - [x] LSM backend resilience improvements:
   - Added handling for SBP rate-limit responses that return HTTP 200 with `{ "error": ... }`
   - Avoids clobbering last good cached LSM data on fetch failure
