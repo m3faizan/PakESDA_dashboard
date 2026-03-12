@@ -65,6 +65,11 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] Auto Vehicles legend/line polish:
   - Legend/toggle controls styled to match range/selector UI format and aligned in-row
   - Total series emphasized with dedicated legend chip and explicit total line overlay
+- [x] Added **Fertilizer** data point in Real Sector:
+  - New endpoint `/api/fertilizer` using SBP dataset `TS_GP_RLS_SALEFERT_M`
+  - Real Sector tile shows Total Sales/Offtake with MoM change
+  - Modal uses stacked chart (Urea + DAP) with Total line overlay
+  - All series (Total/Urea/DAP) are toggleable and can be deselected with dimmed state
 - [x] LSM backend resilience improvements:
   - Added handling for SBP rate-limit responses that return HTTP 200 with `{ "error": ... }`
   - Avoids clobbering last good cached LSM data on fetch failure
