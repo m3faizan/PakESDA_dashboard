@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { X, Car, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 import {
   ResponsiveContainer,
-  BarChart,
+  ComposedChart,
   Bar,
   XAxis,
   YAxis,
@@ -131,7 +131,26 @@ const AutoVehiclesModal = ({ isOpen, onClose, data, title }) => {
           ))}
         </div>
 
-        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginBottom: '0.45rem' }} data-testid="auto-vehicles-series-toggle-row">
+        <div
+          style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '0.45rem' }}
+          data-testid="auto-vehicles-series-toggle-row"
+        >
+          <span
+            className="range-btn"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+              borderColor: '#FACC15',
+              color: '#FACC15',
+              background: 'rgba(250, 204, 21, 0.12)',
+              cursor: 'default'
+            }}
+            data-testid="auto-vehicles-series-total-label"
+          >
+            <span style={{ width: '10px', height: '2px', background: '#FACC15', display: 'inline-block' }}></span>
+            Total
+          </span>
           {stackCategories.map((category, idx) => {
             const active = visibleSeries[category.key] !== false;
             return (
@@ -139,19 +158,8 @@ const AutoVehiclesModal = ({ isOpen, onClose, data, title }) => {
                 key={category.key}
                 onClick={() => toggleSeries(category.key)}
                 data-testid={`auto-vehicles-series-toggle-${category.key}`}
-                style={{
-                  border: '1px solid var(--color-border)',
-                  borderRadius: '12px',
-                  padding: '0.12rem 0.45rem',
-                  background: 'rgba(2, 6, 23, 0.45)',
-                  color: 'var(--color-text)',
-                  fontSize: '0.64rem',
-                  opacity: active ? 1 : 0.42,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.28rem',
-                  cursor: 'pointer'
-                }}
+                className={`range-btn ${active ? 'active' : ''}`}
+                style={{ opacity: active ? 1 : 0.42, display: 'inline-flex', alignItems: 'center', gap: '0.28rem' }}
               >
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: COLORS[idx % COLORS.length], display: 'inline-block' }}></span>
                 {category.label}
@@ -162,7 +170,7 @@ const AutoVehiclesModal = ({ isOpen, onClose, data, title }) => {
 
         <div className="chart-container" data-testid="auto-vehicles-chart-container">
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <ComposedChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
               <XAxis
                 dataKey="date"
@@ -208,11 +216,11 @@ const AutoVehiclesModal = ({ isOpen, onClose, data, title }) => {
                   name={category.label}
                   stackId="a"
                   fill={COLORS[idx % COLORS.length]}
-                  hide={!visibleSeries[category.key]}
+                  hide={visibleSeries[category.key] === false}
                 />
               ))}
-              <Line type="monotone" dataKey="total" name="Total" stroke="#F8FAFC" strokeWidth={2} dot={false} />
-            </BarChart>
+              <Line type="monotone" dataKey="total" name="Total" stroke="#FACC15" strokeWidth={3} dot={false} connectNulls />
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
 

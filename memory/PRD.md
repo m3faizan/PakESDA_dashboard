@@ -62,6 +62,9 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
   - Auto chart now supports per-series deselect with dimmed state (dull) while preserving chart layout
   - Removed 2/3 Wheelers from Auto Vehicles stacked chart categories
   - Added separate **2/3 Wheelers** Real Sector data point with dedicated modal (Production/Sales + trend chart)
+- [x] Auto Vehicles legend/line polish:
+  - Legend/toggle controls styled to match range/selector UI format and aligned in-row
+  - Total series emphasized with dedicated legend chip and explicit total line overlay
 - [x] LSM backend resilience improvements:
   - Added handling for SBP rate-limit responses that return HTTP 200 with `{ "error": ... }`
   - Avoids clobbering last good cached LSM data on fetch failure
