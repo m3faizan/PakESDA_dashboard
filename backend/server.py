@@ -95,6 +95,8 @@ data_cache = {
     "cpi_mom": {"data": {}, "updated": None},
     "cpi_yoy_historical": {"data": {}, "updated": None},
     "cpi_mom_historical": {"data": {}, "updated": None},
+    "lsm": {"data": {}, "updated": None},
+    "lsm_historical": {"data": {}, "updated": None},
     "spi_weekly": {"data": {}, "updated": None},
     "spi_monthly": {"data": {}, "updated": None},
     "liquid_forex": {"data": {}, "updated": None}
@@ -215,6 +217,51 @@ CPI_HISTORICAL_APIS = [
         "start_date": "1964-07-01",
         "end_date": "1973-12-31",
         "label": "Base: 1959-60"
+    }
+]
+
+LSM_HISTORICAL_APIS = [
+    {
+        "series": "TS_GP_RL_LSM1516_M.LSM000160000",
+        "base_year": "Base 2015-16",
+        "label": "2015-16 Base",
+        "start_date": "2016-07-01",
+        "end_date": "2025-12-31"
+    },
+    {
+        "series": "TS_GP_RL_LSM_M.LSM000160000",
+        "base_year": "Base 2005-06",
+        "label": "2005-06 Base",
+        "start_date": "2007-07-01",
+        "end_date": "2022-06-30"
+    },
+    {
+        "series": "TS_GP_RL_LSM9900_M.LSM000160000",
+        "base_year": "Base 1999-2000",
+        "label": "1999-2000 Base",
+        "start_date": "2000-07-01",
+        "end_date": "2007-06-30"
+    },
+    {
+        "series": "TS_GP_RL_LSM8081_M.LSM000160000",
+        "base_year": "Base 1980-81",
+        "label": "1980-81 Base",
+        "start_date": "1985-07-01",
+        "end_date": "2000-06-30"
+    },
+    {
+        "series": "TS_GP_RL_LSM7576_M.LSM000160000",
+        "base_year": "Base 1975-76",
+        "label": "1975-76 Base",
+        "start_date": "1981-07-01",
+        "end_date": "1985-06-30"
+    },
+    {
+        "series": "TS_GP_RL_LSM6970_M.LSM000160000",
+        "base_year": "Base 1969-70",
+        "label": "1969-70 Base",
+        "start_date": "1977-07-01",
+        "end_date": "1981-06-30"
     }
 ]
 
@@ -1478,6 +1525,149 @@ async def fetch_cpi_historical_data(cpi_type: str = "yoy"):
     return None
 
 
+async def fetch_lsm_historical_data():
+    """Fetch complete LSM Quantum Index history across base-year periods (1977-present)."""
+    all_history = []
+    base_year_markers = []
+
+    try:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            for api_config in LSM_HISTORICAL_APIS:
+                try:
+                    series_code = api_config["series"]
+                    url = f"https://easydata.sbp.org.pk/api/v1/series/{series_code}/data"
+
+                    response = await client.get(
+                        url,
+                        params={
+                            "api_key": SBP_API_KEY,
+                            "start_date": api_config["start_date"],
+                            "end_date": api_config["end_date"]
+                        }
+                    )
+
+                    if response.status_code != 200:
+                        continue
+
+                    rows = response.json().get("rows", [])
+                    period_history = []
+                    for row in rows:
+                        try:
+                            if not row[3] or row[4] is None:
+                                continue
+                            period_history.append({
+                                "date": row[3],
+                                "value": float(row[4]),
+                                "base_year": api_config["base_year"]
+                            })
+                        except (ValueError, IndexError, TypeError):
+                            continue
+
+                    if period_history:
+                        all_history.extend(period_history)
+                        base_year_markers.append({
+                            "date": api_config["start_date"],
+                            "label": api_config["label"],
+                            "base_year": api_config["base_year"]
+                        })
+
+                except Exception as e:
+                    print(f"Error fetching LSM period {api_config.get('label', 'unknown')}: {e}")
+                    continue
+
+        all_history.sort(key=lambda x: x["date"])
+
+        seen_dates = {}
+        unique_history = []
+        for item in all_history:
+            if item["date"] not in seen_dates:
+                seen_dates[item["date"]] = True
+                unique_history.append(item)
+
+        base_year_markers.sort(key=lambda x: x["date"])
+
+        if not unique_history:
+            return None
+
+        for idx, item in enumerate(unique_history):
+            if idx == 0:
+                item["pct_change"] = 0
+            else:
+                prev = unique_history[idx - 1]["value"]
+                item["pct_change"] = round(((item["value"] - prev) / prev) * 100, 2) if prev else 0
+
+        latest = unique_history[-1]
+        previous = unique_history[-2] if len(unique_history) > 1 else None
+
+        latest_date = datetime.strptime(latest["date"], "%Y-%m-%d")
+        month_name = latest_date.strftime("%B %Y")
+
+        mom_change = None
+        mom_change_pct = None
+        if previous:
+            mom_change = latest["value"] - previous["value"]
+            mom_change_pct = ((latest["value"] - previous["value"]) / previous["value"]) * 100 if previous["value"] else None
+
+        yoy_change = None
+        yoy_value = None
+        for item in unique_history:
+            item_date = datetime.strptime(item["date"], "%Y-%m-%d")
+            months_diff = (latest_date.year - item_date.year) * 12 + (latest_date.month - item_date.month)
+            if months_diff == 12:
+                yoy_value = item["value"]
+                yoy_change = ((latest["value"] - item["value"]) / item["value"]) * 100 if item["value"] else None
+                break
+
+        return {
+            "latest": {
+                "value": round(latest["value"], 2),
+                "month": month_name,
+                "date": latest["date"],
+                "base_year": latest.get("base_year"),
+                "unit": "Index"
+            },
+            "previous": {
+                "value": round(previous["value"], 2),
+                "date": previous["date"]
+            } if previous else None,
+            "mom_change": round(mom_change, 2) if mom_change is not None else None,
+            "mom_change_pct": round(mom_change_pct, 2) if mom_change_pct is not None else None,
+            "yoy_change": round(yoy_change, 2) if yoy_change is not None else None,
+            "yoy_value": round(yoy_value, 2) if yoy_value is not None else None,
+            "history": unique_history,
+            "base_year_markers": base_year_markers,
+            "total_data_points": len(unique_history),
+            "date_range": f"{unique_history[0]['date']} to {unique_history[-1]['date']}",
+            "source": "State Bank of Pakistan / PBS",
+            "name": "Quantum Index of Large-scale Manufacturing",
+            "updated": datetime.now(timezone.utc).isoformat()
+        }
+
+    except Exception as e:
+        print(f"Error fetching historical LSM data: {e}")
+
+    return None
+
+
+async def fetch_lsm_data():
+    """Fetch latest LSM summary based on combined historical base-year series."""
+    historical = await fetch_lsm_historical_data()
+    if not historical:
+        return None
+
+    return {
+        "latest": historical.get("latest"),
+        "previous": historical.get("previous"),
+        "mom_change": historical.get("mom_change"),
+        "mom_change_pct": historical.get("mom_change_pct"),
+        "yoy_change": historical.get("yoy_change"),
+        "yoy_value": historical.get("yoy_value"),
+        "source": historical.get("source"),
+        "name": historical.get("name"),
+        "updated": historical.get("updated")
+    }
+
+
 def _safe_float(value):
     if value is None:
         return None
@@ -2639,6 +2829,42 @@ async def get_cpi_mom_historical():
     return {
         "data": data_cache["cpi_mom_historical"]["data"],
         "updated": data_cache["cpi_mom_historical"]["updated"].isoformat() if data_cache["cpi_mom_historical"]["updated"] else None
+    }
+
+
+@app.get("/api/lsm")
+async def get_lsm():
+    """Get latest LSM quantum index summary data"""
+    if data_cache["lsm"]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache["lsm"]["updated"]).total_seconds()
+        if age > 21600:
+            data_cache["lsm"]["data"] = await fetch_lsm_data()
+            data_cache["lsm"]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache["lsm"]["data"] = await fetch_lsm_data()
+        data_cache["lsm"]["updated"] = datetime.now(timezone.utc)
+
+    return {
+        "data": data_cache["lsm"]["data"],
+        "updated": data_cache["lsm"]["updated"].isoformat() if data_cache["lsm"]["updated"] else None
+    }
+
+
+@app.get("/api/lsm-historical")
+async def get_lsm_historical():
+    """Get complete historical LSM quantum index data across base periods"""
+    if data_cache["lsm_historical"]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache["lsm_historical"]["updated"]).total_seconds()
+        if age > 21600:
+            data_cache["lsm_historical"]["data"] = await fetch_lsm_historical_data()
+            data_cache["lsm_historical"]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache["lsm_historical"]["data"] = await fetch_lsm_historical_data()
+        data_cache["lsm_historical"]["updated"] = datetime.now(timezone.utc)
+
+    return {
+        "data": data_cache["lsm_historical"]["data"],
+        "updated": data_cache["lsm_historical"]["updated"].isoformat() if data_cache["lsm_historical"]["updated"] else None
     }
 
 

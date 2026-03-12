@@ -24,6 +24,7 @@ import GovernancePanel from './components/GovernancePanel';
 import RoadAdvisoryPanel from './components/RoadAdvisoryPanel';
 import InflationPanel from './components/InflationPanel';
 import BusinessEnvironmentPanel from './components/BusinessEnvironmentPanel';
+import RealSectorPanel from './components/RealSectorPanel';
 import MapSection from './components/MapSection';
 import NewsTicker from './components/NewsTicker';
 
@@ -173,6 +174,7 @@ function App() {
             <EconomicPanel data={economic} loading={loading} />
             <InflationPanel loading={loading} />
             <BusinessEnvironmentPanel loading={loading} />
+            <RealSectorPanel loading={loading} />
             <WeatherPanel cities={weather} loading={loading} />
             <RegionalPanel relations={regional} loading={loading} />
             <InfrastructurePanel data={infrastructure} loading={loading} />
