@@ -56,6 +56,10 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
   - `/api/liquid-forex` now checks `https://www.sbp.org.pk/ecodata/forex.pdf` for latest weekly reserves on refresh
   - Latest PDF row is merged into Liquid FX series (upsert by date) so dashboard stays current
   - Verified latest card/modal now reflects **Mar 06, 2026** values from SBP PDF
+- [x] News feed relevance and source update:
+  - Added/updated Pakistan news source list per provided outlets (Dawn, Geo, ARY, Tribune, Dunya, Business Recorder, Daily Times, Profit, Samaa, Pakistan Today, ProPakistani, TechJuice, etc.)
+  - Implemented hard keyword filtering to remove entertainment/lifestyle/sports headlines unless policy/politics/economy/security context is present
+  - Added deduplication by link/title and kept 48-hour freshness filter
 - [x] Added **Auto Vehicles (Production & Sales)** to Real Sector:
   - New endpoint `/api/auto-vehicles` (SBP dataset `TS_GP_RLS_PSAUTO_M`)
   - Real Sector card now shows both **Production** and **Sales** with MoM changes

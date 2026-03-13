@@ -361,42 +361,55 @@ FERTILIZER_SERIES = {
     "dap": "TS_GP_RLS_SALEFERT_M.D_003000"
 }
 
-# RSS feeds for Pakistan news - comprehensive list
+# RSS feeds for Pakistan news (expanded per user sources)
 PAKISTAN_NEWS_FEEDS = [
-    # Major News Outlets
-    {"name": "Dawn News", "url": "https://www.dawn.com/feed", "category": "general"},
-    {"name": "Geo News", "url": "https://www.geo.tv/rss/1/0", "category": "general"},
-    {"name": "The News International", "url": "https://www.thenews.com.pk/rss/1/1", "category": "general"},
-    {"name": "Express Tribune", "url": "https://tribune.com.pk/feed/home", "category": "general"},
+    {"name": "Dawn", "url": "https://www.dawn.com/feeds/home", "category": "general"},
+    {"name": "Geo News", "url": "https://www.geo.tv/rss/1/1", "category": "general"},
+    {"name": "The News", "url": "https://www.thenews.pk/", "category": "general"},
     {"name": "ARY News", "url": "https://arynews.tv/feed/", "category": "general"},
-    {"name": "Dunya News", "url": "https://dunyanews.tv/feed", "category": "general"},
-    {"name": "Samaa TV", "url": "https://www.samaaenglish.tv/feed/", "category": "general"},
-    {"name": "Pakistan Today", "url": "https://www.pakistantoday.com.pk/feed/", "category": "general"},
-    {"name": "The Nation", "url": "https://www.nation.com.pk/rss/headlines", "category": "general"},
-    {"name": "Daily Times", "url": "https://dailytimes.com.pk/feed/", "category": "general"},
-    
-    # Business & Finance
+    {"name": "Express Tribune", "url": "https://tribune.com.pk/feed/home", "category": "general"},
+    {"name": "Dunya News", "url": "https://dunyanews.tv/index.php/en/RSS", "category": "general"},
     {"name": "Business Recorder", "url": "https://www.brecorder.com/feeds/latest-news", "category": "business"},
-    {"name": "Profit Pakistan", "url": "https://profit.pakistantoday.com.pk/feed/", "category": "business"},
-    
-    # Regional News
-    {"name": "Frontier Post", "url": "https://thefrontierpost.com/feed/", "category": "regional"},
-    {"name": "Balochistan Times", "url": "https://balochistantimes.com/feed/", "category": "regional"},
-    
-    # International Coverage of Pakistan
-    {"name": "Al Jazeera Pakistan", "url": "https://www.aljazeera.com/xml/rss/all.xml", "category": "international"},
-    {"name": "Reuters Pakistan", "url": "https://www.reutersagency.com/feed/", "category": "international"},
-    
-    # Tech & Science
-    {"name": "ProPakistani", "url": "https://propakistani.pk/feed/", "category": "tech"},
-    {"name": "TechJuice", "url": "https://www.techjuice.pk/feed/", "category": "tech"},
-    
-    # Sports
-    {"name": "Cricbuzz Pakistan", "url": "https://www.cricbuzz.com/rss/cb_rss_headlines.xml", "category": "sports"},
+    {"name": "Daily Times Business", "url": "https://dailytimes.com.pk/category/business/feed/", "category": "business"},
+    {"name": "Profit", "url": "https://profit.pakistantoday.com.pk/feed/", "category": "business"},
+    {"name": "Pakistan Today", "url": "https://www.pakistantoday.com.pk/feed/", "category": "general"},
+    {"name": "Daily Times", "url": "https://dailytimes.com.pk/feed/", "category": "general"},
+    {"name": "Samaa TV", "url": "https://www.samaa.tv/rss", "category": "general"},
+    {"name": "APP Pakistan", "url": "https://www.app.com.pk", "category": "general"},
+    {"name": "Mettis Global", "url": "https://mettisglobal.news/latest", "category": "business"},
+    {"name": "ProPakistani", "url": "https://propakistani.pk/", "category": "tech"},
+    {"name": "TechJuice", "url": "https://www.techjuice.pk/", "category": "tech"}
 ]
 
 # Energy specific RSS feed
 ENERGY_NEWS_FEED = {"name": "Energy Update", "url": "https://www.energyupdate.com.pk/feed/", "category": "energy"}
+
+EXCLUDED_NEWS_KEYWORDS = [
+    "entertainment", "celebrity", "movie", "movies", "music", "cricket", "football",
+    "sports", "fashion", "beauty", "fitness", "gaming", "horoscope",
+    "astrology", "comedy", "birthday", "wedding", "netflix", "hbo", "marriage", "score"
+]
+
+POLITICS_POLICY_OVERRIDE_KEYWORDS = [
+    "politic", "policy", "government", "parliament", "senate", "assembly", "election",
+    "prime minister", "president", "cabinet", "minister", "supreme court", "high court",
+    "imf", "sbp", "budget", "economy", "economic", "finance", "tax", "regulation",
+    "security", "defence", "foreign office", "diplomatic", "protest", "governor"
+]
+
+
+def is_relevant_news_article(title: str, summary: str = ""):
+    text = f"{title or ''} {summary or ''}".lower()
+    if not text.strip():
+        return False
+
+    has_excluded = any(keyword in text for keyword in EXCLUDED_NEWS_KEYWORDS)
+    if not has_excluded:
+        return True
+
+    # Keep sports-like keywords only when clearly tied to politics/policy/economy/security
+    has_override = any(keyword in text for keyword in POLITICS_POLICY_OVERRIDE_KEYWORDS)
+    return has_override
 
 def parse_date(date_string):
     """Parse various date formats and return datetime object"""
@@ -452,11 +465,16 @@ async def fetch_rss_feed(feed_info: dict) -> list:
                 feed = feedparser.parse(response.text)
                 articles = []
                 for entry in feed.entries[:10]:
+                    title = entry.get("title", "")
+                    summary = entry.get("summary", "")[:250] if entry.get("summary") else ""
+                    if not is_relevant_news_article(title, summary):
+                        continue
+
                     articles.append({
-                        "title": entry.get("title", ""),
+                        "title": title,
                         "link": entry.get("link", ""),
                         "published": entry.get("published", ""),
-                        "summary": entry.get("summary", "")[:200] if entry.get("summary") else "",
+                        "summary": summary,
                         "source": feed_info["name"],
                         "category": feed_info["category"]
                     })
@@ -475,12 +493,26 @@ async def fetch_all_news():
     for articles in results:
         all_news.extend(articles)
     
-    # Filter to only include news from last 48 hours
-    recent_news = [article for article in all_news if is_within_24_hours(article.get("published", ""))]
+    # Filter to only include news from last 48 hours and relevant topics only
+    recent_news = [
+        article for article in all_news
+        if is_within_24_hours(article.get("published", ""))
+        and is_relevant_news_article(article.get("title", ""), article.get("summary", ""))
+    ]
+
+    # De-duplicate by link/title
+    deduped = []
+    seen = set()
+    for article in recent_news:
+        dedupe_key = (article.get("link") or article.get("title") or "").strip().lower()
+        if not dedupe_key or dedupe_key in seen:
+            continue
+        seen.add(dedupe_key)
+        deduped.append(article)
     
     # Sort by published date if available
-    recent_news.sort(key=lambda x: x.get("published", ""), reverse=True)
-    return recent_news[:150]  # Return up to 150 recent news items
+    deduped.sort(key=lambda x: x.get("published", ""), reverse=True)
+    return deduped[:150]  # Return up to 150 recent news items
 
 async def fetch_energy_news():
     """Fetch energy news from Energy Update Pakistan"""
@@ -2768,7 +2800,7 @@ async def health_check():
 
 @app.get("/api/news")
 async def get_news():
-    """Get latest Pakistan news (last 24 hours only)"""
+    """Get latest Pakistan news (last 48 hours)"""
     # Refresh news if older than 5 minutes
     if data_cache["news"]["updated"]:
         age = (datetime.now(timezone.utc) - data_cache["news"]["updated"]).total_seconds()
@@ -2783,7 +2815,7 @@ async def get_news():
         "news": data_cache["news"]["data"],
         "updated": data_cache["news"]["updated"].isoformat() if data_cache["news"]["updated"] else None,
         "count": len(data_cache["news"]["data"]),
-        "filter": "last_24_hours"
+        "filter": "last_48_hours"
     }
 
 @app.get("/api/energy")
