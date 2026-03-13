@@ -13,8 +13,8 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import NewsPanel from './components/NewsPanel';
+import DailyBriefingPanel from './components/DailyBriefingPanel';
 import EconomicPanel from './components/EconomicPanel';
-import SecurityPanel from './components/SecurityPanel';
 import WeatherPanel from './components/WeatherPanel';
 import RegionalPanel from './components/RegionalPanel';
 import InfrastructurePanel from './components/InfrastructurePanel';
@@ -165,8 +165,8 @@ function App() {
 
           {/* Side Panels */}
           <div className="side-panels">
+            <DailyBriefingPanel />
             <NewsPanel news={news} loading={loading} />
-            <SecurityPanel alerts={security} loading={loading} />
           </div>
 
           {/* Bottom Panels */}

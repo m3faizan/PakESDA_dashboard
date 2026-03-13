@@ -7,6 +7,7 @@ import asyncio
 import csv
 import io
 import re
+import json
 from datetime import datetime, timezone, timedelta
 from contextlib import asynccontextmanager
 from typing import Optional
@@ -18,6 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pymongo import MongoClient
 from dotenv import load_dotenv
+from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 load_dotenv()
 
@@ -102,7 +104,8 @@ data_cache = {
     "fertilizer": {"data": {}, "updated": None},
     "spi_weekly": {"data": {}, "updated": None},
     "spi_monthly": {"data": {}, "updated": None},
-    "liquid_forex": {"data": {}, "updated": None}
+    "liquid_forex": {"data": {}, "updated": None},
+    "daily_briefing": {"data": None, "updated": None}
 }
 
 PERSISTED_CACHE_FILE = "/app/backend/persisted_sbp_cache.json"
@@ -612,6 +615,298 @@ async def fetch_energy_news():
     recent_articles = [article for article in articles if is_within_24_hours(article.get("published", ""))]
     recent_articles.sort(key=lambda x: x.get("published", ""), reverse=True)
     return recent_articles
+
+
+DAILY_BRIEFING_TTL_SECONDS = 21600
+
+
+def format_pct(value: Optional[float]) -> str:
+    if value is None:
+        return "n/a"
+    sign = "+" if value > 0 else ""
+    return f"{sign}{value:.2f}%"
+
+
+def format_value(value: Optional[float], decimals: int = 2) -> str:
+    if value is None:
+        return "n/a"
+    return f"{value:,.{decimals}f}"
+
+
+def parse_llm_json_payload(text: str) -> Optional[dict]:
+    if not text:
+        return None
+    try:
+        return json.loads(text)
+    except Exception:
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if match:
+            try:
+                return json.loads(match.group(0))
+            except Exception:
+                return None
+    return None
+
+
+def normalize_briefing_payload(payload: Optional[dict], fallback_text: str) -> dict:
+    if not isinstance(payload, dict):
+        return {
+            "executive_summary": fallback_text.strip(),
+            "key_takeaways": [],
+            "economic_watch": [],
+            "risks": [],
+            "watchlist": []
+        }
+
+    def normalize_list(value):
+        if isinstance(value, list):
+            return [str(item).strip() for item in value if str(item).strip()]
+        if isinstance(value, str) and value.strip():
+            return [value.strip()]
+        return []
+
+    executive_summary = str(payload.get("executive_summary", "")).strip() or fallback_text.strip()
+
+    return {
+        "executive_summary": executive_summary,
+        "key_takeaways": normalize_list(payload.get("key_takeaways")),
+        "economic_watch": normalize_list(payload.get("economic_watch")),
+        "risks": normalize_list(payload.get("risks")),
+        "watchlist": normalize_list(payload.get("watchlist"))
+    }
+
+
+async def ensure_news_cache():
+    if data_cache["news"]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache["news"]["updated"]).total_seconds()
+        if age > 900:
+            data_cache["news"]["data"] = await fetch_all_news()
+            data_cache["news"]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache["news"]["data"] = await fetch_all_news()
+        data_cache["news"]["updated"] = datetime.now(timezone.utc)
+
+
+async def refresh_cpi_cache(cache_key: str, cpi_type: str):
+    if data_cache[cache_key]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache[cache_key]["updated"]).total_seconds()
+        if age > 3600:
+            data_cache[cache_key]["data"] = await fetch_cpi_data(cpi_type)
+            data_cache[cache_key]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache[cache_key]["data"] = await fetch_cpi_data(cpi_type)
+        data_cache[cache_key]["updated"] = datetime.now(timezone.utc)
+
+
+async def refresh_liquid_forex_cache():
+    if data_cache["liquid_forex"]["updated"]:
+        age = (datetime.now(timezone.utc) - data_cache["liquid_forex"]["updated"]).total_seconds()
+        if age > 21600:
+            data_cache["liquid_forex"]["data"] = await fetch_liquid_forex_data()
+            data_cache["liquid_forex"]["updated"] = datetime.now(timezone.utc)
+    else:
+        data_cache["liquid_forex"]["data"] = await fetch_liquid_forex_data()
+        data_cache["liquid_forex"]["updated"] = datetime.now(timezone.utc)
+
+
+async def gather_briefing_inputs():
+    await ensure_news_cache()
+    await asyncio.gather(
+        refresh_cache_with_persistence("pkr_usd", 3600, fetch_pkr_usd_data),
+        refresh_cache_with_persistence("psx_data", 300, fetch_psx_data),
+        refresh_cache_with_persistence("remittances", 3600, fetch_remittances_data),
+        refresh_cache_with_persistence("forex_reserves", 3600, fetch_forex_reserves_data),
+        refresh_cache_with_persistence("gold_reserves", 3600, fetch_gold_reserves_data),
+        refresh_cache_with_persistence("current_account", 3600, fetch_current_account_data),
+        refresh_cache_with_persistence("imports", 3600, fetch_imports_data),
+        refresh_cache_with_persistence("exports", 3600, fetch_exports_data),
+        refresh_cache_with_persistence("fdi", 3600, fetch_fdi_data),
+        refresh_cache_with_persistence("gov_debt", 3600, fetch_gov_debt_data)
+    )
+    await refresh_cpi_cache("cpi_yoy", "yoy")
+    await refresh_cpi_cache("cpi_mom", "mom")
+    await refresh_liquid_forex_cache()
+
+
+def build_economic_snapshot_lines() -> list:
+    lines = []
+
+    pkr_data = data_cache["pkr_usd"]["data"]
+    if pkr_data:
+        latest = pkr_data.get("latest", {})
+        line = f"PKR/USD: {format_value(latest.get('value'), 2)} ({format_pct(pkr_data.get('daily_change'))} daily) as of {latest.get('dateFormatted') or latest.get('date')}"
+        lines.append(line)
+
+    psx_data = data_cache["psx_data"]["data"]
+    if psx_data:
+        line = f"KSE-100: {format_value(psx_data.get('value'), 2)} ({format_pct(psx_data.get('change_percent'))} session) timestamp {psx_data.get('timestamp') or 'n/a'}"
+        lines.append(line)
+
+    cpi_yoy = data_cache["cpi_yoy"]["data"]
+    if cpi_yoy:
+        latest = cpi_yoy.get("latest", {})
+        line = f"CPI YoY: {format_value(latest.get('value'), 2)}% ({latest.get('month')})"
+        lines.append(line)
+
+    cpi_mom = data_cache["cpi_mom"]["data"]
+    if cpi_mom:
+        latest = cpi_mom.get("latest", {})
+        line = f"CPI MoM: {format_value(latest.get('value'), 2)}% ({latest.get('month')})"
+        lines.append(line)
+
+    remittances = data_cache["remittances"]["data"]
+    if remittances:
+        latest = remittances.get("latest", {})
+        line = f"Remittances: ${format_value(latest.get('value'), 2)}M ({format_pct(remittances.get('mom_change'))} MoM) {latest.get('month')}"
+        lines.append(line)
+
+    forex_reserves = data_cache["forex_reserves"]["data"]
+    if forex_reserves:
+        latest = forex_reserves.get("latest", {})
+        line = f"Forex Reserves: ${format_value(latest.get('value'), 2)}M ({format_pct(forex_reserves.get('mom_change'))} MoM) {latest.get('month')}"
+        lines.append(line)
+
+    gold_reserves = data_cache["gold_reserves"]["data"]
+    if gold_reserves:
+        latest = gold_reserves.get("latest", {})
+        line = f"Gold Reserves: ${format_value(latest.get('value'), 2)}M ({format_pct(gold_reserves.get('mom_change'))} MoM) {latest.get('month')}"
+        lines.append(line)
+
+    current_account = data_cache["current_account"]["data"]
+    if current_account:
+        latest = current_account.get("latest", {})
+        line = f"Current Account: ${format_value(latest.get('value'), 2)}M (change {format_value(current_account.get('mom_change'), 2)}M) {latest.get('month')}"
+        lines.append(line)
+
+    imports = data_cache["imports"]["data"]
+    if imports:
+        latest = imports.get("latest", {})
+        line = f"Imports: ${format_value(latest.get('value'), 2)}M ({format_pct(imports.get('mom_change'))} MoM) {latest.get('month')}"
+        lines.append(line)
+
+    exports = data_cache["exports"]["data"]
+    if exports:
+        latest = exports.get("latest", {})
+        line = f"Exports: ${format_value(latest.get('value'), 2)}M ({format_pct(exports.get('mom_change'))} MoM) {latest.get('month')}"
+        lines.append(line)
+
+    fdi = data_cache["fdi"]["data"]
+    if fdi:
+        latest = fdi.get("latest", {})
+        line = f"FDI: ${format_value(latest.get('value'), 2)}M ({format_pct(fdi.get('mom_change'))} MoM) {latest.get('month')}"
+        lines.append(line)
+
+    gov_debt = data_cache["gov_debt"]["data"]
+    if gov_debt:
+        latest = gov_debt.get("latest", {})
+        line = f"Government Debt: ₨{format_value(latest.get('value'), 2)}B ({format_pct(gov_debt.get('mom_change'))} MoM) {latest.get('month')}"
+        lines.append(line)
+
+    liquid_forex = data_cache["liquid_forex"]["data"]
+    if liquid_forex:
+        latest = liquid_forex.get("latest", {})
+        line = f"Liquid FX Reserves: ${format_value(latest.get('value'), 2)}M ({format_pct(liquid_forex.get('wow_change_pct'))} WoW) {latest.get('dateFormatted')}"
+        lines.append(line)
+
+    return lines
+
+
+async def generate_daily_briefing_payload() -> dict:
+    await gather_briefing_inputs()
+
+    news_items = data_cache["news"]["data"] or []
+    news_lines = []
+    for item in news_items[:30]:
+        title = (item.get("title") or "").strip()
+        source = (item.get("source") or "").strip()
+        if title:
+            news_lines.append(f"- ({source or 'Source'}) {title}")
+
+    economic_lines = build_economic_snapshot_lines()
+
+    if not news_lines and not economic_lines:
+        raise ValueError("No inputs available for briefing generation")
+
+    pk_time = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=5)))
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="OPENAI_API_KEY is not configured")
+
+    system_message = (
+        "You are a senior Pakistan intelligence analyst writing a concise daily briefing. "
+        "Use only the provided data. Avoid speculation. Do not mention being an AI. "
+        "Keep a professional, analytic tone."
+    )
+
+    prompt = (
+        f"Date (PKT): {pk_time.strftime('%b %d, %Y %H:%M')}\n"
+        "Return JSON only with keys: executive_summary, key_takeaways, economic_watch, risks, watchlist. "
+        "Executive summary should be 3-5 sentences. Other keys should be arrays of 3-6 concise bullet sentences. "
+        "Do not add markdown, numbering, or extra keys.\n\n"
+        "News headlines (last 48 hours):\n"
+        f"{chr(10).join(news_lines)}\n\n"
+        "Economic snapshot:\n"
+        f"{chr(10).join(economic_lines)}\n"
+    )
+
+    chat = LlmChat(
+        api_key=api_key,
+        session_id=f"daily-briefing-{pk_time.strftime('%Y-%m-%d')}",
+        system_message=system_message
+    ).with_model("openai", "gpt-5.2")
+
+    response_text = await chat.send_message(UserMessage(text=prompt))
+    parsed = parse_llm_json_payload(response_text)
+    return normalize_briefing_payload(parsed, response_text)
+
+
+async def build_daily_briefing_response(force_refresh: bool = False) -> dict:
+    if not force_refresh and data_cache["daily_briefing"]["updated"] and data_cache["daily_briefing"]["data"]:
+        age = (datetime.now(timezone.utc) - data_cache["daily_briefing"]["updated"]).total_seconds()
+        if age < DAILY_BRIEFING_TTL_SECONDS:
+            return {
+                "briefing": data_cache["daily_briefing"]["data"],
+                "updated": data_cache["daily_briefing"]["updated"].isoformat(),
+                "stale": False,
+                "model": "gpt-5.2"
+            }
+
+    try:
+        briefing_payload = await generate_daily_briefing_payload()
+        data_cache["daily_briefing"]["data"] = briefing_payload
+        data_cache["daily_briefing"]["updated"] = datetime.now(timezone.utc)
+        persist_cache_entry("daily_briefing", briefing_payload)
+        return {
+            "briefing": briefing_payload,
+            "updated": data_cache["daily_briefing"]["updated"].isoformat(),
+            "stale": False,
+            "model": "gpt-5.2"
+        }
+    except Exception as e:
+        cached_payload = data_cache["daily_briefing"]["data"]
+        cached_updated = data_cache["daily_briefing"]["updated"]
+        if cached_payload:
+            return {
+                "briefing": cached_payload,
+                "updated": cached_updated.isoformat() if cached_updated else None,
+                "stale": True,
+                "model": "gpt-5.2",
+                "error": str(e)
+            }
+
+        persisted_payload, persisted_updated = restore_cache_entry("daily_briefing")
+        if persisted_payload:
+            data_cache["daily_briefing"]["data"] = persisted_payload
+            data_cache["daily_briefing"]["updated"] = datetime.fromisoformat(persisted_updated) if persisted_updated else datetime.now(timezone.utc)
+            return {
+                "briefing": persisted_payload,
+                "updated": data_cache["daily_briefing"]["updated"].isoformat() if data_cache["daily_briefing"]["updated"] else None,
+                "stale": True,
+                "model": "gpt-5.2",
+                "error": str(e)
+            }
+
+        raise HTTPException(status_code=502, detail="Daily briefing generation failed")
 
 async def fetch_remittances_data():
     """Fetch remittances data from State Bank of Pakistan API"""
@@ -2942,6 +3237,18 @@ async def get_news():
         "count": len(data_cache["news"]["data"]),
         "filter": "last_48_hours"
     }
+
+
+@app.get("/api/daily-briefing")
+async def get_daily_briefing():
+    """Get daily intelligence briefing (cached for 6 hours)"""
+    return await build_daily_briefing_response(force_refresh=False)
+
+
+@app.post("/api/daily-briefing/refresh")
+async def refresh_daily_briefing():
+    """Force refresh daily intelligence briefing"""
+    return await build_daily_briefing_response(force_refresh=True)
 
 @app.get("/api/energy")
 async def get_energy_news():

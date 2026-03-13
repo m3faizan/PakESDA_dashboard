@@ -1054,3 +1054,116 @@ h1, h2, h3, h4, h5, h6 {
     text-align: center;
   }
 }
+
+/* Daily Briefing Panel */
+.daily-briefing-panel {
+  min-height: 520px;
+}
+
+.daily-briefing-content {
+  max-height: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.briefing-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.briefing-refresh {
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.35rem 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.briefing-refresh:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.briefing-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.briefing-stale-badge {
+  font-size: 0.6rem;
+  padding: 0.2rem 0.45rem;
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--color-warning);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.briefing-meta {
+  font-size: 0.7rem;
+  color: var(--color-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.briefing-error {
+  font-size: 0.75rem;
+  color: var(--color-warning);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.briefing-section-title {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-primary);
+  margin-bottom: 0.35rem;
+}
+
+.briefing-summary {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+.briefing-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--color-text);
+}
+
+.briefing-list li {
+  position: relative;
+  padding-left: 0.9rem;
+  line-height: 1.45;
+}
+
+.briefing-list li::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  position: absolute;
+  left: 0;
+  top: 0.5rem;
+}
+
+.briefing-empty {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}

@@ -34,6 +34,11 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 
 ## What's Been Implemented (Mar 8-10, 2026)
 
+### Latest Updates (Mar 14, 2026)
+- [x] Implemented **Daily Briefing** panel powered by **OpenAI GPT-5.2** with a 6-hour cache window.
+- [x] Added manual refresh support with stale fallback to last successful briefing if generation fails.
+- [x] Daily briefing now summarizes top headlines plus key economic indicators into structured sections.
+
 ### Latest Updates (Mar 10, 2026)
 - [x] Added new **Real Sector** panel with LSM Quantum Index (CPI-style historical flow):
   - New APIs: `/api/lsm` and `/api/lsm-historical`
@@ -224,6 +229,7 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - **Security**: MOCKED (ready for API integration)
 - **Regional**: MOCKED (ready for API integration)
 - **Infrastructure**: **LIVE** - Scraped from FlightStats (airports) and MyShipTracking (ports)
+- **Daily Briefing**: **LIVE** - OpenAI GPT-5.2 generated intelligence summary (cached 6 hours)
 
 ## Prioritized Backlog
 
