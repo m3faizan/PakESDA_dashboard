@@ -2,6 +2,23 @@ import React from 'react';
 import { Shield, AlertTriangle, Info, AlertCircle } from 'lucide-react';
 
 const SecurityPanel = ({ alerts, loading }) => {
+  const bucketOrder = ['security', 'political', 'diplomatic', 'economic', 'energy'];
+  const bucketLabels = {
+    security: 'Security',
+    political: 'Political',
+    diplomatic: 'Diplomatic',
+    economic: 'Economic',
+    energy: 'Energy'
+  };
+
+  const groupedAlerts = bucketOrder
+    .map((bucket) => ({
+      bucket,
+      label: bucketLabels[bucket],
+      items: alerts.filter((a) => (a.type || '').toLowerCase() === bucket)
+    }))
+    .filter((group) => group.items.length > 0);
+
   const getSeverityIcon = (severity) => {
     switch (severity) {
       case 'high':
@@ -32,20 +49,40 @@ const SecurityPanel = ({ alerts, loading }) => {
         ) : alerts.length === 0 ? (
           <div className="loading">No alerts</div>
         ) : (
-          alerts.map((alert, index) => (
-            <div 
-              key={index} 
-              className={`security-alert ${alert.severity}`}
-              data-testid={`security-alert-${index}`}
-            >
-              <div className="alert-type" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                {getSeverityIcon(alert.severity)}
-                {alert.type}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+            {groupedAlerts.map((group) => (
+              <div key={group.bucket} data-testid={`security-bucket-${group.bucket}`}>
+                <div
+                  style={{
+                    fontSize: '0.68rem',
+                    color: '#94a3b8',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    marginBottom: '0.35rem'
+                  }}
+                >
+                  {group.label}
+                </div>
+                {group.items.map((alert, index) => (
+                  <div
+                    key={`${group.bucket}-${index}`}
+                    className={`security-alert ${alert.severity}`}
+                    data-testid={`security-alert-${group.bucket}-${index}`}
+                  >
+                    <div className="alert-type" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      {getSeverityIcon(alert.severity)}
+                      {alert.type}
+                    </div>
+                    <div className="alert-title">{alert.title}</div>
+                    <div className="alert-region">
+                      {alert.region}
+                      {alert.source ? ` • ${alert.source}` : ''}
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="alert-title">{alert.title}</div>
-              <div className="alert-region">{alert.region}</div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
     </div>

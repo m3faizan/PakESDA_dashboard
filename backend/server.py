@@ -375,6 +375,7 @@ PAKISTAN_NEWS_FEEDS = [
     {"name": "Pakistan Today", "url": "https://www.pakistantoday.com.pk/feed/", "category": "general"},
     {"name": "Daily Times", "url": "https://dailytimes.com.pk/feed/", "category": "general"},
     {"name": "Samaa TV", "url": "https://www.samaa.tv/rss", "category": "general"},
+    {"name": "Al Jazeera", "url": "https://www.aljazeera.com/xml/rss/all.xml", "category": "international"},
     {"name": "APP Pakistan", "url": "https://www.app.com.pk", "category": "general"},
     {"name": "Mettis Global", "url": "https://mettisglobal.news/latest", "category": "business"},
     {"name": "ProPakistani", "url": "https://propakistani.pk/feed/", "category": "tech"},
@@ -397,6 +398,22 @@ POLITICS_POLICY_OVERRIDE_KEYWORDS = [
     "security", "defence", "foreign office", "diplomatic", "protest", "governor"
 ]
 
+PAKISTAN_CONTEXT_KEYWORDS = [
+    "pakistan", "islamabad", "karachi", "lahore", "peshawar", "quetta", "multan", "rawalpindi",
+    "sindh", "punjab", "balochistan", "kpk", "kp", "gilgit", "cpec", "sbp", "pti", "pml", "ppp"
+]
+
+SECURITY_BUCKET_KEYWORDS = {
+    "security": ["attack", "blast", "terror", "militant", "security", "defence", "army", "police", "violence", "border"],
+    "political": ["parliament", "assembly", "senate", "election", "cabinet", "minister", "prime minister", "president", "party"],
+    "diplomatic": ["diplomatic", "foreign minister", "bilateral", "embassy", "china", "india", "usa", "iran", "saudi", "afghanistan", "un"],
+    "economic": ["imf", "budget", "inflation", "tax", "economy", "economic", "gdp", "trade", "debt", "sbp", "fdi", "forex"],
+    "energy": ["energy", "power", "electricity", "gas", "oil", "petroleum", "load shedding", "renewable", "transmission", "fuel"]
+}
+
+HIGH_SEVERITY_KEYWORDS = ["terror", "blast", "attack", "killed", "emergency", "sanction", "crisis", "shutdown", "blackout"]
+MEDIUM_SEVERITY_KEYWORDS = ["protest", "court", "review", "policy", "cabinet", "talks", "warning", "strike", "tension"]
+
 
 def is_relevant_news_article(title: str, summary: str = ""):
     text = f"{title or ''} {summary or ''}".lower()
@@ -410,6 +427,60 @@ def is_relevant_news_article(title: str, summary: str = ""):
     # Keep sports-like keywords only when clearly tied to politics/policy/economy/security
     has_override = any(keyword in text for keyword in POLITICS_POLICY_OVERRIDE_KEYWORDS)
     return has_override
+
+
+def is_pakistan_context_article(title: str, summary: str = "", source: str = ""):
+    text = f"{title or ''} {summary or ''} {source or ''}".lower()
+    return any(keyword in text for keyword in PAKISTAN_CONTEXT_KEYWORDS)
+
+
+def classify_security_bucket(title: str, summary: str = ""):
+    text = f"{title or ''} {summary or ''}".lower()
+    for bucket in ["security", "political", "diplomatic", "economic", "energy"]:
+        if any(keyword in text for keyword in SECURITY_BUCKET_KEYWORDS[bucket]):
+            return bucket
+    return None
+
+
+def compute_alert_severity(title: str, summary: str = "", published: str = ""):
+    text = f"{title or ''} {summary or ''}".lower()
+    score = 0
+
+    if any(keyword in text for keyword in HIGH_SEVERITY_KEYWORDS):
+        score += 2
+    if any(keyword in text for keyword in MEDIUM_SEVERITY_KEYWORDS):
+        score += 1
+
+    parsed = parse_date(published)
+    if parsed:
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        age_hours = (datetime.now(timezone.utc) - parsed).total_seconds() / 3600
+        if age_hours <= 6:
+            score += 1
+
+    if score >= 3:
+        return "high"
+    if score >= 2:
+        return "medium"
+    return "low"
+
+
+def infer_region_from_text(title: str, summary: str = ""):
+    text = f"{title or ''} {summary or ''}".lower()
+    if any(k in text for k in ["karachi", "sindh"]):
+        return "Sindh"
+    if any(k in text for k in ["lahore", "punjab"]):
+        return "Punjab"
+    if any(k in text for k in ["peshawar", "kpk", "kp"]):
+        return "Khyber Pakhtunkhwa"
+    if any(k in text for k in ["quetta", "balochistan"]):
+        return "Balochistan"
+    if any(k in text for k in ["islamabad", "rawalpindi"]):
+        return "Islamabad"
+    if any(k in text for k in ["china", "india", "usa", "iran", "saudi", "afghanistan", "un"]):
+        return "International"
+    return "Pakistan"
 
 def parse_date(date_string):
     """Parse various date formats and return datetime object"""
@@ -2547,43 +2618,77 @@ async def fetch_weather_data():
     return cities
 
 async def fetch_security_data():
-    """Fetch security alerts and political developments"""
-    # Mock security/political data
-    alerts = [
-        {
-            "type": "political",
-            "severity": "medium",
-            "title": "National Assembly Session Scheduled",
-            "description": "Parliament to convene for budget discussions",
-            "region": "Islamabad",
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        },
-        {
-            "type": "security",
-            "severity": "low",
-            "title": "Security Enhanced in Major Cities",
-            "description": "Routine security measures for upcoming events",
-            "region": "Nationwide",
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        },
-        {
-            "type": "diplomatic",
-            "severity": "info",
-            "title": "Foreign Minister's Visit to China",
-            "description": "Bilateral talks on CPEC projects scheduled",
-            "region": "International",
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        },
-        {
-            "type": "economic",
-            "severity": "medium",
-            "title": "IMF Review Mission Arrives",
-            "description": "Economic review for next tranche release",
-            "region": "Islamabad",
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        }
-    ]
-    return alerts
+    """Build live security/politics/energy alerts from latest Pakistan-related news."""
+    try:
+        # Reuse already-fetched news if still fresh; otherwise fetch fresh feed pool.
+        news_pool = data_cache.get("news", {}).get("data") or []
+        news_updated = data_cache.get("news", {}).get("updated")
+        if not news_pool or not news_updated or (datetime.now(timezone.utc) - news_updated).total_seconds() > 900:
+            news_pool = await fetch_all_news()
+
+        candidates = []
+        for article in news_pool:
+            title = article.get("title", "")
+            summary = article.get("summary", "")
+            source = article.get("source", "")
+            published = article.get("published", "")
+
+            if not is_relevant_news_article(title, summary):
+                continue
+            if not is_pakistan_context_article(title, summary, source):
+                continue
+
+            bucket = classify_security_bucket(title, summary)
+            if not bucket:
+                continue
+
+            severity = compute_alert_severity(title, summary, published)
+            parsed = parse_date(published)
+            timestamp = parsed.isoformat() if parsed else datetime.now(timezone.utc).isoformat()
+
+            candidates.append({
+                "type": bucket,
+                "severity": severity,
+                "title": title,
+                "description": summary,
+                "region": infer_region_from_text(title, summary),
+                "source": source,
+                "published": published,
+                "timestamp": timestamp,
+                "link": article.get("link", "")
+            })
+
+        # De-duplicate by title and keep latest first
+        deduped = []
+        seen_titles = set()
+        for item in sorted(candidates, key=lambda x: x.get("timestamp", ""), reverse=True):
+            key = (item.get("title") or "").strip().lower()
+            if not key or key in seen_titles:
+                continue
+            seen_titles.add(key)
+            deduped.append(item)
+
+        # Segregate by buckets and balance output
+        bucket_order = ["security", "political", "diplomatic", "economic", "energy"]
+        grouped = {bucket: [] for bucket in bucket_order}
+        for item in deduped:
+            if item["type"] in grouped:
+                grouped[item["type"]].append(item)
+
+        result = []
+        # Take up to 2 from each bucket first
+        for bucket in bucket_order:
+            result.extend(grouped[bucket][:2])
+
+        # Fill remaining slots up to 12 with latest left-over
+        already = set(id(x) for x in result)
+        leftovers = [item for item in deduped if id(item) not in already]
+        result.extend(leftovers[: max(0, 12 - len(result))])
+
+        return result[:12]
+    except Exception as e:
+        print(f"Error building live security alerts: {e}")
+        return []
 
 async def fetch_airport_flights(airport_key: str):
     """Fetch airport departure and arrival counts from FlightStats"""
@@ -2877,14 +2982,7 @@ async def get_weather():
 @app.get("/api/security")
 async def get_security_alerts():
     """Get security and political alerts"""
-    if data_cache["security"]["updated"]:
-        age = (datetime.now(timezone.utc) - data_cache["security"]["updated"]).total_seconds()
-        if age > 300:
-            data_cache["security"]["data"] = await fetch_security_data()
-            data_cache["security"]["updated"] = datetime.now(timezone.utc)
-    else:
-        data_cache["security"]["data"] = await fetch_security_data()
-        data_cache["security"]["updated"] = datetime.now(timezone.utc)
+    await refresh_cache_with_persistence("security", 300, fetch_security_data)
     
     return {
         "alerts": data_cache["security"]["data"],
