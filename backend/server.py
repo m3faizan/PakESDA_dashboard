@@ -377,8 +377,8 @@ PAKISTAN_NEWS_FEEDS = [
     {"name": "Samaa TV", "url": "https://www.samaa.tv/rss", "category": "general"},
     {"name": "APP Pakistan", "url": "https://www.app.com.pk", "category": "general"},
     {"name": "Mettis Global", "url": "https://mettisglobal.news/latest", "category": "business"},
-    {"name": "ProPakistani", "url": "https://propakistani.pk/", "category": "tech"},
-    {"name": "TechJuice", "url": "https://www.techjuice.pk/", "category": "tech"}
+    {"name": "ProPakistani", "url": "https://propakistani.pk/feed/", "category": "tech"},
+    {"name": "TechJuice", "url": "https://www.techjuice.pk/feed/", "category": "tech"}
 ]
 
 # Energy specific RSS feed
