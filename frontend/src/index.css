@@ -215,6 +215,7 @@ h1, h2, h3, h4, h5, h6 {
   }
   .side-panels > * {
     flex: 1;
+    min-height: 400px;
   }
   .bottom-panels {
     grid-template-columns: repeat(2, 1fr);
@@ -224,6 +225,9 @@ h1, h2, h3, h4, h5, h6 {
 @media (max-width: 768px) {
   .side-panels {
     flex-direction: column;
+  }
+  .side-panels > * {
+    min-height: 400px;
   }
   .bottom-panels {
     grid-template-columns: 1fr;

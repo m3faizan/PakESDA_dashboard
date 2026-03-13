@@ -160,7 +160,7 @@ function App() {
         <div className="bento-grid">
           {/* Map Section */}
           <div className="map-section" data-testid="map-section">
-            <MapSection mapData={mapData} loading={loading} />
+            <MapSection mapData={mapData} alerts={security} loading={loading} />
           </div>
 
           {/* Side Panels */}

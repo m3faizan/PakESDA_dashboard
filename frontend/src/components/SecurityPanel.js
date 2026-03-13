@@ -33,15 +33,15 @@ const SecurityPanel = ({ alerts, loading }) => {
   };
 
   return (
-    <div className="panel" data-testid="security-panel">
+    <div className="panel" data-testid="security-panel" style={{ minHeight: '400px' }}>
       <div className="panel-header">
         <div className="panel-title">
           <Shield size={16} />
-          Security & Politics
+          Alerts
         </div>
         <span className="panel-badge">{alerts.length} alerts</span>
       </div>
-      <div className="panel-content">
+      <div className="panel-content" style={{ maxHeight: '500px', overflowY: 'auto' }}>
         {loading ? (
           <div className="loading">
             <div className="spinner"></div>

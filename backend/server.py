@@ -366,6 +366,8 @@ PAKISTAN_NEWS_FEEDS = [
     {"name": "Dawn", "url": "https://www.dawn.com/feeds/home", "category": "general"},
     {"name": "Geo News", "url": "https://www.geo.tv/rss/1/1", "category": "general"},
     {"name": "The News", "url": "https://www.thenews.pk/", "category": "general"},
+    {"name": "The News Pakistan", "url": "https://www.thenews.pk/rss/2/15", "category": "general"},
+    {"name": "The News World", "url": "https://www.thenews.pk/rss/1/2", "category": "international"},
     {"name": "ARY News", "url": "https://arynews.tv/feed/", "category": "general"},
     {"name": "Express Tribune", "url": "https://tribune.com.pk/feed/home", "category": "general"},
     {"name": "Dunya News", "url": "https://dunyanews.tv/index.php/en/RSS", "category": "general"},
@@ -400,7 +402,12 @@ POLITICS_POLICY_OVERRIDE_KEYWORDS = [
 
 PAKISTAN_CONTEXT_KEYWORDS = [
     "pakistan", "islamabad", "karachi", "lahore", "peshawar", "quetta", "multan", "rawalpindi",
-    "sindh", "punjab", "balochistan", "kpk", "kp", "gilgit", "cpec", "sbp", "pti", "pml", "ppp"
+    "sindh", "punjab", "balochistan", "kpk", "kp", "gilgit", "cpec", "sbp", "pti", "pml", "ppp",
+    "shehbaz", "sharif", "pakistani", "foreign office", "fo spokesperson"
+]
+
+REGIONAL_CONFLICT_KEYWORDS = [
+    "war", "conflict", "gaza", "israel", "iran", "saudi", "uae", "qatar", "ceasefire", "middle east"
 ]
 
 SECURITY_BUCKET_KEYWORDS = {
@@ -431,15 +438,28 @@ def is_relevant_news_article(title: str, summary: str = ""):
 
 def is_pakistan_context_article(title: str, summary: str = "", source: str = ""):
     text = f"{title or ''} {summary or ''} {source or ''}".lower()
-    return any(keyword in text for keyword in PAKISTAN_CONTEXT_KEYWORDS)
+    base_match = any(keyword in text for keyword in PAKISTAN_CONTEXT_KEYWORDS)
+    conflict_match = any(keyword in text for keyword in REGIONAL_CONFLICT_KEYWORDS)
+    leadership_match = any(keyword in text for keyword in ["prime minister", "foreign minister", "foreign office", "pakistan", "pakistani", "shehbaz"])
+    return base_match or (conflict_match and leadership_match)
 
 
 def classify_security_bucket(title: str, summary: str = ""):
     text = f"{title or ''} {summary or ''}".lower()
+    scores = {}
     for bucket in ["security", "political", "diplomatic", "economic", "energy"]:
-        if any(keyword in text for keyword in SECURITY_BUCKET_KEYWORDS[bucket]):
-            return bucket
-    return None
+        scores[bucket] = sum(1 for keyword in SECURITY_BUCKET_KEYWORDS[bucket] if keyword in text)
+
+    # Business/economic should win over diplomatic for petroleum/price/dealer-style alerts.
+    if any(k in text for k in ["petrol", "diesel", "pump", "dealer", "price", "margin", "sales", "market"]):
+        scores["economic"] += 2
+
+    if max(scores.values()) == 0:
+        return None
+
+    priority = ["security", "economic", "political", "diplomatic", "energy"]
+    best = sorted(priority, key=lambda b: scores[b], reverse=True)[0]
+    return best
 
 
 def compute_alert_severity(title: str, summary: str = "", published: str = ""):

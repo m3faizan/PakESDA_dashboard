@@ -1,18 +1,59 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { MapPin, Navigation } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Navigation, Bell } from 'lucide-react';
 
-const MapSection = ({ mapData, loading }) => {
+const ALERT_COORDS = {
+  islamabad: [73.0479, 33.6844],
+  karachi: [67.0011, 24.8607],
+  lahore: [74.3587, 31.5204],
+  peshawar: [71.5249, 34.0151],
+  quetta: [66.9905, 30.1798],
+  multan: [71.5249, 30.1575],
+  rawalpindi: [73.0551, 33.5651],
+  sindh: [67.0011, 24.8607],
+  punjab: [74.3587, 31.5204],
+  balochistan: [66.9905, 30.1798],
+  'khyber pakhtunkhwa': [71.5249, 34.0151],
+  kp: [71.5249, 34.0151],
+  kpk: [71.5249, 34.0151],
+  gilgit: [74.3142, 35.9208],
+  pakistan: [69.3451, 30.3753]
+};
+
+const resolveAlertCoords = (alert) => {
+  const text = `${alert?.title || ''} ${alert?.description || ''} ${alert?.region || ''}`.toLowerCase();
+  const keys = Object.keys(ALERT_COORDS);
+  for (const key of keys) {
+    if (text.includes(key)) {
+      return ALERT_COORDS[key];
+    }
+  }
+  return null;
+};
+
+const MapSection = ({ mapData, alerts = [], loading }) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
+  const maplibreRef = useRef(null);
+  const markerRefs = useRef([]);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [showAlertsLayer, setShowAlertsLayer] = useState(true);
+
+  const topAlerts = useMemo(() => {
+    const sorted = [...(alerts || [])].sort((a, b) => {
+      const ta = new Date(a?.timestamp || 0).getTime();
+      const tb = new Date(b?.timestamp || 0).getTime();
+      return tb - ta;
+    });
+    return sorted.slice(0, 8);
+  }, [alerts]);
 
   useEffect(() => {
-    // Dynamic import of maplibre-gl
     const loadMap = async () => {
       if (!mapContainerRef.current || mapRef.current) return;
 
       try {
         const maplibregl = (await import('maplibre-gl')).default;
+        maplibreRef.current = maplibregl;
         await import('maplibre-gl/dist/maplibre-gl.css');
 
         const map = new maplibregl.Map({
@@ -31,17 +72,9 @@ const MapSection = ({ mapData, loading }) => {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
               }
             },
-            layers: [
-              {
-                id: 'carto-dark-layer',
-                type: 'raster',
-                source: 'carto-dark',
-                minzoom: 0,
-                maxzoom: 22
-              }
-            ]
+            layers: [{ id: 'carto-dark-layer', type: 'raster', source: 'carto-dark', minzoom: 0, maxzoom: 22 }]
           },
-          center: [69.3451, 30.3753], // Pakistan center
+          center: [69.3451, 30.3753],
           zoom: 5,
           attributionControl: false
         });
@@ -52,39 +85,7 @@ const MapSection = ({ mapData, loading }) => {
         map.on('load', () => {
           setMapLoaded(true);
           mapRef.current = map;
-
-          // Add markers for cities if mapData is available
-          if (mapData?.cities) {
-            mapData.cities.forEach((city) => {
-              const el = document.createElement('div');
-              el.className = 'map-marker';
-              el.style.cssText = `
-                width: 12px;
-                height: 12px;
-                background: ${city.type === 'capital' ? '#22C55E' : city.type === 'strategic' ? '#F59E0B' : '#3B82F6'};
-                border-radius: 50%;
-                border: 2px solid rgba(255,255,255,0.5);
-                cursor: pointer;
-                box-shadow: 0 0 10px ${city.type === 'capital' ? '#22C55E' : city.type === 'strategic' ? '#F59E0B' : '#3B82F6'};
-              `;
-
-              const popup = new maplibregl.Popup({ offset: 15 })
-                .setHTML(`
-                  <div style="background: #0F172A; color: #F8FAFC; padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; border: 1px solid #22C55E;">
-                    <strong style="color: #22C55E;">${city.name}</strong><br/>
-                    <span style="color: #94A3B8;">Population: ${city.population}</span><br/>
-                    <span style="color: #94A3B8; text-transform: uppercase; font-size: 10px;">${city.type}</span>
-                  </div>
-                `);
-
-              new maplibregl.Marker({ element: el })
-                .setLngLat([city.lon, city.lat])
-                .setPopup(popup)
-                .addTo(map);
-            });
-          }
         });
-
       } catch (error) {
         console.error('Error loading map:', error);
       }
@@ -93,6 +94,8 @@ const MapSection = ({ mapData, loading }) => {
     loadMap();
 
     return () => {
+      markerRefs.current.forEach((m) => m.remove());
+      markerRefs.current = [];
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -100,52 +103,73 @@ const MapSection = ({ mapData, loading }) => {
     };
   }, []);
 
-  // Update markers when mapData changes
   useEffect(() => {
-    const addMarkers = async () => {
-      if (mapRef.current && mapData?.cities && mapLoaded) {
-        // Clear existing markers and add new ones
-        const markers = document.querySelectorAll('.map-marker');
-        markers.forEach(m => m.parentElement?.remove());
+    const renderMarkers = async () => {
+      if (!mapRef.current || !mapLoaded || !maplibreRef.current) return;
 
-        try {
-          const maplibregl = (await import('maplibre-gl')).default;
+      const maplibregl = maplibreRef.current;
+      markerRefs.current.forEach((m) => m.remove());
+      markerRefs.current = [];
 
-          mapData.cities.forEach((city) => {
-            const el = document.createElement('div');
-            el.className = 'map-marker';
-            el.style.cssText = `
-              width: 12px;
-              height: 12px;
-              background: ${city.type === 'capital' ? '#22C55E' : city.type === 'strategic' ? '#F59E0B' : '#3B82F6'};
-              border-radius: 50%;
-              border: 2px solid rgba(255,255,255,0.5);
-              cursor: pointer;
-              box-shadow: 0 0 10px ${city.type === 'capital' ? '#22C55E' : city.type === 'strategic' ? '#F59E0B' : '#3B82F6'};
-            `;
+      (mapData?.cities || []).forEach((city) => {
+        const el = document.createElement('div');
+        el.className = 'map-marker city-marker';
+        el.style.cssText = `
+          width: 12px;
+          height: 12px;
+          background: ${city.type === 'capital' ? '#22C55E' : city.type === 'strategic' ? '#F59E0B' : '#3B82F6'};
+          border-radius: 50%;
+          border: 2px solid rgba(255,255,255,0.5);
+          cursor: pointer;
+          box-shadow: 0 0 10px ${city.type === 'capital' ? '#22C55E' : city.type === 'strategic' ? '#F59E0B' : '#3B82F6'};
+        `;
 
-            const popup = new maplibregl.Popup({ offset: 15 })
-              .setHTML(`
-                <div style="background: #0F172A; color: #F8FAFC; padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; border: 1px solid #22C55E;">
-                  <strong style="color: #22C55E;">${city.name}</strong><br/>
-                  <span style="color: #94A3B8;">Population: ${city.population}</span><br/>
-                  <span style="color: #94A3B8; text-transform: uppercase; font-size: 10px;">${city.type}</span>
-                </div>
-              `);
+        const popup = new maplibregl.Popup({ offset: 15 }).setHTML(`
+          <div style="background: #0F172A; color: #F8FAFC; padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; border: 1px solid #22C55E;">
+            <strong style="color: #22C55E;">${city.name}</strong><br/>
+            <span style="color: #94A3B8;">Population: ${city.population}</span><br/>
+            <span style="color: #94A3B8; text-transform: uppercase; font-size: 10px;">${city.type}</span>
+          </div>
+        `);
 
-            new maplibregl.Marker({ element: el })
-              .setLngLat([city.lon, city.lat])
-              .setPopup(popup)
-              .addTo(mapRef.current);
-          });
-        } catch (error) {
-          console.error('Error adding map markers:', error);
-        }
+        const marker = new maplibregl.Marker({ element: el }).setLngLat([city.lon, city.lat]).setPopup(popup).addTo(mapRef.current);
+        markerRefs.current.push(marker);
+      });
+
+      if (showAlertsLayer) {
+        topAlerts.forEach((alert) => {
+          const coords = resolveAlertCoords(alert);
+          if (!coords) return;
+
+          const el = document.createElement('div');
+          el.className = 'map-marker alert-marker';
+          el.style.cssText = `
+            width: 11px;
+            height: 11px;
+            background: #EF4444;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.6);
+            cursor: pointer;
+            box-shadow: 0 0 10px #EF4444;
+          `;
+
+          const popup = new maplibregl.Popup({ offset: 15 }).setHTML(`
+            <div style="background: #0F172A; color: #F8FAFC; padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; border: 1px solid #EF4444; max-width: 260px;">
+              <strong style="color: #EF4444; text-transform: uppercase;">Alert</strong><br/>
+              <span style="color: #94A3B8; text-transform: uppercase; font-size: 10px;">${alert.type || 'general'} • ${alert.severity || 'info'}</span><br/>
+              <strong style="color: #F8FAFC;">${alert.title || 'Untitled Alert'}</strong><br/>
+              <span style="color: #94A3B8;">${alert.region || 'Pakistan'}${alert.source ? ` • ${alert.source}` : ''}</span>
+            </div>
+          `);
+
+          const marker = new maplibregl.Marker({ element: el }).setLngLat(coords).setPopup(popup).addTo(mapRef.current);
+          markerRefs.current.push(marker);
+        });
       }
     };
 
-    addMarkers();
-  }, [mapData, mapLoaded]);
+    renderMarkers();
+  }, [mapData, topAlerts, mapLoaded, showAlertsLayer]);
 
   return (
     <div className="map-container" data-testid="map-container">
@@ -182,6 +206,19 @@ const MapSection = ({ mapData, loading }) => {
           <span className="legend-dot strategic"></span>
           <span>Strategic Port</span>
         </div>
+        <div className="legend-item">
+          <span className="legend-dot" style={{ background: '#EF4444' }}></span>
+          <span>Alerts</span>
+        </div>
+        <button
+          onClick={() => setShowAlertsLayer((prev) => !prev)}
+          className="range-btn"
+          style={{ marginTop: '0.35rem', fontSize: '0.62rem', padding: '0.2rem 0.45rem', width: '100%' }}
+          data-testid="map-alert-layer-toggle"
+        >
+          <Bell size={12} style={{ marginRight: '0.3rem', display: 'inline' }} />
+          Alerts Layer: {showAlertsLayer ? 'On' : 'Off'}
+        </button>
       </div>
 
       {loading && (
