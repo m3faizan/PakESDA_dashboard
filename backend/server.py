@@ -6,6 +6,7 @@ import os
 import asyncio
 import csv
 import io
+import re
 from datetime import datetime, timezone, timedelta
 from contextlib import asynccontextmanager
 from typing import Optional
@@ -1321,9 +1322,58 @@ async def fetch_pkr_usd_data():
 
 
 async def fetch_liquid_forex_data():
-    """Fetch Liquid Foreign Exchange Reserves data from historical JSON file"""
+    """Fetch Liquid Foreign Exchange Reserves data from historical JSON and latest SBP PDF weekly table."""
     import json
     import os
+    from pypdf import PdfReader
+
+    def fetch_latest_from_sbp_pdf():
+        """Read latest weekly FX reserves from SBP PDF (forex.pdf)."""
+        try:
+            url = "https://www.sbp.org.pk/ecodata/forex.pdf"
+            async def _download_bytes():
+                async with httpx.AsyncClient(timeout=25.0, follow_redirects=True) as client:
+                    resp = await client.get(url)
+                    if resp.status_code != 200:
+                        return None
+                    return resp.content
+
+            pdf_bytes = asyncio.run(_download_bytes())
+            if not pdf_bytes:
+                return None
+
+            reader = PdfReader(io.BytesIO(pdf_bytes))
+            extracted_text = "\n".join([(p.extract_text() or "") for p in reader.pages])
+            if not extracted_text:
+                return None
+
+            # Weekly rows look like: 6-Mar-26 16,341.1 5,257.2 21,598.3
+            pattern = re.compile(r"(\d{1,2}-[A-Za-z]{3}-\d{2})\s+([\d,]+\.\d)\s+([\d,]+\.\d)\s+([\d,]+\.\d)")
+            matches = pattern.findall(extracted_text)
+            if not matches:
+                return None
+
+            weekly_rows = []
+            for date_str, sbp_str, bank_str, total_str in matches:
+                try:
+                    date_obj = datetime.strptime(date_str, "%d-%b-%y")
+                    weekly_rows.append({
+                        "date": date_obj.strftime("%Y-%m-%d"),
+                        "sbp_reserves": float(sbp_str.replace(",", "")),
+                        "bank_reserves": float(bank_str.replace(",", "")),
+                        "total": float(total_str.replace(",", ""))
+                    })
+                except Exception:
+                    continue
+
+            if not weekly_rows:
+                return None
+
+            weekly_rows.sort(key=lambda x: x["date"], reverse=True)
+            return weekly_rows[0]
+        except Exception as e:
+            print(f"Error parsing SBP forex PDF: {e}")
+            return None
     
     try:
         # Load historical data from JSON file
@@ -1337,6 +1387,19 @@ async def fetch_liquid_forex_data():
         
         # Sort by date descending (most recent first)
         history.sort(key=lambda x: x["date"], reverse=True)
+
+        # Always check latest weekly point from SBP PDF and merge/override latest row.
+        latest_pdf_point = await asyncio.to_thread(fetch_latest_from_sbp_pdf)
+        if latest_pdf_point:
+            matched_index = next((idx for idx, item in enumerate(history) if item.get("date") == latest_pdf_point["date"]), None)
+            if matched_index is not None:
+                history[matched_index]["sbp_reserves"] = latest_pdf_point["sbp_reserves"]
+                history[matched_index]["bank_reserves"] = latest_pdf_point["bank_reserves"]
+                history[matched_index]["total"] = latest_pdf_point["total"]
+            else:
+                history.insert(0, latest_pdf_point)
+
+            history.sort(key=lambda x: x["date"], reverse=True)
         
         # Add value field for compatibility
         for item in history:
