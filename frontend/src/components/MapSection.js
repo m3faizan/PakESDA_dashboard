@@ -137,20 +137,20 @@ const MapSection = ({ mapData, alerts = [], energyReport, loading }) => {
             box-shadow: 0 0 10px #38BDF8;
           `;
 
-          const items = (entry.items || []).slice(0, 4).map((item) => `
-            <li style="margin-bottom: 4px;">${item}</li>
+          const items = (entry.items || []).slice(0, 8).map((item) => `
+            <li style="margin-bottom: 6px;">${item}</li>
           `).join('');
-          const moreCount = (entry.count || 0) - (entry.items || []).slice(0, 4).length;
+          const moreCount = (entry.count || 0) - (entry.items || []).slice(0, 8).length;
 
           const popup = new maplibregl.Popup({ offset: 15 }).setHTML(`
             <div style="background: #0F172A; color: #F8FAFC; padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; border: 1px solid #38BDF8; max-width: 280px;">
-              <strong style="color: #38BDF8; text-transform: uppercase;">${entry.country}</strong><br/>
-              <span style="color: #94A3B8; text-transform: uppercase; font-size: 10px;">${entry.region || 'Region'} • ${entry.count || entry.items?.length || 0} items</span><br/>
-              <strong style="color: #F8FAFC;">${entry.headline || 'Energy Update'}</strong>
-              <ul style="margin-top: 6px; padding-left: 16px; color: #94A3B8;">
-                ${items}
-              </ul>
-              ${moreCount > 0 ? `<span style='color:#94A3B8;'>+${moreCount} more</span>` : ''}
+              <div style="color: #38BDF8; text-transform: uppercase; font-size: 10px; margin-bottom: 6px;">${entry.country} • ${entry.region || 'Region'} • ${entry.count || entry.items?.length || 0} items</div>
+              <div style="max-height: 160px; overflow-y: auto; padding-right: 4px;">
+                <ul style="padding-left: 16px; color: #E2E8F0;">
+                  ${items}
+                </ul>
+                ${moreCount > 0 ? `<div style='color:#94A3B8; margin-top:6px;'>+${moreCount} more</div>` : ''}
+              </div>
             </div>
           `);
 

@@ -742,6 +742,30 @@ h1, h2, h3, h4, h5, h6 {
   position: relative;
 }
 
+.maplibregl-popup-content {
+  background: #0F172A !important;
+  color: #F8FAFC;
+  border: 1px solid #1E293B !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45) !important;
+  padding: 0 !important;
+}
+
+.maplibregl-popup-close-button {
+  color: #94A3B8;
+}
+
+.maplibregl-popup-close-button:hover {
+  color: #F8FAFC;
+  background: transparent;
+}
+
+.maplibregl-popup-tip {
+  border-top-color: #0F172A !important;
+  border-bottom-color: #0F172A !important;
+  border-left-color: #0F172A !important;
+  border-right-color: #0F172A !important;
+}
+
 .map-overlay {
   position: absolute;
   top: 1rem;
@@ -767,6 +791,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  font-size: 0.9rem;
 }
 
 .map-tabs {

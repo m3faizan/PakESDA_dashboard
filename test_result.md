@@ -562,6 +562,21 @@ frontend:
         agent: "testing"
         comment: "PASS - All required data-testid attributes exist and are accessible: 'map-tabs' (container), 'map-tab-overview' (Overview tab button), 'map-tab-energy' (Daily Energy Report tab button), 'energy-marker-{index}' (energy markers 0-50), 'map-energy-report-date' (report date display), 'energy-report-meta' (legend counts). Implementation in MapSection.js lines 129, 240-254, 257-260, 304-306."
 
+  - task: "Map popup styling updates for energy and alert markers"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/MapSection.js, /app/frontend/src/index.css"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Testing map popup styling updates: 1) Energy tab marker popup shows list without bold headline and allows scrolling when long, 2) Popups (energy + alerts) have dark background with no white container, 3) Map overlay title style consistent between Pakistan Overview and Daily Energy Report, 4) Map tabs work and markers render"
+      - working: true
+        agent: "testing"
+        comment: "PASS - All 4 styling requirements verified successfully. Energy popup: No bold headline (no <strong> tags), list structure with <ul>/<li> present, scrollable container found at Level 2 div with max-height: 160px and overflow-y: auto. Dark background: Both energy and alert popups use #0F172A (rgb(15, 23, 42)) background, no white/light containers detected (checked all elements). Overlay title consistency: Both 'Pakistan Overview' and 'Daily Energy Report' titles use same styles - color: rgb(34, 197, 94), fontSize: 14.4px, fontWeight: 600, textTransform: uppercase, letterSpacing: 0.72px. Map functionality: Tabs switch correctly, 51 energy markers render in energy mode, 10 city + 8 alert markers render in overview mode. Alert popup has correct red border rgb(239, 68, 68). CSS implementation in index.css lines 745-767 (.maplibregl-popup-content, .maplibregl-popup-tip). Popup HTML structure in MapSection.js lines 145-155 (energy) and 209-216 (alerts). Screenshots captured: energy_popup_styling.png, alert_popup_verified.png, final_map_popups.png."
+
 metadata:
   created_by: "testing_agent"
   version: "1.0"
@@ -611,4 +626,8 @@ agent_communication:
     message: "Starting comprehensive testing of Daily Energy Report map tab feature. Testing 5 key requirements: 1) Map tab visibility and layer switching, 2) Energy markers (cyan #38BDF8) appear and city/alert markers hidden in energy tab, 3) Overlay shows report date and legend shows energy counts, 4) Switch back to Overview restores alerts/cities, 5) All data-testid attributes exist for automated testing."
   - agent: "testing"
     message: "ALL TESTS PASSED ✓ - Daily Energy Report map tab feature fully functional. All 5 requirements verified successfully: 1) Daily Energy Report tab (data-testid='map-tab-energy') visible and clickable, successfully switches from Overview to Energy layer with active state styling. 2) 51 energy markers render with correct cyan color #38BDF8 (rgb(56, 189, 248)), each with data-testid='energy-marker-{index}'. City markers (10) and alert markers (8) completely hidden when Energy tab active (both counts = 0). 3) Overlay displays 'Daily Energy Report' title with report date 'Report: March 13, 2026' (data-testid='map-energy-report-date'). Legend shows energy metadata '51 locations • 378 items' (data-testid='energy-report-meta'). 4) Switching back to Overview tab successfully restores 10 city markers + 8 alert markers, hides all energy markers, reverts overlay to 'Pakistan Overview', and restores Overview legend. 5) All required data-testid attributes present and functional: map-tabs, map-tab-overview, map-tab-energy, energy-marker-{0-50}, map-energy-report-date, energy-report-meta. Bidirectional tab switching works perfectly without marker persistence issues. No console errors detected (only WebGL performance warnings unrelated to feature). Screenshots captured for both energy_mode.png and overview_mode.png showing correct marker rendering and layer switching."
+  - agent: "testing"
+    message: "Starting comprehensive testing of map popup styling updates. Testing 4 key requirements: 1) Energy tab marker popup shows list without bold headline and allows scrolling when long, 2) Popups (energy + alerts) have dark background with no white container, 3) Map overlay title style consistent between Overview and Energy tabs, 4) Map tabs work and markers render correctly."
+  - agent: "testing"
+    message: "ALL TESTS PASSED ✓ - Map popup styling updates fully verified. All 4 requirements met: 1) Energy popup correctly displays list structure without bold headline (no <strong> tags found), scrollable container properly configured with max-height: 160px and overflow-y: auto at Level 2 div (MapSection.js line 148). 2) Both energy and alert popups use dark background #0F172A (rgb(15, 23, 42)), comprehensive scan found zero white or light-colored container elements in either popup type (index.css lines 745-767 implement .maplibregl-popup-content styling). 3) Overlay title styles perfectly consistent between 'Pakistan Overview' and 'Daily Energy Report' - identical color (rgb(34, 197, 94)), fontSize (14.4px), fontWeight (600), textTransform (uppercase), letterSpacing (0.72px). 4) Tab switching works correctly with proper active states, markers render in both modes (51 energy markers in energy mode, 10 city + 8 alert markers in overview mode). Alert popups show correct red border rgb(239, 68, 68). No console errors. Screenshots: energy_popup_styling.png, alert_popup_verified.png, final_map_popups.png. Implementation quality excellent - all styling requirements met without any white container artifacts."
 ---
