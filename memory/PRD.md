@@ -40,6 +40,7 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] Daily briefing now summarizes top headlines plus key economic indicators into structured sections.
 - [x] Added **RDA Inflows** to Economic Indicators (total funds received, full history, USD billions format).
 - [x] Added **POL Sales** to Real Sector with stacked-by-sector modal and total overlay.
+- [x] Fixed POL legend overflow (moved below chart, wraps) and added stale fallback for POL/Auto Vehicles/2&3 Wheelers when SBP API fails.
 
 ### Latest Updates (Mar 10, 2026)
 - [x] Added new **Real Sector** panel with LSM Quantum Index (CPI-style historical flow):
