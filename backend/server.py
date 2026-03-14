@@ -8,6 +8,7 @@ import csv
 import io
 import re
 import json
+import html as html_lib
 from datetime import datetime, timezone, timedelta
 from contextlib import asynccontextmanager
 from typing import Optional
@@ -107,6 +108,8 @@ data_cache = {
     "spi_weekly": {"data": {}, "updated": None},
     "spi_monthly": {"data": {}, "updated": None},
     "liquid_forex": {"data": {}, "updated": None},
+    "daily_energy_report": {"data": [], "updated": None},
+    "energy_geo_cache": {"data": {}, "updated": None},
     "daily_briefing": {"data": None, "updated": None}
 }
 
@@ -262,6 +265,19 @@ SBP_CPI_MOM_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_PT_CPI_M.P004
 SPI_GOOGLE_SHEET_ID = "1q2ixfzKUMx9Y5yX_jPUx5B1wda7bY3hefKAiae5Io1k"
 SPI_WEEKLY_SHEET_NAME = "main raw data"
 SPI_MONTHLY_SHEET_NAME = "monthly_spi"
+
+ENERGY_REPORT_SHEET_ID = "1qpNNVSsN_PTyk1HZdc7OPeJd7JDqtXBK_k7CcsUlg7w"
+ENERGY_REPORT_TTL_SECONDS = 21600
+ENERGY_GEO_CACHE_KEY = "energy_geo_cache"
+ENERGY_REPORT_CACHE_KEY = "daily_energy_report"
+ENERGY_REGION_COORDS = {
+    "asia": [90.0, 30.0],
+    "africa": [20.0, 5.0],
+    "europe": [10.0, 50.0],
+    "middle east": [45.0, 27.0],
+    "latin america": [-60.0, -15.0],
+    "global": [0.0, 20.0]
+}
 
 # Historical CPI API endpoints by base year period
 CPI_HISTORICAL_APIS = [
@@ -2948,6 +2964,207 @@ async def fetch_spi_monthly_data():
     return None
 
 
+async def fetch_energy_report_html():
+    """Fetch raw HTML text from the Daily Energy Report Google Sheet (cell A1)."""
+    workbook = None
+    try:
+        workbook_url = f"https://docs.google.com/spreadsheets/d/{ENERGY_REPORT_SHEET_ID}/export?format=xlsx"
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+            response = await client.get(workbook_url)
+            response.raise_for_status()
+            workbook = load_workbook(io.BytesIO(response.content), data_only=True)
+
+        sheet = workbook[workbook.sheetnames[0]]
+        html_text = sheet["A1"].value
+        return html_text or ""
+    except Exception as e:
+        print(f"Error fetching energy report HTML: {e}")
+        return ""
+    finally:
+        if workbook:
+            workbook.close()
+
+
+def _clean_energy_text(text: str) -> str:
+    text = re.sub(r"<script.*?</script>", "", text, flags=re.S | re.I)
+    text = re.sub(r"<style.*?</style>", "", text, flags=re.S | re.I)
+    text = re.sub(r"<br\s*/?>", "\n", text, flags=re.I)
+    text = re.sub(r"</p>", "\n", text, flags=re.I)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = html_lib.unescape(text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+def _extract_energy_report_date(html_text: str) -> Optional[str]:
+    if not html_text:
+        return None
+    for pattern in [
+        r"\b[A-Z][a-z]+\s+\d{1,2},\s+\d{4}\b",
+        r"\b\d{1,2}\s+[A-Za-z]+\s+\d{4}\b"
+    ]:
+        match = re.search(pattern, html_text)
+        if match:
+            return match.group(0)
+    return None
+
+
+def _normalize_location_name(name: str) -> str:
+    cleaned = re.sub(r"\(.*?\)", "", name or "")
+    cleaned = cleaned.replace("/", " ")
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    return cleaned
+
+
+def _resolve_energy_region_coords(name: str):
+    normalized = (name or "").lower()
+    for region_key, coords in ENERGY_REGION_COORDS.items():
+        if region_key in normalized:
+            return coords
+    return None
+
+
+def parse_energy_report_html(html_text: str):
+    if not html_text:
+        return []
+
+    sanitized = re.sub(r"<script.*?</script>", "", html_text, flags=re.S | re.I)
+    sanitized = re.sub(r"<style.*?</style>", "", sanitized, flags=re.S | re.I)
+
+    region_matches = list(re.finditer(r"<h2[^>]*>(.*?)</h2>", sanitized, flags=re.I | re.S))
+    entries = []
+
+    for idx, region_match in enumerate(region_matches):
+        region_block = sanitized[region_match.end(): region_matches[idx + 1].start() if idx + 1 < len(region_matches) else len(sanitized)]
+        region_name = _normalize_location_name(_clean_energy_text(region_match.group(1)))
+        if "duplicate entries" in region_name.lower():
+            continue
+
+        country_matches = list(re.finditer(r"<h3[^>]*>(.*?)</h3>", region_block, flags=re.I | re.S))
+        for cidx, country_match in enumerate(country_matches):
+            country_block = region_block[country_match.end(): country_matches[cidx + 1].start() if cidx + 1 < len(country_matches) else len(region_block)]
+            country_name = _normalize_location_name(_clean_energy_text(country_match.group(1)))
+            if not country_name:
+                continue
+
+            items = [_clean_energy_text(item) for item in re.findall(r"<li[^>]*>(.*?)</li>", country_block, flags=re.I | re.S)]
+            items = [item for item in items if item]
+
+            if not items:
+                paragraphs = [_clean_energy_text(p) for p in re.findall(r"<p[^>]*>(.*?)</p>", country_block, flags=re.I | re.S)]
+                items = [p for p in paragraphs if p]
+
+            if not items:
+                blob = _clean_energy_text(country_block)
+                if blob:
+                    items = [blob]
+
+            for item in items:
+                if len(item) < 5:
+                    continue
+                entries.append({
+                    "region": region_name,
+                    "country": country_name,
+                    "summary": item
+                })
+
+    return entries
+
+
+async def _geocode_energy_location(client: httpx.AsyncClient, location: str, cache: dict):
+    if not location:
+        return None
+    key = location.lower()
+    if key in cache:
+        return cache[key]
+
+    region_coords = _resolve_energy_region_coords(location)
+    if region_coords:
+        cache[key] = {"lon": region_coords[0], "lat": region_coords[1]}
+        return cache[key]
+
+    try:
+        response = await client.get(
+            "https://nominatim.openstreetmap.org/search",
+            params={"q": location, "format": "json", "limit": 1},
+            headers={"User-Agent": "PakistanIntelligenceMonitor/1.0"}
+        )
+        if response.status_code == 200:
+            data = response.json()
+            if data:
+                coords = {"lon": float(data[0]["lon"]), "lat": float(data[0]["lat"])}
+                cache[key] = coords
+                await asyncio.sleep(0.6)
+                return coords
+    except Exception as e:
+        print(f"Energy report geocode failed for {location}: {e}")
+
+    return None
+
+
+async def fetch_daily_energy_report_data():
+    html_text = await fetch_energy_report_html()
+    if not html_text:
+        return None
+
+    report_date = _extract_energy_report_date(html_text)
+    raw_entries = parse_energy_report_html(html_text)
+    if not raw_entries:
+        return None
+
+    geo_cache, _ = restore_cache_entry(ENERGY_GEO_CACHE_KEY)
+    if not isinstance(geo_cache, dict):
+        geo_cache = {}
+
+    grouped = {}
+    for entry in raw_entries:
+        key = f"{entry['region']}|{entry['country']}"
+        grouped.setdefault(key, {
+            "region": entry["region"],
+            "country": entry["country"],
+            "items": []
+        })
+        grouped[key]["items"].append(entry["summary"])
+
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        for group in grouped.values():
+            await _geocode_energy_location(client, group["country"], geo_cache)
+
+    persist_cache_entry(ENERGY_GEO_CACHE_KEY, geo_cache)
+
+    entries_with_coords = []
+    for idx, group in enumerate(grouped.values()):
+        coords = geo_cache.get(group["country"].lower())
+        if not coords:
+            coords = _resolve_energy_region_coords(group["country"])
+        if not coords:
+            continue
+
+        items = group["items"]
+        headline = items[0].split(".")[0].strip() if items else ""
+        if len(headline) > 120:
+            headline = headline[:117] + "..."
+
+        entries_with_coords.append({
+            "id": f"energy-{idx}",
+            "region": group["region"],
+            "country": group["country"],
+            "headline": headline,
+            "items": items[:8],
+            "count": len(items),
+            "lon": coords["lon"],
+            "lat": coords["lat"]
+        })
+
+    return {
+        "report_date": report_date,
+        "entries": entries_with_coords,
+        "total_countries": len(entries_with_coords),
+        "total_items": len(raw_entries),
+        "source": "Daily Energy Report Sheet"
+    }
+
+
 async def fetch_road_advisory():
     """Fetch road advisory data from NHMP"""
     try:
@@ -4193,6 +4410,17 @@ async def get_infrastructure_status():
         "updated": datetime.now(timezone.utc).isoformat()
     }
     return infrastructure
+
+@app.get("/api/daily-energy-report")
+async def get_daily_energy_report():
+    """Get daily energy report entries for map layer."""
+    await refresh_cache_with_persistence(ENERGY_REPORT_CACHE_KEY, ENERGY_REPORT_TTL_SECONDS, fetch_daily_energy_report_data)
+
+    return {
+        "data": data_cache[ENERGY_REPORT_CACHE_KEY]["data"],
+        "updated": data_cache[ENERGY_REPORT_CACHE_KEY]["updated"].isoformat() if data_cache[ENERGY_REPORT_CACHE_KEY]["updated"] else None
+    }
+
 
 @app.get("/api/map-data")
 async def get_map_data():

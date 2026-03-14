@@ -487,16 +487,95 @@ frontend:
         agent: "testing"
         comment: "PASS - CPI cards handle empty data correctly. CPI (YoY) card displays '--' when value is null/undefined. CPI (MoM) card displays '--' when value is null/undefined. Both cards clickable and open modals without crash. CPI YoY modal opened showing '0.0%' with proper chart rendering. CPI MoM modal opened and closed successfully. Implementation at lines 183-192 (formatDisplayValue function) returns '--' when value is null/undefined. Modals handle empty data gracefully with default 0 values. No console errors or crashes detected."
 
+  - task: "Daily Energy Report map tab is visible and switches layer"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/MapSection.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Testing Daily Energy Report tab visibility, tab switching, and layer change functionality"
+      - working: true
+        agent: "testing"
+        comment: "PASS - Daily Energy Report tab (data-testid='map-tab-energy') is visible and clickable. Clicking tab successfully switches from Overview to Energy layer. Tab shows active state with green highlight (rgba(34, 197, 94, 0.15)). Overlay title changes from 'Pakistan Overview' to 'Daily Energy Report'. Tab switching works bidirectionally (Overview ↔ Energy)."
+
+  - task: "Energy markers appear and alerts/cities hidden in energy tab"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/MapSection.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Verifying energy markers (blue/cyan) render and city/alert markers are hidden when energy tab is active"
+      - working: true
+        agent: "testing"
+        comment: "PASS - When Energy tab is active, 51 energy markers appear with correct cyan color #38BDF8 (rgb(56, 189, 248)). Energy markers have data-testid='energy-marker-{index}' from 0-50. City markers and alert markers are completely hidden (both counts = 0). In Overview mode: 10 city markers + 8 alert markers visible. In Energy mode: 51 energy markers visible, 0 city/alert markers. Layer switching correctly toggles marker visibility."
+
+  - task: "Energy tab overlay shows report date and legend shows counts"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/MapSection.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Testing overlay displays report date and legend shows energy location/item counts"
+      - working: true
+        agent: "testing"
+        comment: "PASS - Overlay correctly shows report date 'Report: March 13, 2026' (data-testid='map-energy-report-date') when Energy tab is active. Legend displays energy metadata (data-testid='energy-report-meta') showing '51 locations • 378 items'. Report date only appears in Energy mode, hidden in Overview mode. Legend dynamically changes between Overview legend (Capital/Major City/Strategic Port/Alerts) and Energy legend (Energy Report/Country/Region with counts)."
+
+  - task: "Switch back to Overview confirms alerts/cities return"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/MapSection.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Verifying switching from Energy back to Overview restores city and alert markers"
+      - working: true
+        agent: "testing"
+        comment: "PASS - Switching from Energy tab back to Overview tab correctly restores all markers. After switch: 10 city markers return, 8 alert markers return, 0 energy markers (hidden). Overlay title reverts to 'Pakistan Overview'. Legend reverts to Overview legend items. Bidirectional tab switching works perfectly without any marker persistence issues."
+
+  - task: "data-testid attributes for map tabs and energy markers exist"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/MapSection.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Confirming all required data-testid attributes are present for automated testing"
+      - working: true
+        agent: "testing"
+        comment: "PASS - All required data-testid attributes exist and are accessible: 'map-tabs' (container), 'map-tab-overview' (Overview tab button), 'map-tab-energy' (Daily Energy Report tab button), 'energy-marker-{index}' (energy markers 0-50), 'map-energy-report-date' (report date display), 'energy-report-meta' (legend counts). Implementation in MapSection.js lines 129, 240-254, 257-260, 304-306."
+
 metadata:
   created_by: "testing_agent"
   version: "1.0"
-  test_sequence: 7
+  test_sequence: 8
 
 test_plan:
   - agent: "testing"
     message: "Starting comprehensive testing of Consumer Confidence Index (CCI) feature in Business Environment panel. Will verify CCI KPI card rendering with value/change/month, clicking CCI KPI highlights card and switches to CCI tab, CCI tab renders line chart with date range and no overflow, other tabs (Overview/EPU) still work correctly, and all required data-testid attributes exist."
   - agent: "testing"
     message: "ALL TESTS PASSED ✓ - Consumer Confidence Index (CCI) feature fully functional in Business Environment panel. CCI KPI card displays correctly with label 'Consumer Confidence Index', value '43.00', MoM change '+3.37%', and month 'February 2026'. Clicking CCI KPI successfully highlights card with green background (rgba(34, 197, 94, 0.12)) and switches to CCI tab. CCI tab view renders line chart with date range label 'Nov 2017 - Feb 2026', chart dimensions 569.89x175px, no horizontal overflow (scrollWidth=clientWidth=583). Overview tab works correctly with BCI data and multi-line chart (Overall/Current/Expected). EPU tab works correctly with EPU data and dual-line chart (4/2 Newspapers). All required data-testid attributes present: business-kpi-cci, business-tab-cci, business-cci-view, cci-date-range-label. No console errors or layout issues detected. Screenshots confirm all visual elements render correctly."
+  - agent: "testing"
+    message: "Starting comprehensive testing of Daily Energy Report map tab feature. Testing 5 requirements: 1) Map tab visibility and layer switching, 2) Energy markers (cyan #38BDF8) appear and city/alert markers hidden in energy tab, 3) Overlay shows report date and legend shows energy counts, 4) Switch back to Overview restores alerts/cities, 5) All data-testid attributes exist."
+  - agent: "testing"
+    message: "ALL TESTS PASSED ✓ - Daily Energy Report map tab feature fully functional. Tab switching works perfectly: Overview tab (default active) ↔ Energy tab (data-testid='map-tab-energy'). Energy mode displays 51 energy markers with correct cyan color #38BDF8 (rgb(56, 189, 248)), all with data-testid='energy-marker-{index}'. City markers (10) and alert markers (8) completely hidden when Energy tab active. Overlay correctly shows 'Daily Energy Report' title and report date 'Report: March 13, 2026' (data-testid='map-energy-report-date'). Legend displays energy metadata '51 locations • 378 items' (data-testid='energy-report-meta'). Switching back to Overview tab successfully restores 10 city markers + 8 alert markers, hides energy markers, reverts overlay to 'Pakistan Overview', and restores Overview legend. All required data-testid attributes present and functional. No console errors. Screenshots captured for both energy_mode.png and overview_mode.png."
 
   current_focus: []
   stuck_tasks: []
@@ -528,4 +607,8 @@ agent_communication:
     message: "Starting comprehensive testing of status dots implementation (replacing stale text badges). Testing 5 requirements: 1) Economic panel shows green/orange dots without stale text, 2) Real Sector cards + modals show dots and no stale text, 3) Daily Briefing header shows dot instead of stale badge, 4) Inflation panel dots show orange when CPI is stale, 5) CPI cards render without crashes even if data is empty (show --)."
   - agent: "testing"
     message: "ALL TESTS PASSED ✓ - Status dots implementation fully functional across all panels. Economic Panel: 12 live indicator dots found (11 GREEN, 1 ORANGE for KSE-100 market closed), no stale text badges. Real Sector Panel: All 5 cards have dots (LSM GREEN, Auto Vehicles ORANGE, 2/3 Wheelers ORANGE, Fertilizer GREEN, POL Sales ORANGE). Real Sector Modals: Auto Vehicles, 2/3 Wheelers, and POL Sales modals all show ORANGE dots in headers. Daily Briefing: GREEN status dot found in header, no old stale badge element. Inflation Panel: All 4 cards show GREEN dots (CPI YoY, CPI MoM, SPI Weekly, SPI Monthly) - orange color logic implemented via isStale flag. CPI Empty Data: Both CPI cards show '--' for empty values, modals open without crash (CPI YoY shows 0.0%, CPI MoM opens successfully). All dots use 6x6px size with pulse animation and conditional coloring: stale ? #F59E0B (orange) : #22C55E (green). No console errors, no stale text badges found anywhere in UI. Screenshots captured at 1920x1080 viewport."
+  - agent: "testing"
+    message: "Starting comprehensive testing of Daily Energy Report map tab feature. Testing 5 key requirements: 1) Map tab visibility and layer switching, 2) Energy markers (cyan #38BDF8) appear and city/alert markers hidden in energy tab, 3) Overlay shows report date and legend shows energy counts, 4) Switch back to Overview restores alerts/cities, 5) All data-testid attributes exist for automated testing."
+  - agent: "testing"
+    message: "ALL TESTS PASSED ✓ - Daily Energy Report map tab feature fully functional. All 5 requirements verified successfully: 1) Daily Energy Report tab (data-testid='map-tab-energy') visible and clickable, successfully switches from Overview to Energy layer with active state styling. 2) 51 energy markers render with correct cyan color #38BDF8 (rgb(56, 189, 248)), each with data-testid='energy-marker-{index}'. City markers (10) and alert markers (8) completely hidden when Energy tab active (both counts = 0). 3) Overlay displays 'Daily Energy Report' title with report date 'Report: March 13, 2026' (data-testid='map-energy-report-date'). Legend shows energy metadata '51 locations • 378 items' (data-testid='energy-report-meta'). 4) Switching back to Overview tab successfully restores 10 city markers + 8 alert markers, hides all energy markers, reverts overlay to 'Pakistan Overview', and restores Overview legend. 5) All required data-testid attributes present and functional: map-tabs, map-tab-overview, map-tab-energy, energy-marker-{0-50}, map-energy-report-date, energy-report-meta. Bidirectional tab switching works perfectly without marker persistence issues. No console errors detected (only WebGL performance warnings unrelated to feature). Screenshots captured for both energy_mode.png and overview_mode.png showing correct marker rendering and layer switching."
 ---
