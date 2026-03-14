@@ -352,10 +352,55 @@ frontend:
         agent: "testing"
         comment: "PASS - All required data-testid attributes are present and accessible: 'business-kpi-cci' (line 278), 'business-tab-cci' (line 316), 'business-cci-view' (line 463), and 'cci-date-range-label' (line 465). All elements can be selected and verified in automated tests."
 
+  - task: "KSE-100 card sublabel shows 'Last Close: <date>' when market closed"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/EconomicPanel.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Testing KSE-100 card sublabel displays 'Last Close: <date>' format when market is closed and 'Updated: <time> PKT' when market is open"
+      - working: true
+        agent: "testing"
+        comment: "PASS - KSE-100 card sublabel correctly displays 'Last Close: Mar 13, 2026' when market is closed (tested on Saturday 05:43 PM PKT). Sublabel logic implemented at lines 153-163: psxMarketOpen checks weekday and trading hours (9:30-15:30 PKT), psxSubLabel conditionally shows 'Updated: <time> PKT' when open or 'Last Close: <date>' when closed. Card found at economic-item-2 with value 153,866.16."
+
+  - task: "KSE-100 live indicator dot color (orange=closed, green=open)"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/EconomicPanel.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Verifying live indicator dot shows orange (#F59E0B) when market closed/stale and green (#22C55E) when market open"
+      - working: true
+        agent: "testing"
+        comment: "PASS - Live indicator dot correctly displays ORANGE rgb(245, 158, 11) = #F59E0B when market is closed/stale (tested on Saturday when market closed). Color logic implemented at lines 360-368: backgroundColor uses conditional 'item.isStale ? #F59E0B : #22C55E'. The isStale flag is set at line 164 as 'psxIsStale = !psxMarketOpen' and passed to KSE-100 indicator at line 199. Indicator dimensions 6x6px with pulse animation."
+
+  - task: "KSE-100 live indicator has data-testid attribute"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/EconomicPanel.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Confirming data-testid for KSE-100 live indicator exists as 'economic-live-indicator-<index>'"
+      - working: true
+        agent: "testing"
+        comment: "PASS - Live indicator has correct data-testid='economic-live-indicator-2' (KSE-100 is at index 2 in indicators array). Implementation at line 360 uses template `data-testid={economic-live-indicator-${index}}`. Element successfully found and verified in DOM."
+
 metadata:
   created_by: "testing_agent"
   version: "1.0"
-  test_sequence: 5
+  test_sequence: 6
 
 test_plan:
   - agent: "testing"
@@ -380,9 +425,13 @@ agent_communication:
   - agent: "testing"
     message: "Starting comprehensive testing of RDA Inflows and POL Sales features. Will verify RDA Inflows card in Economic Indicators panel, RDA Inflows modal with B$ formatting, POL Sales card in Real Sector panel, POL Sales modal with stacked bars and total line, category toggles functionality, and layout integrity."
   - agent: "testing"
-    message: "ALL TESTS PASSED ✓ - RDA Inflows and POL Sales features fully functional. RDA Inflows card displays at economic-item-8 with value '$12.17B' (B$ formatting), change '+2.03%', and month 'February 2026'. Modal opens correctly with title 'RDA INFLOWS', shows summary value '$12.17B' with MoM '+2.03%' and YoY '+24.54%' changes, and renders area chart. POL Sales card displays in Real Sector panel with value '1.49M', change '-11.01%', month 'December 2025', and unit 'Metric Ton'. POL Sales modal opens with title 'POL SALES', shows summary value '1,491,804 Metric Ton', MoM change '-11.01%', and renders stacked bar chart with colored categories and yellow total line overlay. Found 8 series toggle buttons (Total + 7 categories). Toggle functionality works correctly - tested Total and Agriculture toggles, chart updates properly when toggling categories on/off. No layout overflow detected - Economic panel: 619px, Real Sector panel: 619px. No horizontal scrolling. All labels and values display correctly without cutoff. Only console warnings are WebGL GPU performance from map component (unrelated). No critical errors."
+    message: "ALL TESTS PASSED ✓ - RDA Inflows and POL Sales features fully functional. RDA Inflows card displays at economic-item-8 with value '$12.17B' (B$ formatting), change '+2.03%', and month 'February 2026'. Modal opens correctly with title 'RDA INFLOWS', shows summary value '$12.17B' with MoM '+2.03%' and YoY '+24.54%' changes, and renders area chart. POL Sales card displays in Real Sector panel with value '1.49M', change '-11.01%', month 'December 2025', and unit 'Metric Ton'. POL Sales modal opens with title 'POL SALES', shows summary value '1,491,804 Metric Ton', MoM change '-11.01%', and renters stacked bar chart with colored categories and yellow total line overlay. Found 8 series toggle buttons (Total + 7 categories). Toggle functionality works correctly - tested Total and Agriculture toggles, chart updates properly when toggling categories on/off. No layout overflow detected - Economic panel: 619px, Real Sector panel: 619px. No horizontal scrolling. All labels and values display correctly without cutoff. Only console warnings are WebGL GPU performance from map component (unrelated). No critical errors."
   - agent: "testing"
     message: "Starting detailed verification testing for POL Sales modal legend positioning, chart visibility, Auto Vehicles and 2/3 Wheelers modal rendering, and stale badge implementation across Real Sector panel."
   - agent: "testing"
     message: "ALL DETAILED TESTS PASSED ✓ - POL Sales modal legend positioning verified: legend sits BELOW chart (legend y-position 796.69 > chart bottom 787.09), uses flex-wrap for responsive wrapping, no overflow detected (scrollWidth equals width at 698px). All 8 categories display correctly: TOTAL, AGRICULTURE, DOMESTIC, GOVERNMENT, INDUSTRY, OVERSEAS, POWER, TRANSPORT. Chart renders with 7 stacked bar layers showing visible non-transport segments in multiple colors (purple, cyan, orange, etc.) with yellow Total line overlay. Auto Vehicles modal opens and renders stacked bar chart with 6 series toggles, title 'PRODUCTION AND SALE OF AUTO VEHICLES', and stale badge slot. 2/3 Wheelers modal opens and renders area chart with teal gradient, title '2/3 WHEELERS', and stale badge slot. Real Sector panel cards (Auto Vehicles, 2/3 Wheelers, POL Sales) all have stale badge slots properly implemented - badges conditionally render when API returns stale=true. No layout overflow in panel (scrollWidth: 617 = clientWidth: 617). Screenshots confirm all visual elements render correctly. No console errors."
+  - agent: "testing"
+    message: "Starting comprehensive testing of KSE-100 indicator update feature. Will verify: 1) KSE-100 card sublabel shows 'Last Close: <date>' when market closed, 2) Live indicator dot is orange (#F59E0B) when market closed/stale and green (#22C55E) when market open, 3) data-testid 'economic-live-indicator-<index>' exists for live indicator."
+  - agent: "testing"
+    message: "ALL TESTS PASSED ✓ - KSE-100 indicator update feature fully functional. All three requirements verified: 1) Sublabel correctly displays 'Last Close: Mar 13, 2026' when market is closed (tested Saturday 05:43 PM PKT, outside trading hours). Code at lines 153-163 implements conditional logic: shows 'Updated: <time> PKT' when market open, 'Last Close: <date>' when closed. 2) Live indicator dot correctly displays ORANGE rgb(245, 158, 11) = #F59E0B when market is closed/stale. Color logic at lines 360-368 uses 'item.isStale ? #F59E0B : #22C55E'. The isStale flag computed as '!psxMarketOpen' at line 164. Market open logic checks weekday and time window 09:30-15:30 PKT (lines 146-151). 3) Live indicator has correct data-testid='economic-live-indicator-2' (KSE-100 at index 2). All visual elements render correctly: indicator 6x6px with pulse animation, card at economic-item-2, value 153,866.16. No console errors or layout issues detected."
 ---

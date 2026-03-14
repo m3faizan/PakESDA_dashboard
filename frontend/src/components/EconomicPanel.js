@@ -135,6 +135,34 @@ const EconomicPanel = ({ data, loading }) => {
     return `${value >= 0 ? '+' : '-'}$${abs.toFixed(0)}M`;
   };
 
+  const parsePsxTimestamp = (timestamp) => {
+    if (!timestamp) return null;
+    const normalized = timestamp.replace(' ', 'T');
+    return new Date(`${normalized}+05:00`);
+  };
+
+  const getPakistanNow = () => new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Karachi' }));
+
+  const isMarketOpen = (now) => {
+    const day = now.getDay();
+    if (day === 0 || day === 6) return false;
+    const minutes = now.getHours() * 60 + now.getMinutes();
+    return minutes >= 570 && minutes <= 930; // 09:30 - 15:30 PKT
+  };
+
+  const psxTimestampDate = parsePsxTimestamp(psxData?.timestamp);
+  const psxLastCloseDate = psxTimestampDate
+    ? psxTimestampDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric', timeZone: 'Asia/Karachi' })
+    : '';
+  const psxUpdateTime = psxTimestampDate
+    ? psxTimestampDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Karachi' })
+    : '';
+  const psxMarketOpen = isMarketOpen(getPakistanNow());
+  const psxSubLabel = psxMarketOpen
+    ? (psxUpdateTime ? `Updated: ${psxUpdateTime} PKT` : '')
+    : (psxLastCloseDate ? `Last Close: ${psxLastCloseDate}` : '');
+  const psxIsStale = !psxMarketOpen;
+
   const indicators = [
     { 
       label: 'PKR/USD', 
@@ -162,11 +190,13 @@ const EconomicPanel = ({ data, loading }) => {
     { 
       label: 'KSE-100', 
       value: psxData?.value?.toLocaleString() || data?.psx_kse100?.value?.toLocaleString() || '--', 
+      subLabel: psxSubLabel,
       change: psxData?.change_percent || data?.psx_kse100?.change_percent,
       prefix: '',
       clickable: true,
       modalKey: 'psx',
-      isLive: !dataLoading && psxData
+      isLive: !dataLoading && psxData,
+      isStale: psxIsStale
     },
     { 
       label: 'Gold Reserves', 
@@ -327,10 +357,10 @@ const EconomicPanel = ({ data, loading }) => {
                   <ExternalLink size={10} style={{ marginLeft: '4px', opacity: 0.6 }} />
                 )}
                 {item.isLive && (
-                  <span className="live-indicator" style={{ 
+                  <span className="live-indicator" data-testid={`economic-live-indicator-${index}`} style={{ 
                     width: '6px', 
                     height: '6px', 
-                    backgroundColor: '#22C55E', 
+                    backgroundColor: item.isStale ? '#F59E0B' : '#22C55E', 
                     borderRadius: '50%', 
                     display: 'inline-block',
                     marginLeft: '6px',
