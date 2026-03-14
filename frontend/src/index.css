@@ -827,6 +827,22 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--color-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.energy-flag {
+  font-size: 0.75rem;
+}
+
+.energy-region-chip {
+  border: 1px solid;
+  padding: 0.1rem 0.35rem;
+  border-radius: 999px;
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
 }
 
 .energy-feed-text {

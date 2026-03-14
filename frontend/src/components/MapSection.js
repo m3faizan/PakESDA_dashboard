@@ -19,6 +19,97 @@ const ALERT_COORDS = {
   pakistan: [69.3451, 30.3753]
 };
 
+const REGION_COLORS = {
+  asia: '#38BDF8',
+  europe: '#60A5FA',
+  africa: '#F59E0B',
+  'middle east': '#F97316',
+  americas: '#A855F7',
+  global: '#94A3B8'
+};
+
+const COUNTRY_FLAG_MAP = {
+  china: '🇨🇳',
+  'hong kong': '🇭🇰',
+  india: '🇮🇳',
+  indonesia: '🇮🇩',
+  japan: '🇯🇵',
+  kazakhstan: '🇰🇿',
+  malaysia: '🇲🇾',
+  mongolia: '🇲🇳',
+  pakistan: '🇵🇰',
+  philippines: '🇵🇭',
+  'south korea': '🇰🇷',
+  'sri lanka': '🇱🇰',
+  taiwan: '🇹🇼',
+  vietnam: '🇻🇳',
+  bahrain: '🇧🇭',
+  iran: '🇮🇷',
+  iraq: '🇮🇶',
+  israel: '🇮🇱',
+  jordan: '🇯🇴',
+  kuwait: '🇰🇼',
+  lebanon: '🇱🇧',
+  oman: '🇴🇲',
+  qatar: '🇶🇦',
+  'saudi arabia': '🇸🇦',
+  'united arab emirates': '🇦🇪',
+  uae: '🇦🇪',
+  angola: '🇦🇴',
+  'cote d ivoire': '🇨🇮',
+  gabon: '🇬🇦',
+  ghana: '🇬🇭',
+  guinea: '🇬🇳',
+  kenya: '🇰🇪',
+  mauritania: '🇲🇷',
+  namibia: '🇳🇦',
+  seychelles: '🇸🇨',
+  'south africa': '🇿🇦',
+  'south sudan': '🇸🇸',
+  cyprus: '🇨🇾',
+  estonia: '🇪🇪',
+  france: '🇫🇷',
+  germany: '🇩🇪',
+  hungary: '🇭🇺',
+  italy: '🇮🇹',
+  netherlands: '🇳🇱',
+  norway: '🇳🇴',
+  russia: '🇷🇺',
+  australia: '🇦🇺',
+  brazil: '🇧🇷',
+  canada: '🇨🇦',
+  cuba: '🇨🇺'
+};
+
+const normalizeKey = (value = '') => {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+const getRegionColor = (region = '') => {
+  const normalized = normalizeKey(region);
+  if (normalized.includes('middle east')) return REGION_COLORS['middle east'];
+  if (normalized.includes('asia')) return REGION_COLORS.asia;
+  if (normalized.includes('europe')) return REGION_COLORS.europe;
+  if (normalized.includes('africa')) return REGION_COLORS.africa;
+  if (normalized.includes('america')) return REGION_COLORS.americas;
+  if (normalized.includes('global')) return REGION_COLORS.global;
+  return REGION_COLORS.global;
+};
+
+const getCountryFlag = (country = '') => {
+  const normalized = normalizeKey(country);
+  if (!normalized) return '🌐';
+  if (normalized.includes('global') || normalized.includes('region')) return '🌍';
+  if (normalized.includes('asia') || normalized.includes('africa') || normalized.includes('europe')) return '🌍';
+  return COUNTRY_FLAG_MAP[normalized] || '🌐';
+};
+
 const resolveAlertCoords = (alert) => {
   const text = `${alert?.title || ''} ${alert?.description || ''} ${alert?.region || ''}`.toLowerCase();
   const keys = Object.keys(ALERT_COORDS);
@@ -58,7 +149,9 @@ const MapSection = ({ mapData, alerts = [], energyReport, loading }) => {
         id: `${entry.country}-${idx}`,
         country: entry.country,
         region: entry.region,
-        text: item
+        text: item,
+        flag: getCountryFlag(entry.country),
+        regionColor: getRegionColor(entry.region)
       }))
     );
   }, [energyEntries]);
@@ -274,7 +367,17 @@ const MapSection = ({ mapData, alerts = [], energyReport, loading }) => {
                 <div className="energy-sidebar-content" data-testid="energy-sidebar-content">
                   {energyFeedItems.map((item, index) => (
                     <div className="energy-feed-item" data-testid={`energy-feed-item-${index}`} key={`${item.id}-${index}`}>
-                      <div className="energy-feed-title">{item.country} • {item.region}</div>
+                      <div className="energy-feed-title">
+                        <span className="energy-flag" data-testid={`energy-feed-flag-${index}`}>{item.flag}</span>
+                        <span>{item.country}</span>
+                        <span
+                          className="energy-region-chip"
+                          data-testid={`energy-feed-region-${index}`}
+                          style={{ borderColor: item.regionColor, color: item.regionColor }}
+                        >
+                          {item.region}
+                        </span>
+                      </div>
                       <div className="energy-feed-text">{item.text}</div>
                     </div>
                   ))}
