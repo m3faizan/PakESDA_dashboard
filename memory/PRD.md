@@ -45,6 +45,7 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] KSE-100 indicator now shows last market close date and uses orange dot when market is closed.
 - [x] Added **Daily Energy Report** map tab pulling HTML from Google Sheet and geocoding country/region markers.
 - [x] Added Energy sidebar feed with collapsible list; tabs renamed to Pakistan/Daily Energy Report and popups show full scrollable lists.
+- [x] Energy sidebar height now fixed to map viewport with internal scrolling.
 - [x] Replaced stale text badges with green/orange status dots across panels; CPI now uses cached fallback when SBP API fails (if last-good exists).
 
 ### Latest Updates (Mar 10, 2026)
