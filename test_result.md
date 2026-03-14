@@ -224,6 +224,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "PASS - Clicking POL Sales card opens modal with title 'POL SALES'. Modal displays summary value '1,491,804' with unit 'Metric Ton' and MoM change '-11.01%'. Chart container renders stacked bar chart with multiple colored category bars and yellow total line overlay. Time range buttons (1Y, 2Y, 5Y, ALL) are present. Found 8 series toggle buttons including 'Total' and categories (Agriculture, Domestic, Government, etc.). Toggle functionality tested successfully - clicking 'Total' and 'Agriculture' toggles properly show/hide respective chart elements. Chart updates correctly when toggling categories. Modal closes without errors."
+      - working: true
+        agent: "testing"
+        comment: "RETEST PASS - Detailed verification of legend positioning and chart visibility. Legend chips positioned BELOW chart (legend y: 796.69 > chart bottom: 787.09). Legend uses flex-wrap with no overflow (scrollWidth: 698 = width: 698). All 8 categories displayed: TOTAL, AGRICULTURE, DOMESTIC, GOVERNMENT, INDUSTRY, OVERSEAS, POWER, TRANSPORT. Chart shows 7 stacked bar layers with visible non-transport segments in multiple colors (purple, cyan, orange, etc.). Yellow Total line visible on top. Screenshots confirm all visual elements render correctly."
 
   - task: "Layout integrity after adding RDA Inflows and POL Sales"
     implemented: true
@@ -239,11 +242,44 @@ frontend:
       - working: true
         agent: "testing"
         comment: "PASS - No layout overflow detected. Economic panel width: 619px, Real Sector panel width: 619px. No horizontal scrolling on page (body scrollWidth equals clientWidth). All cards render properly with correct spacing and labels. Full page layout maintains integrity with no visual issues or text cutoff."
+      - working: true
+        agent: "testing"
+        comment: "RETEST PASS - Real Sector panel verified: Auto Vehicles, 2/3 Wheelers, and POL Sales cards all render correctly. Stale badge slots properly implemented in all cards (Auto Vehicles line 220-222, 2/3 Wheelers line 278-280, POL Sales line 356-358). Badges conditionally render when data.stale=true. No horizontal overflow (scrollWidth: 617 = clientWidth: 617). All modals (Auto Vehicles, 2/3 Wheelers) open and render charts correctly with stale badge support."
+
+  - task: "Auto Vehicles modal opens and renders"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/AutoVehiclesModal.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Verifying Auto Vehicles modal opens, displays title, chart, and stale badge slot"
+      - working: true
+        agent: "testing"
+        comment: "PASS - Auto Vehicles modal opens correctly with title 'PRODUCTION AND SALE OF AUTO VEHICLES'. Chart container renders stacked bar chart with 6 series toggle buttons (Cars, Trucks, Buses, Jeeps & Pickups, Tractors + Total line). Stale badge slot implemented (line 79-81) and shows when data.stale=true. Production/Sales mode toggle works. Modal closes without errors."
+
+  - task: "2/3 Wheelers modal opens and renders"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/TwoThreeWheelersModal.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Verifying 2/3 Wheelers modal opens, displays title, chart, and stale badge slot"
+      - working: true
+        agent: "testing"
+        comment: "PASS - 2/3 Wheelers modal opens correctly with title '2/3 WHEELERS'. Chart renders area chart with teal gradient fill showing production/sales data over time. Stale badge slot implemented (line 55-57) and shows when data.stale=true. Production/Sales mode toggle works. Modal closes without errors."
 
 metadata:
   created_by: "testing_agent"
   version: "1.0"
-  test_sequence: 3
+  test_sequence: 4
 
 test_plan:
   current_focus: []
@@ -264,4 +300,8 @@ agent_communication:
     message: "Starting comprehensive testing of RDA Inflows and POL Sales features. Will verify RDA Inflows card in Economic Indicators panel, RDA Inflows modal with B$ formatting, POL Sales card in Real Sector panel, POL Sales modal with stacked bars and total line, category toggles functionality, and layout integrity."
   - agent: "testing"
     message: "ALL TESTS PASSED ✓ - RDA Inflows and POL Sales features fully functional. RDA Inflows card displays at economic-item-8 with value '$12.17B' (B$ formatting), change '+2.03%', and month 'February 2026'. Modal opens correctly with title 'RDA INFLOWS', shows summary value '$12.17B' with MoM '+2.03%' and YoY '+24.54%' changes, and renders area chart. POL Sales card displays in Real Sector panel with value '1.49M', change '-11.01%', month 'December 2025', and unit 'Metric Ton'. POL Sales modal opens with title 'POL SALES', shows summary value '1,491,804 Metric Ton', MoM change '-11.01%', and renders stacked bar chart with colored categories and yellow total line overlay. Found 8 series toggle buttons (Total + 7 categories). Toggle functionality works correctly - tested Total and Agriculture toggles, chart updates properly when toggling categories on/off. No layout overflow detected - Economic panel: 619px, Real Sector panel: 619px. No horizontal scrolling. All labels and values display correctly without cutoff. Only console warnings are WebGL GPU performance from map component (unrelated). No critical errors."
+  - agent: "testing"
+    message: "Starting detailed verification testing for POL Sales modal legend positioning, chart visibility, Auto Vehicles and 2/3 Wheelers modal rendering, and stale badge implementation across Real Sector panel."
+  - agent: "testing"
+    message: "ALL DETAILED TESTS PASSED ✓ - POL Sales modal legend positioning verified: legend sits BELOW chart (legend y-position 796.69 > chart bottom 787.09), uses flex-wrap for responsive wrapping, no overflow detected (scrollWidth equals width at 698px). All 8 categories display correctly: TOTAL, AGRICULTURE, DOMESTIC, GOVERNMENT, INDUSTRY, OVERSEAS, POWER, TRANSPORT. Chart renders with 7 stacked bar layers showing visible non-transport segments in multiple colors (purple, cyan, orange, etc.) with yellow Total line overlay. Auto Vehicles modal opens and renders stacked bar chart with 6 series toggles, title 'PRODUCTION AND SALE OF AUTO VEHICLES', and stale badge slot. 2/3 Wheelers modal opens and renders area chart with teal gradient, title '2/3 WHEELERS', and stale badge slot. Real Sector panel cards (Auto Vehicles, 2/3 Wheelers, POL Sales) all have stale badge slots properly implemented - badges conditionally render when API returns stale=true. No layout overflow in panel (scrollWidth: 617 = clientWidth: 617). Screenshots confirm all visual elements render correctly. No console errors."
 ---

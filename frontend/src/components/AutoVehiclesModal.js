@@ -76,6 +76,9 @@ const AutoVehiclesModal = ({ isOpen, onClose, data, title }) => {
           <div className="modal-title" data-testid="auto-vehicles-modal-title">
             <Car size={20} />
             <span>{title || 'Production and Sale of Auto Vehicles'}</span>
+            {data?.stale && (
+              <span className="stale-badge" data-testid="auto-vehicles-stale-badge">Stale</span>
+            )}
           </div>
           <button className="modal-close" onClick={onClose} data-testid="auto-vehicles-modal-close">
             <X size={20} />

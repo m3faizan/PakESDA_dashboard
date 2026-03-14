@@ -72,6 +72,9 @@ const PolSalesModal = ({ isOpen, onClose, data, title }) => {
           <div className="modal-title" data-testid="pol-sales-modal-title">
             <Flame size={20} />
             <span>{title || 'POL Sales by Sector'}</span>
+            {data?.stale && (
+              <span className="stale-badge" data-testid="pol-sales-stale-badge">Stale</span>
+            )}
           </div>
           <button className="modal-close" onClick={onClose} data-testid="pol-sales-modal-close">
             <X size={20} />
@@ -111,31 +114,6 @@ const PolSalesModal = ({ isOpen, onClose, data, title }) => {
               {range.label}
             </button>
           ))}
-          <div style={{ width: '1px', height: '22px', background: 'var(--color-border)', margin: '0 0.3rem' }}></div>
-          <button
-            onClick={() => toggleSeries('total')}
-            className={`range-btn ${visibleSeries.total !== false ? 'active' : ''}`}
-            style={{ opacity: visibleSeries.total !== false ? 1 : 0.42, display: 'inline-flex', alignItems: 'center', gap: '0.28rem' }}
-            data-testid="pol-sales-series-toggle-total"
-          >
-            <span style={{ width: '10px', height: '2px', background: '#FACC15', display: 'inline-block' }}></span>
-            Total
-          </button>
-          {categories.map((series, idx) => {
-            const active = visibleSeries[series.key] !== false;
-            return (
-              <button
-                key={series.key}
-                onClick={() => toggleSeries(series.key)}
-                className={`range-btn ${active ? 'active' : ''}`}
-                style={{ opacity: active ? 1 : 0.42, display: 'inline-flex', alignItems: 'center', gap: '0.28rem' }}
-                data-testid={`pol-sales-series-toggle-${series.key}`}
-              >
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: COLORS[idx % COLORS.length], display: 'inline-block' }}></span>
-                {series.label}
-              </button>
-            );
-          })}
         </div>
 
         <div className="chart-container" data-testid="pol-sales-chart-container">
@@ -175,6 +153,33 @@ const PolSalesModal = ({ isOpen, onClose, data, title }) => {
               <Line type="monotone" dataKey="total" name="Total" stroke="#FACC15" strokeWidth={3} dot={false} connectNulls hide={visibleSeries.total === false} />
             </ComposedChart>
           </ResponsiveContainer>
+        </div>
+
+        <div className="pol-legend" data-testid="pol-sales-legend">
+          <button
+            onClick={() => toggleSeries('total')}
+            className={`pol-legend-chip ${visibleSeries.total !== false ? 'active' : ''}`}
+            style={{ opacity: visibleSeries.total !== false ? 1 : 0.42 }}
+            data-testid="pol-sales-series-toggle-total"
+          >
+            <span className="pol-legend-line" style={{ background: '#FACC15' }}></span>
+            Total
+          </button>
+          {categories.map((series, idx) => {
+            const active = visibleSeries[series.key] !== false;
+            return (
+              <button
+                key={series.key}
+                onClick={() => toggleSeries(series.key)}
+                className={`pol-legend-chip ${active ? 'active' : ''}`}
+                style={{ opacity: active ? 1 : 0.42 }}
+                data-testid={`pol-sales-series-toggle-${series.key}`}
+              >
+                <span className="pol-legend-dot" style={{ background: COLORS[idx % COLORS.length] }}></span>
+                {series.label}
+              </button>
+            );
+          })}
         </div>
 
         <div className="modal-footer" data-testid="pol-sales-modal-footer">

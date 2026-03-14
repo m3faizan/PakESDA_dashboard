@@ -101,9 +101,9 @@ data_cache = {
     "cpi_mom_historical": {"data": {}, "updated": None},
     "lsm": {"data": {}, "updated": None},
     "lsm_historical": {"data": {}, "updated": None},
-    "auto_vehicles": {"data": {}, "updated": None},
+    "auto_vehicles": {"data": {}, "updated": None, "stale": False},
     "fertilizer": {"data": {}, "updated": None},
-    "pol_sales": {"data": {}, "updated": None},
+    "pol_sales": {"data": {}, "updated": None, "stale": False},
     "spi_weekly": {"data": {}, "updated": None},
     "spi_monthly": {"data": {}, "updated": None},
     "liquid_forex": {"data": {}, "updated": None},
@@ -175,6 +175,42 @@ async def refresh_cache_with_persistence(cache_key: str, ttl_seconds: int, fetch
         if persisted_data:
             data_cache[cache_key]["data"] = persisted_data
             data_cache[cache_key]["updated"] = datetime.fromisoformat(persisted_updated) if persisted_updated else datetime.now(timezone.utc)
+
+
+async def refresh_cache_with_persistence_status(cache_key: str, ttl_seconds: int, fetcher) -> bool:
+    """Refresh cache and return True when fallback (stale) data is served."""
+    stale = data_cache.get(cache_key, {}).get("stale", False)
+    should_refresh = False
+    if not data_cache[cache_key]["updated"] or not data_cache[cache_key]["data"]:
+        should_refresh = True
+    else:
+        age = (datetime.now(timezone.utc) - data_cache[cache_key]["updated"]).total_seconds()
+        should_refresh = age > ttl_seconds
+
+    if should_refresh:
+        fetched = await fetcher()
+        if fetched:
+            data_cache[cache_key]["data"] = fetched
+            data_cache[cache_key]["updated"] = datetime.now(timezone.utc)
+            data_cache[cache_key]["stale"] = False
+            persist_cache_entry(cache_key, fetched)
+            stale = False
+        else:
+            stale = True
+            if not data_cache[cache_key]["data"]:
+                persisted_data, persisted_updated = restore_cache_entry(cache_key)
+                if persisted_data:
+                    data_cache[cache_key]["data"] = persisted_data
+                    data_cache[cache_key]["updated"] = datetime.fromisoformat(persisted_updated) if persisted_updated else datetime.now(timezone.utc)
+    elif not data_cache[cache_key]["data"]:
+        persisted_data, persisted_updated = restore_cache_entry(cache_key)
+        if persisted_data:
+            data_cache[cache_key]["data"] = persisted_data
+            data_cache[cache_key]["updated"] = datetime.fromisoformat(persisted_updated) if persisted_updated else datetime.now(timezone.utc)
+            stale = True
+
+    data_cache[cache_key]["stale"] = stale
+    return stale
 
 # NHMP Road Advisory API
 NHMP_ADVISORY_URL = "http://cpo.nhmp.gov.pk:6788/api/TravelAdvisory/FilteredAdvisory"
@@ -2335,6 +2371,9 @@ async def fetch_auto_vehicle_data():
         results = await asyncio.gather(*tasks)
         series_data = {key: results[idx] for idx, key in enumerate(fetch_map.keys())}
 
+        if any(len(history) == 0 for history in series_data.values()):
+            return None
+
         category_labels = {
             "cars": "Cars",
             "trucks": "Trucks",
@@ -2511,6 +2550,10 @@ async def fetch_pol_sales_data():
             key: results[idx + 1]
             for idx, key in enumerate(list(POL_SALES_SERIES.keys())[1:])
         }
+
+        required_histories = [total_history] + list(category_histories.values())
+        if any(len(history) == 0 for history in required_histories):
+            return None
 
         total_by_date = {item["date"]: item["value"] for item in total_history}
         category_by_date = {
@@ -3803,11 +3846,12 @@ async def get_lsm_historical():
 @app.get("/api/auto-vehicles")
 async def get_auto_vehicles():
     """Get production and sales of auto vehicles with category breakdowns"""
-    await refresh_cache_with_persistence("auto_vehicles", 21600, fetch_auto_vehicle_data)
+    stale = await refresh_cache_with_persistence_status("auto_vehicles", 21600, fetch_auto_vehicle_data)
 
     return {
         "data": data_cache["auto_vehicles"]["data"],
-        "updated": data_cache["auto_vehicles"]["updated"].isoformat() if data_cache["auto_vehicles"]["updated"] else None
+        "updated": data_cache["auto_vehicles"]["updated"].isoformat() if data_cache["auto_vehicles"]["updated"] else None,
+        "stale": stale
     }
 
 
@@ -3836,11 +3880,12 @@ async def get_fertilizer():
 @app.get("/api/pol-sales")
 async def get_pol_sales():
     """Get POL sales by sector data"""
-    await refresh_cache_with_persistence("pol_sales", 21600, fetch_pol_sales_data)
+    stale = await refresh_cache_with_persistence_status("pol_sales", 21600, fetch_pol_sales_data)
 
     return {
         "data": data_cache["pol_sales"]["data"],
-        "updated": data_cache["pol_sales"]["updated"].isoformat() if data_cache["pol_sales"]["updated"] else None
+        "updated": data_cache["pol_sales"]["updated"].isoformat() if data_cache["pol_sales"]["updated"] else None,
+        "stale": stale
     }
 
 

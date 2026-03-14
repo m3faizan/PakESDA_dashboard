@@ -45,7 +45,14 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
         }
 
         if (autoVehiclesRes.status === 'fulfilled') {
-          setAutoVehiclesData(autoVehiclesRes.value.data.data);
+          const payload = autoVehiclesRes.value.data;
+          if (payload?.data) {
+            setAutoVehiclesData({
+              ...payload.data,
+              stale: payload.stale,
+              updated: payload.updated || payload.data.updated
+            });
+          }
         }
 
         if (fertilizerRes.status === 'fulfilled') {
@@ -53,7 +60,14 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
         }
 
         if (polSalesRes.status === 'fulfilled') {
-          setPolSalesData(polSalesRes.value.data.data);
+          const payload = polSalesRes.value.data;
+          if (payload?.data) {
+            setPolSalesData({
+              ...payload.data,
+              stale: payload.stale,
+              updated: payload.updated || payload.data.updated
+            });
+          }
         }
       } catch (error) {
         console.error('Error fetching LSM data:', error);
@@ -110,6 +124,7 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
   const twoThreeModalData = {
     source: autoVehiclesData?.source,
     updated: autoVehiclesData?.updated,
+    stale: autoVehiclesData?.stale,
     latest_month: autoVehiclesData?.latest_month,
     production: {
       latest: {
@@ -202,6 +217,9 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
             <div className="economic-label" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
               <span>Auto Vehicles</span>
               <ExternalLink size={10} style={{ opacity: 0.6 }} />
+              {autoVehiclesData?.stale && (
+                <span className="stale-badge" data-testid="real-sector-auto-stale">Stale</span>
+              )}
               <span
                 className="live-dot"
                 style={{
@@ -257,6 +275,9 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
             <div className="economic-label" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
               <span>2/3 Wheelers</span>
               <ExternalLink size={10} style={{ opacity: 0.6 }} />
+              {autoVehiclesData?.stale && (
+                <span className="stale-badge" data-testid="real-sector-two-three-stale">Stale</span>
+              )}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.5rem' }}>
@@ -332,6 +353,9 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
             <div className="economic-label" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
               <span>POL Sales</span>
               <ExternalLink size={10} style={{ opacity: 0.6 }} />
+              {polSalesData?.stale && (
+                <span className="stale-badge" data-testid="real-sector-pol-stale">Stale</span>
+              )}
             </div>
 
             <div className="economic-value" data-testid="real-sector-pol-value">
