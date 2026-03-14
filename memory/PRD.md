@@ -43,6 +43,7 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] Fixed POL legend overflow (moved below chart, wraps) and added stale fallback for POL/Auto Vehicles/2&3 Wheelers when SBP API fails.
 - [x] Added **Consumer Confidence Index (CCI)** to Business Environment with clickable trend tab.
 - [x] KSE-100 indicator now shows last market close date and uses orange dot when market is closed.
+- [x] Replaced stale text badges with green/orange status dots across panels; CPI now uses cached fallback when SBP API fails (if last-good exists).
 
 ### Latest Updates (Mar 10, 2026)
 - [x] Added new **Real Sector** panel with LSM Quantum Index (CPI-style historical flow):
