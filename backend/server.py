@@ -95,8 +95,8 @@ data_cache = {
     "road_advisory": {"data": [], "updated": None},
     "pkr_usd": {"data": {}, "updated": None},
     "psx_data": {"data": {}, "updated": None},
-    "cpi_yoy": {"data": {}, "updated": None},
-    "cpi_mom": {"data": {}, "updated": None},
+    "cpi_yoy": {"data": {}, "updated": None, "stale": False},
+    "cpi_mom": {"data": {}, "updated": None, "stale": False},
     "cpi_yoy_historical": {"data": {}, "updated": None},
     "cpi_mom_historical": {"data": {}, "updated": None},
     "lsm": {"data": {}, "updated": None},
@@ -3727,54 +3727,32 @@ async def get_pkr_usd():
 @app.get("/api/cpi-yoy")
 async def get_cpi_yoy():
     """Get CPI Year-on-Year inflation data from State Bank of Pakistan"""
-    # Refresh every hour (monthly data)
-    if data_cache["cpi_yoy"]["updated"]:
-        age = (datetime.now(timezone.utc) - data_cache["cpi_yoy"]["updated"]).total_seconds()
-        if age > 3600:
-            data_cache["cpi_yoy"]["data"] = await fetch_cpi_data("yoy")
-            data_cache["cpi_yoy"]["updated"] = datetime.now(timezone.utc)
-    else:
-        data_cache["cpi_yoy"]["data"] = await fetch_cpi_data("yoy")
-        data_cache["cpi_yoy"]["updated"] = datetime.now(timezone.utc)
-    
+    stale = await refresh_cache_with_persistence_status("cpi_yoy", 3600, lambda: fetch_cpi_data("yoy"))
+
     return {
         "data": data_cache["cpi_yoy"]["data"],
-        "updated": data_cache["cpi_yoy"]["updated"].isoformat() if data_cache["cpi_yoy"]["updated"] else None
+        "updated": data_cache["cpi_yoy"]["updated"].isoformat() if data_cache["cpi_yoy"]["updated"] else None,
+        "stale": stale
     }
 
 
 @app.get("/api/cpi-mom")
 async def get_cpi_mom():
     """Get CPI Month-on-Month inflation data from State Bank of Pakistan"""
-    # Refresh every hour (monthly data)
-    if data_cache["cpi_mom"]["updated"]:
-        age = (datetime.now(timezone.utc) - data_cache["cpi_mom"]["updated"]).total_seconds()
-        if age > 3600:
-            data_cache["cpi_mom"]["data"] = await fetch_cpi_data("mom")
-            data_cache["cpi_mom"]["updated"] = datetime.now(timezone.utc)
-    else:
-        data_cache["cpi_mom"]["data"] = await fetch_cpi_data("mom")
-        data_cache["cpi_mom"]["updated"] = datetime.now(timezone.utc)
-    
+    stale = await refresh_cache_with_persistence_status("cpi_mom", 3600, lambda: fetch_cpi_data("mom"))
+
     return {
         "data": data_cache["cpi_mom"]["data"],
-        "updated": data_cache["cpi_mom"]["updated"].isoformat() if data_cache["cpi_mom"]["updated"] else None
+        "updated": data_cache["cpi_mom"]["updated"].isoformat() if data_cache["cpi_mom"]["updated"] else None,
+        "stale": stale
     }
 
 
 @app.get("/api/cpi-yoy-historical")
 async def get_cpi_yoy_historical():
     """Get complete historical CPI Year-on-Year inflation data (1964-present)"""
-    # Refresh every 24 hours (historical data rarely changes)
-    if data_cache["cpi_yoy_historical"]["updated"]:
-        age = (datetime.now(timezone.utc) - data_cache["cpi_yoy_historical"]["updated"]).total_seconds()
-        if age > 86400:  # 24 hours
-            data_cache["cpi_yoy_historical"]["data"] = await fetch_cpi_historical_data("yoy")
-            data_cache["cpi_yoy_historical"]["updated"] = datetime.now(timezone.utc)
-    else:
-        data_cache["cpi_yoy_historical"]["data"] = await fetch_cpi_historical_data("yoy")
-        data_cache["cpi_yoy_historical"]["updated"] = datetime.now(timezone.utc)
-    
+    await refresh_cache_with_persistence("cpi_yoy_historical", 86400, lambda: fetch_cpi_historical_data("yoy"))
+
     return {
         "data": data_cache["cpi_yoy_historical"]["data"],
         "updated": data_cache["cpi_yoy_historical"]["updated"].isoformat() if data_cache["cpi_yoy_historical"]["updated"] else None
@@ -3784,16 +3762,8 @@ async def get_cpi_yoy_historical():
 @app.get("/api/cpi-mom-historical")
 async def get_cpi_mom_historical():
     """Get complete historical CPI Month-on-Month inflation data (1964-present)"""
-    # Refresh every 24 hours (historical data rarely changes)
-    if data_cache["cpi_mom_historical"]["updated"]:
-        age = (datetime.now(timezone.utc) - data_cache["cpi_mom_historical"]["updated"]).total_seconds()
-        if age > 86400:  # 24 hours
-            data_cache["cpi_mom_historical"]["data"] = await fetch_cpi_historical_data("mom")
-            data_cache["cpi_mom_historical"]["updated"] = datetime.now(timezone.utc)
-    else:
-        data_cache["cpi_mom_historical"]["data"] = await fetch_cpi_historical_data("mom")
-        data_cache["cpi_mom_historical"]["updated"] = datetime.now(timezone.utc)
-    
+    await refresh_cache_with_persistence("cpi_mom_historical", 86400, lambda: fetch_cpi_historical_data("mom"))
+
     return {
         "data": data_cache["cpi_mom_historical"]["data"],
         "updated": data_cache["cpi_mom_historical"]["updated"].isoformat() if data_cache["cpi_mom_historical"]["updated"] else None

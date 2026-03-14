@@ -52,9 +52,19 @@ const TwoThreeWheelersModal = ({ isOpen, onClose, data, title }) => {
           <div className="modal-title" data-testid="two-three-modal-title">
             <Bike size={20} />
             <span>{title || '2 & 3 Wheelers'}</span>
-            {data?.stale && (
-              <span className="stale-badge" data-testid="two-three-stale-badge">Stale</span>
-            )}
+            <span
+              className="live-dot"
+              data-testid="two-three-live-dot"
+              style={{
+                width: '6px',
+                height: '6px',
+                backgroundColor: data?.stale ? '#F59E0B' : '#22C55E',
+                borderRadius: '50%',
+                display: 'inline-block',
+                marginLeft: '6px',
+                animation: 'pulse 2s infinite'
+              }}
+            ></span>
           </div>
           <button className="modal-close" onClick={onClose} data-testid="two-three-modal-close">
             <X size={20} />

@@ -72,9 +72,19 @@ const PolSalesModal = ({ isOpen, onClose, data, title }) => {
           <div className="modal-title" data-testid="pol-sales-modal-title">
             <Flame size={20} />
             <span>{title || 'POL Sales by Sector'}</span>
-            {data?.stale && (
-              <span className="stale-badge" data-testid="pol-sales-stale-badge">Stale</span>
-            )}
+            <span
+              className="live-dot"
+              data-testid="pol-sales-live-dot"
+              style={{
+                width: '6px',
+                height: '6px',
+                backgroundColor: data?.stale ? '#F59E0B' : '#22C55E',
+                borderRadius: '50%',
+                display: 'inline-block',
+                marginLeft: '6px',
+                animation: 'pulse 2s infinite'
+              }}
+            ></span>
           </div>
           <button className="modal-close" onClick={onClose} data-testid="pol-sales-modal-close">
             <X size={20} />

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { BookOpen, RefreshCw, AlertTriangle } from 'lucide-react';
+import { BookOpen, RefreshCw } from 'lucide-react';
 import axios from 'axios';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
@@ -82,11 +82,18 @@ const DailyBriefingPanel = () => {
           Daily Briefing
         </div>
         <div className="briefing-header-actions" data-testid="daily-briefing-header-actions">
-          {meta.stale && (
-            <span className="briefing-stale-badge" data-testid="daily-briefing-stale-badge">
-              Stale
-            </span>
-          )}
+          <span
+            className="briefing-status-dot"
+            data-testid="daily-briefing-status-dot"
+            style={{
+              width: '6px',
+              height: '6px',
+              backgroundColor: meta.stale ? '#F59E0B' : '#22C55E',
+              borderRadius: '50%',
+              display: 'inline-block',
+              animation: 'pulse 2s infinite'
+            }}
+          ></span>
           <button
             type="button"
             className="briefing-refresh"
@@ -112,7 +119,6 @@ const DailyBriefingPanel = () => {
           <>
             <div className="briefing-meta" data-testid="daily-briefing-meta">
               Updated {formatPakistanTimestamp(meta.updated)} PKT
-              {meta.stale && <AlertTriangle size={14} />}
             </div>
             {error && (
               <div className="briefing-error" data-testid="daily-briefing-error">

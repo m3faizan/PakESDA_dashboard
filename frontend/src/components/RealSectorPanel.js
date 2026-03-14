@@ -183,6 +183,7 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
               <ExternalLink size={10} style={{ opacity: 0.6 }} />
               <span
                 className="live-dot"
+                data-testid="real-sector-lsm-live-dot"
                 style={{
                   width: '6px',
                   height: '6px',
@@ -217,15 +218,13 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
             <div className="economic-label" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
               <span>Auto Vehicles</span>
               <ExternalLink size={10} style={{ opacity: 0.6 }} />
-              {autoVehiclesData?.stale && (
-                <span className="stale-badge" data-testid="real-sector-auto-stale">Stale</span>
-              )}
               <span
                 className="live-dot"
+                data-testid="real-sector-auto-live-dot"
                 style={{
                   width: '6px',
                   height: '6px',
-                  backgroundColor: '#22C55E',
+                  backgroundColor: autoVehiclesData?.stale ? '#F59E0B' : '#22C55E',
                   borderRadius: '50%',
                   display: 'inline-block',
                   animation: 'pulse 2s infinite'
@@ -275,9 +274,18 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
             <div className="economic-label" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
               <span>2/3 Wheelers</span>
               <ExternalLink size={10} style={{ opacity: 0.6 }} />
-              {autoVehiclesData?.stale && (
-                <span className="stale-badge" data-testid="real-sector-two-three-stale">Stale</span>
-              )}
+              <span
+                className="live-dot"
+                data-testid="real-sector-two-three-live-dot"
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  backgroundColor: autoVehiclesData?.stale ? '#F59E0B' : '#22C55E',
+                  borderRadius: '50%',
+                  display: 'inline-block',
+                  animation: 'pulse 2s infinite'
+                }}
+              ></span>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.5rem' }}>
@@ -322,6 +330,18 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
             <div className="economic-label" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
               <span>Fertilizer</span>
               <ExternalLink size={10} style={{ opacity: 0.6 }} />
+              <span
+                className="live-dot"
+                data-testid="real-sector-fertilizer-live-dot"
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  backgroundColor: '#22C55E',
+                  borderRadius: '50%',
+                  display: 'inline-block',
+                  animation: 'pulse 2s infinite'
+                }}
+              ></span>
             </div>
 
             <div className="economic-value" data-testid="real-sector-fertilizer-value">
@@ -353,9 +373,18 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
             <div className="economic-label" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
               <span>POL Sales</span>
               <ExternalLink size={10} style={{ opacity: 0.6 }} />
-              {polSalesData?.stale && (
-                <span className="stale-badge" data-testid="real-sector-pol-stale">Stale</span>
-              )}
+              <span
+                className="live-dot"
+                data-testid="real-sector-pol-live-dot"
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  backgroundColor: polSalesData?.stale ? '#F59E0B' : '#22C55E',
+                  borderRadius: '50%',
+                  display: 'inline-block',
+                  animation: 'pulse 2s infinite'
+                }}
+              ></span>
             </div>
 
             <div className="economic-value" data-testid="real-sector-pol-value">

@@ -27,15 +27,29 @@ const InflationPanel = ({ loading: parentLoading }) => {
         ]);
 
         if (yoyRes.status === 'fulfilled') {
-          setCpiYoyData(yoyRes.value.data.data);
+          const payload = yoyRes.value.data;
+          if (payload?.data) {
+            setCpiYoyData({
+              ...payload.data,
+              stale: payload.stale,
+              updated: payload.updated || payload.data.updated
+            });
+          }
         }
         if (momRes.status === 'fulfilled') {
-          setCpiMomData(momRes.value.data.data);
+          const payload = momRes.value.data;
+          if (payload?.data) {
+            setCpiMomData({
+              ...payload.data,
+              stale: payload.stale,
+              updated: payload.updated || payload.data.updated
+            });
+          }
         }
         // Merge historical data with latest data
         if (yoyHistRes.status === 'fulfilled' && yoyHistRes.value.data.data) {
           setCpiYoyData(prev => ({
-            ...prev,
+            ...(prev || {}),
             ...yoyHistRes.value.data.data,
             // Keep latest from regular endpoint if available
             latest: prev?.latest || yoyHistRes.value.data.data.latest
@@ -43,7 +57,7 @@ const InflationPanel = ({ loading: parentLoading }) => {
         }
         if (momHistRes.status === 'fulfilled' && momHistRes.value.data.data) {
           setCpiMomData(prev => ({
-            ...prev,
+            ...(prev || {}),
             ...momHistRes.value.data.data,
             latest: prev?.latest || momHistRes.value.data.data.latest
           }));
@@ -92,6 +106,7 @@ const InflationPanel = ({ loading: parentLoading }) => {
       clickable: true,
       modalKey: 'yoy',
       isLive: cpiYoyData !== null,
+      isStale: cpiYoyData?.stale,
       isPercent: true,
       changeIsPercent: false
     },
@@ -104,6 +119,7 @@ const InflationPanel = ({ loading: parentLoading }) => {
       clickable: true,
       modalKey: 'mom',
       isLive: cpiMomData !== null,
+      isStale: cpiMomData?.stale,
       isPercent: true,
       changeIsPercent: false
     },
@@ -121,6 +137,7 @@ const InflationPanel = ({ loading: parentLoading }) => {
       clickable: true,
       modalKey: 'spiWeekly',
       isLive: spiWeeklyData !== null,
+      isStale: false,
       isPercent: false,
       changeIsPercent: true
     },
@@ -133,6 +150,7 @@ const InflationPanel = ({ loading: parentLoading }) => {
       clickable: true,
       modalKey: 'spiMonthly',
       isLive: spiMonthlyData !== null,
+      isStale: false,
       isPercent: false,
       changeIsPercent: true
     }
@@ -210,10 +228,10 @@ const InflationPanel = ({ loading: parentLoading }) => {
                       <ExternalLink size={10} style={{ marginLeft: '4px', opacity: 0.6 }} />
                     )}
                     {item.isLive && (
-                      <span className="live-dot" style={{
+                      <span className="live-dot" data-testid={`inflation-live-indicator-${index}`} style={{
                         width: '6px',
                         height: '6px',
-                        backgroundColor: '#22C55E',
+                        backgroundColor: item.isStale ? '#F59E0B' : '#22C55E',
                         borderRadius: '50%',
                         display: 'inline-block',
                         marginLeft: '6px',
