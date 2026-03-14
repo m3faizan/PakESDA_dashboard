@@ -38,6 +38,8 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] Implemented **Daily Briefing** panel powered by **OpenAI GPT-5.2** with a 6-hour cache window.
 - [x] Added manual refresh support with stale fallback to last successful briefing if generation fails.
 - [x] Daily briefing now summarizes top headlines plus key economic indicators into structured sections.
+- [x] Added **RDA Inflows** to Economic Indicators (total funds received, full history, USD billions format).
+- [x] Added **POL Sales** to Real Sector with stacked-by-sector modal and total overlay.
 
 ### Latest Updates (Mar 10, 2026)
 - [x] Added new **Real Sector** panel with LSM Quantum Index (CPI-style historical flow):
