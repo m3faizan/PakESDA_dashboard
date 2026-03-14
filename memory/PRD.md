@@ -44,6 +44,7 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] Added **Consumer Confidence Index (CCI)** to Business Environment with clickable trend tab.
 - [x] KSE-100 indicator now shows last market close date and uses orange dot when market is closed.
 - [x] Added **Daily Energy Report** map tab pulling HTML from Google Sheet and geocoding country/region markers.
+- [x] Energy/alert popups now use dark theme with scrollable lists and no bold headline duplication.
 - [x] Replaced stale text badges with green/orange status dots across panels; CPI now uses cached fallback when SBP API fails (if last-good exists).
 
 ### Latest Updates (Mar 10, 2026)
