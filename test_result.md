@@ -577,10 +577,25 @@ frontend:
         agent: "testing"
         comment: "PASS - All 4 styling requirements verified successfully. Energy popup: No bold headline (no <strong> tags), list structure with <ul>/<li> present, scrollable container found at Level 2 div with max-height: 160px and overflow-y: auto. Dark background: Both energy and alert popups use #0F172A (rgb(15, 23, 42)) background, no white/light containers detected (checked all elements). Overlay title consistency: Both 'Pakistan Overview' and 'Daily Energy Report' titles use same styles - color: rgb(34, 197, 94), fontSize: 14.4px, fontWeight: 600, textTransform: uppercase, letterSpacing: 0.72px. Map functionality: Tabs switch correctly, 51 energy markers render in energy mode, 10 city + 8 alert markers render in overview mode. Alert popup has correct red border rgb(239, 68, 68). CSS implementation in index.css lines 745-767 (.maplibregl-popup-content, .maplibregl-popup-tip). Popup HTML structure in MapSection.js lines 145-155 (energy) and 209-216 (alerts). Screenshots captured: energy_popup_styling.png, alert_popup_verified.png, final_map_popups.png."
 
+  - task: "Energy tab sidebar with collapsible toggle and news feed"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/MapSection.js, /app/frontend/src/index.css"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Testing Daily Energy Report sidebar feature: 1) Energy tab shows left sidebar with collapsible toggle and list of news items, 2) Sidebar collapse/expand works without breaking map, 3) Map tabs show labels 'Pakistan' and 'Daily Energy Report', 4) Energy marker popup lists all items with scroll and no '+X more', 5) Confirm popup list has dark background and no bold headline duplication"
+      - working: true
+        agent: "testing"
+        comment: "PASS - All 5 requirements verified successfully. 1) Map Tabs: Overview tab shows 'Pakistan', Energy tab shows 'Daily Energy Report' (exact labels confirmed). 2) Energy Sidebar: Sidebar visible when Energy tab active (data-testid='energy-sidebar'), in 'open' state by default, displays title 'Daily Energy Report', toggle button present (data-testid='energy-sidebar-toggle'), sidebar meta shows 'Report: March 13, 2026 • 378 items', sidebar content shows 168 energy feed items with country/region labels. 3) Sidebar Collapse/Expand: Clicking toggle successfully collapses sidebar (width reduced from 320px to 46px), sidebar title and content hidden when collapsed, map expanded by 274px after collapse, 51 energy markers still visible, map returned to original size after re-expanding sidebar (diff: 0px). 4) Energy Marker Popup: Clicked energy markers show popup with 8 list items using <ul>/<li> structure, no '+X more' text found, scrollable container with max-height: 220px and overflow-y: auto. 5) Popup Styling: Dark background #0F172A / rgb(15, 23, 42), zero <strong> bold tags, proper header structure with bullet separators (country • region • X items). 6) Tab Switching: Switching back to Overview hides sidebar, restores 10 city markers, hides 51 energy markers. Implementation: Sidebar component at MapSection.js lines 250-284, CSS at index.css lines 762-837, map resize on sidebar toggle at line 128. No console errors. Screenshots: energy_sidebar_open.png, energy_sidebar_collapsed.png, energy_marker_popup.png, energy_popup_dark_bg.png."
+
 metadata:
   created_by: "testing_agent"
   version: "1.0"
-  test_sequence: 8
+  test_sequence: 9
 
 test_plan:
   - agent: "testing"
@@ -630,4 +645,8 @@ agent_communication:
     message: "Starting comprehensive testing of map popup styling updates. Testing 4 key requirements: 1) Energy tab marker popup shows list without bold headline and allows scrolling when long, 2) Popups (energy + alerts) have dark background with no white container, 3) Map overlay title style consistent between Overview and Energy tabs, 4) Map tabs work and markers render correctly."
   - agent: "testing"
     message: "ALL TESTS PASSED ✓ - Map popup styling updates fully verified. All 4 requirements met: 1) Energy popup correctly displays list structure without bold headline (no <strong> tags found), scrollable container properly configured with max-height: 160px and overflow-y: auto at Level 2 div (MapSection.js line 148). 2) Both energy and alert popups use dark background #0F172A (rgb(15, 23, 42)), comprehensive scan found zero white or light-colored container elements in either popup type (index.css lines 745-767 implement .maplibregl-popup-content styling). 3) Overlay title styles perfectly consistent between 'Pakistan Overview' and 'Daily Energy Report' - identical color (rgb(34, 197, 94)), fontSize (14.4px), fontWeight (600), textTransform (uppercase), letterSpacing (0.72px). 4) Tab switching works correctly with proper active states, markers render in both modes (51 energy markers in energy mode, 10 city + 8 alert markers in overview mode). Alert popups show correct red border rgb(239, 68, 68). No console errors. Screenshots: energy_popup_styling.png, alert_popup_verified.png, final_map_popups.png. Implementation quality excellent - all styling requirements met without any white container artifacts."
+  - agent: "testing"
+    message: "Starting comprehensive testing of Daily Energy Report sidebar feature. Testing 5 requirements from review request: 1) Energy tab shows left sidebar with collapsible toggle and list of news items, 2) Sidebar collapse/expand works without breaking map, 3) Map tabs show labels 'Pakistan' and 'Daily Energy Report', 4) Energy marker popup lists all items with scroll and no '+X more', 5) Confirm popup list has dark background and no bold headline duplication."
+  - agent: "testing"
+    message: "ALL TESTS PASSED ✓ - Daily Energy Report sidebar feature fully functional. All 5 review requirements verified successfully: 1) Map tab labels confirmed exact: 'Pakistan' (Overview) and 'Daily Energy Report' (Energy tab). 2) Energy sidebar visible when Energy tab active with 168 energy feed items displayed, toggle button functional (data-testid='energy-sidebar-toggle'), sidebar meta shows 'Report: March 13, 2026 • 378 items'. 3) Sidebar collapse/expand works perfectly: collapse reduces sidebar from 320px to 46px, hides title/content, expands map by 274px, 51 energy markers remain visible, expand restores original layout (0px diff). 4) Energy marker popup lists all items with <ul>/<li> structure (8 items shown), no '+X more' text, scrollable container with max-height: 220px and overflow-y: auto. 5) Popup styling verified: dark background #0F172A (rgb(15, 23, 42)), zero <strong> bold tags, proper header with bullet separators. Tab switching works bidirectionally without breaking map or markers. Implementation: Sidebar at MapSection.js lines 250-284, CSS at index.css lines 762-837, map resize at line 128. No console errors. Screenshots: energy_sidebar_open.png, energy_sidebar_collapsed.png, energy_marker_popup.png, energy_popup_dark_bg.png."
 ---

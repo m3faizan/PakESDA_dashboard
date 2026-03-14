@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Navigation, Bell, Zap } from 'lucide-react';
+import { Bell, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ALERT_COORDS = {
   islamabad: [73.0479, 33.6844],
@@ -38,6 +38,7 @@ const MapSection = ({ mapData, alerts = [], energyReport, loading }) => {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [showAlertsLayer, setShowAlertsLayer] = useState(true);
   const [activeLayer, setActiveLayer] = useState('overview');
+  const [energySidebarOpen, setEnergySidebarOpen] = useState(true);
 
   const topAlerts = useMemo(() => {
     const sorted = [...(alerts || [])].sort((a, b) => {
@@ -48,8 +49,19 @@ const MapSection = ({ mapData, alerts = [], energyReport, loading }) => {
     return sorted.slice(0, 8);
   }, [alerts]);
 
-  const energyEntries = useMemo(() => (energyReport?.entries || []).slice(0, 120), [energyReport]);
+  const energyEntries = useMemo(() => energyReport?.entries || [], [energyReport]);
   const energyReportDate = energyReport?.report_date;
+
+  const energyFeedItems = useMemo(() => {
+    return energyEntries.flatMap((entry) =>
+      (entry.items || []).map((item, idx) => ({
+        id: `${entry.country}-${idx}`,
+        country: entry.country,
+        region: entry.region,
+        text: item
+      }))
+    );
+  }, [energyEntries]);
 
   useEffect(() => {
     const loadMap = async () => {
@@ -108,6 +120,14 @@ const MapSection = ({ mapData, alerts = [], energyReport, loading }) => {
   }, []);
 
   useEffect(() => {
+    if (!mapRef.current || !mapLoaded) return;
+    const timer = setTimeout(() => {
+      mapRef.current.resize();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [activeLayer, energySidebarOpen, mapLoaded]);
+
+  useEffect(() => {
     const renderMarkers = async () => {
       if (!mapRef.current || !mapLoaded || !maplibreRef.current) return;
 
@@ -137,19 +157,17 @@ const MapSection = ({ mapData, alerts = [], energyReport, loading }) => {
             box-shadow: 0 0 10px #38BDF8;
           `;
 
-          const items = (entry.items || []).slice(0, 8).map((item) => `
+          const items = (entry.items || []).map((item) => `
             <li style="margin-bottom: 6px;">${item}</li>
           `).join('');
-          const moreCount = (entry.count || 0) - (entry.items || []).slice(0, 8).length;
 
           const popup = new maplibregl.Popup({ offset: 15 }).setHTML(`
             <div style="background: #0F172A; color: #F8FAFC; padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; border: 1px solid #38BDF8; max-width: 280px;">
               <div style="color: #38BDF8; text-transform: uppercase; font-size: 10px; margin-bottom: 6px;">${entry.country} • ${entry.region || 'Region'} • ${entry.count || entry.items?.length || 0} items</div>
-              <div style="max-height: 160px; overflow-y: auto; padding-right: 4px;">
+              <div style="max-height: 220px; overflow-y: auto; padding-right: 4px;">
                 <ul style="padding-left: 16px; color: #E2E8F0;">
                   ${items}
                 </ul>
-                ${moreCount > 0 ? `<div style='color:#94A3B8; margin-top:6px;'>+${moreCount} more</div>` : ''}
               </div>
             </div>
           `);
@@ -228,103 +246,135 @@ const MapSection = ({ mapData, alerts = [], energyReport, loading }) => {
 
   return (
     <div className="map-container" data-testid="map-container">
-      <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
-      
-      {/* Map Overlay - Title */}
-      <div className="map-overlay" data-testid="map-overlay">
-        <div className="map-overlay-header">
-          <div className="map-overlay-title">
-            {activeLayer === 'energy' ? <Zap size={16} /> : <Navigation size={16} />}
-            {activeLayer === 'energy' ? 'Daily Energy Report' : 'Pakistan Overview'}
+      <div className={`map-layout ${activeLayer === 'energy' ? 'energy-active' : ''}`} data-testid="map-layout">
+        {activeLayer === 'energy' && (
+          <div
+            className={`energy-sidebar ${energySidebarOpen ? 'open' : 'collapsed'}`}
+            data-testid="energy-sidebar"
+          >
+            <div className="energy-sidebar-header">
+              <div className="panel-title energy-sidebar-title" data-testid="energy-sidebar-title">
+                <Zap size={14} />
+                Daily Energy Report
+              </div>
+              <button
+                className="energy-sidebar-toggle"
+                onClick={() => setEnergySidebarOpen((prev) => !prev)}
+                data-testid="energy-sidebar-toggle"
+                type="button"
+              >
+                {energySidebarOpen ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
+              </button>
+            </div>
+            {energySidebarOpen && (
+              <>
+                <div className="energy-sidebar-meta" data-testid="energy-sidebar-meta">
+                  Report: {energyReportDate || 'Latest'} • {energyReport?.total_items || 0} items
+                </div>
+                <div className="energy-sidebar-content" data-testid="energy-sidebar-content">
+                  {energyFeedItems.map((item, index) => (
+                    <div className="energy-feed-item" data-testid={`energy-feed-item-${index}`} key={`${item.id}-${index}`}>
+                      <div className="energy-feed-title">{item.country} • {item.region}</div>
+                      <div className="energy-feed-text">{item.text}</div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
-          <div className="map-tabs" data-testid="map-tabs">
-            <button
-              className={`map-tab ${activeLayer === 'overview' ? 'active' : ''}`}
-              onClick={() => setActiveLayer('overview')}
-              data-testid="map-tab-overview"
-            >
-              Overview
-            </button>
-            <button
-              className={`map-tab ${activeLayer === 'energy' ? 'active' : ''}`}
-              onClick={() => setActiveLayer('energy')}
-              data-testid="map-tab-energy"
-            >
-              Daily Energy Report
-            </button>
+        )}
+        <div className="map-canvas" data-testid="map-canvas">
+          <div ref={mapContainerRef} className="map-canvas-inner" />
+
+          <div className="map-overlay" data-testid="map-overlay">
+            <div className="map-tabs" data-testid="map-tabs">
+              <button
+                className={`map-tab ${activeLayer === 'overview' ? 'active' : ''}`}
+                onClick={() => setActiveLayer('overview')}
+                data-testid="map-tab-overview"
+              >
+                Pakistan
+              </button>
+              <button
+                className={`map-tab ${activeLayer === 'energy' ? 'active' : ''}`}
+                onClick={() => setActiveLayer('energy')}
+                data-testid="map-tab-energy"
+              >
+                Daily Energy Report
+              </button>
+            </div>
+            {activeLayer === 'energy' && energyReportDate && (
+              <div className="map-report-date" data-testid="map-energy-report-date">
+                Report: {energyReportDate}
+              </div>
+            )}
           </div>
-          {activeLayer === 'energy' && energyReportDate && (
-            <div className="map-report-date" data-testid="map-energy-report-date">
-              Report: {energyReportDate}
+
+          <div className="map-legend" data-testid="map-legend">
+            {activeLayer === 'overview' ? (
+              <>
+                <div className="legend-item">
+                  <span className="legend-dot capital"></span>
+                  <span>Capital</span>
+                </div>
+                <div className="legend-item">
+                  <span className="legend-dot major"></span>
+                  <span>Major City</span>
+                </div>
+                <div className="legend-item">
+                  <span className="legend-dot strategic"></span>
+                  <span>Strategic Port</span>
+                </div>
+                <div className="legend-item">
+                  <span className="legend-dot" style={{ background: '#EF4444' }}></span>
+                  <span>Alerts</span>
+                </div>
+                <button
+                  onClick={() => setShowAlertsLayer((prev) => !prev)}
+                  className="range-btn"
+                  style={{ marginTop: '0.35rem', fontSize: '0.62rem', padding: '0.2rem 0.45rem', width: '100%' }}
+                  data-testid="map-alert-layer-toggle"
+                >
+                  <Bell size={12} style={{ marginRight: '0.3rem', display: 'inline' }} />
+                  Alerts Layer: {showAlertsLayer ? 'On' : 'Off'}
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="legend-item">
+                  <span className="legend-dot energy"></span>
+                  <span>Energy Report</span>
+                </div>
+                <div className="legend-item">
+                  <span className="legend-dot" style={{ background: '#38BDF8' }}></span>
+                  <span>Country/Region</span>
+                </div>
+                <div className="legend-meta" data-testid="energy-report-meta">
+                  {energyReport?.total_countries || 0} locations • {energyReport?.total_items || 0} items
+                </div>
+              </>
+            )}
+          </div>
+
+          {loading && (
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              background: 'rgba(2, 6, 23, 0.9)',
+              padding: '1rem 2rem',
+              border: '1px solid var(--color-border)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <div className="spinner"></div>
+              <span>Loading map data...</span>
             </div>
           )}
         </div>
       </div>
-
-      {/* Map Legend */}
-      <div className="map-legend" data-testid="map-legend">
-        {activeLayer === 'overview' ? (
-          <>
-            <div className="legend-item">
-              <span className="legend-dot capital"></span>
-              <span>Capital</span>
-            </div>
-            <div className="legend-item">
-              <span className="legend-dot major"></span>
-              <span>Major City</span>
-            </div>
-            <div className="legend-item">
-              <span className="legend-dot strategic"></span>
-              <span>Strategic Port</span>
-            </div>
-            <div className="legend-item">
-              <span className="legend-dot" style={{ background: '#EF4444' }}></span>
-              <span>Alerts</span>
-            </div>
-            <button
-              onClick={() => setShowAlertsLayer((prev) => !prev)}
-              className="range-btn"
-              style={{ marginTop: '0.35rem', fontSize: '0.62rem', padding: '0.2rem 0.45rem', width: '100%' }}
-              data-testid="map-alert-layer-toggle"
-            >
-              <Bell size={12} style={{ marginRight: '0.3rem', display: 'inline' }} />
-              Alerts Layer: {showAlertsLayer ? 'On' : 'Off'}
-            </button>
-          </>
-        ) : (
-          <>
-            <div className="legend-item">
-              <span className="legend-dot energy"></span>
-              <span>Energy Report</span>
-            </div>
-            <div className="legend-item">
-              <span className="legend-dot" style={{ background: '#38BDF8' }}></span>
-              <span>Country/Region</span>
-            </div>
-            <div className="legend-meta" data-testid="energy-report-meta">
-              {energyReport?.total_countries || 0} locations • {energyReport?.total_items || 0} items
-            </div>
-          </>
-        )}
-      </div>
-
-      {loading && (
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          background: 'rgba(2, 6, 23, 0.9)',
-          padding: '1rem 2rem',
-          border: '1px solid var(--color-border)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem'
-        }}>
-          <div className="spinner"></div>
-          <span>Loading map data...</span>
-        </div>
-      )}
     </div>
   );
 };

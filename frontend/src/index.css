@@ -742,6 +742,100 @@ h1, h2, h3, h4, h5, h6 {
   position: relative;
 }
 
+.map-layout {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+.map-canvas {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.map-canvas-inner {
+  width: 100%;
+  height: 100%;
+}
+
+.energy-sidebar {
+  width: 320px;
+  background: rgba(2, 6, 23, 0.92);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.2s ease;
+}
+
+.energy-sidebar.collapsed {
+  width: 46px;
+}
+
+.energy-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.energy-sidebar-title {
+  font-size: 0.75rem;
+}
+
+.energy-sidebar-toggle {
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-muted);
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.energy-sidebar-meta {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.65rem;
+  color: var(--color-muted);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.energy-sidebar-content {
+  padding: 0.6rem 0.75rem;
+  overflow-y: auto;
+  max-height: calc(100% - 96px);
+}
+
+.energy-feed-item {
+  border: 1px solid var(--color-border);
+  background: rgba(15, 23, 42, 0.55);
+  padding: 0.45rem;
+  margin-bottom: 0.5rem;
+}
+
+.energy-feed-title {
+  font-size: 0.55rem;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.energy-feed-text {
+  font-size: 0.75rem;
+  color: var(--color-text);
+  margin-top: 0.25rem;
+  line-height: 1.4;
+}
+
+.energy-sidebar.collapsed .energy-sidebar-title,
+.energy-sidebar.collapsed .energy-sidebar-meta,
+.energy-sidebar.collapsed .energy-sidebar-content {
+  display: none;
+}
+
 .maplibregl-popup-content {
   background: #0F172A !important;
   color: #F8FAFC;
@@ -772,26 +866,11 @@ h1, h2, h3, h4, h5, h6 {
   left: 1rem;
   z-index: 10;
   background: rgba(2, 6, 23, 0.9);
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 0.75rem;
   border: 1px solid var(--color-border);
-}
-
-.map-overlay-header {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-}
-
-.map-overlay-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #22C55E;
-  font-family: 'Barlow Condensed, sans-serif';
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-size: 0.9rem;
+  gap: 0.35rem;
 }
 
 .map-tabs {
