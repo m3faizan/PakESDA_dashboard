@@ -237,6 +237,7 @@ BUSINESS_ENV_SERIES = {
     "bci": "TS_GP_RL_BCSIND_M.BCI",
     "cbci": "TS_GP_RL_BCSIND_M.CBCI",
     "ebci": "TS_GP_RL_BCSIND_M.EBCI",
+    "cci": "TS_GP_RL_CCSIND_M.CCI",
     "sector_manufacturing": "TS_GP_RL_BCSIND_M.BCI_IM",
     "sector_construction": "TS_GP_RL_BCSIND_M.BCI_IC",
     "sector_wholesale_retail": "TS_GP_RL_BCSIND_M.BCI_ST",
@@ -1637,6 +1638,7 @@ async def fetch_business_environment_data():
         bci_summary = summarize_monthly_series(series_histories["bci"])
         cbci_summary = summarize_monthly_series(series_histories["cbci"])
         ebci_summary = summarize_monthly_series(series_histories["ebci"])
+        cci_summary = summarize_monthly_series(series_histories["cci"])
 
         history_map = {}
 
@@ -1648,6 +1650,7 @@ async def fetch_business_environment_data():
         merge_series("bci", "bci")
         merge_series("cbci", "cbci")
         merge_series("ebci", "ebci")
+        merge_series("cci", "cci")
         merge_series("epu_4", "epu4")
         merge_series("epu_2", "epu2")
         merge_series("sector_manufacturing", "manufacturing")
@@ -1687,6 +1690,15 @@ async def fetch_business_environment_data():
             }
             for item in merged_history
             if item.get("epu4") is not None and item["date"] >= min_confidence_date
+        ]
+
+        cci_history = [
+            {
+                "date": item["date"],
+                "cci": item.get("cci")
+            }
+            for item in merged_history
+            if item.get("cci") is not None and item["date"] >= "2012-01-01"
         ]
 
         sector_mappings = [
@@ -1749,10 +1761,17 @@ async def fetch_business_environment_data():
                 "history": confidence_history,
                 "date_range": f"{confidence_history[0]['date']} to {confidence_history[-1]['date']}" if confidence_history else None
             },
+            "consumer_confidence": {
+                "headline": cci_summary,
+                "description": "Consumer Confidence Index (CCI) diffusion index; values above 50 indicate net positive sentiment.",
+                "history": cci_history,
+                "date_range": f"{cci_history[0]['date']} to {cci_history[-1]['date']}" if cci_history else None
+            },
             "latest_month": latest_month,
             "coverage": {
                 "epu_series_available": 2,
                 "bci_series_available": 107,
+                "cci_series_available": 1,
                 "series_used_in_panel": len(BUSINESS_ENV_SERIES)
             },
             "source": "State Bank of Pakistan",

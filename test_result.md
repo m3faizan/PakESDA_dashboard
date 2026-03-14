@@ -276,12 +276,93 @@ frontend:
         agent: "testing"
         comment: "PASS - 2/3 Wheelers modal opens correctly with title '2/3 WHEELERS'. Chart renders area chart with teal gradient fill showing production/sales data over time. Stale badge slot implemented (line 55-57) and shows when data.stale=true. Production/Sales mode toggle works. Modal closes without errors."
 
+
+  - task: "CCI KPI card displays in Business Environment panel"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/BusinessEnvironmentPanel.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Testing if CCI KPI card appears in Business Environment panel with value, MoM change, and month"
+      - working: true
+        agent: "testing"
+        comment: "PASS - CCI KPI card displays correctly with data-testid='business-kpi-cci'. Card shows label 'Consumer Confidence Index', value '43.00', MoM change '+3.37%', and month 'February 2026'. Card is visible and clickable in the KPI grid."
+
+  - task: "Clicking CCI KPI highlights card and switches to CCI tab"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/BusinessEnvironmentPanel.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Verifying clicking CCI KPI card highlights it with green background and activates CCI tab"
+      - working: true
+        agent: "testing"
+        comment: "PASS - Clicking CCI KPI card successfully highlights the card with green background (rgba(34, 197, 94, 0.12)) and switches activeTab to 'cci'. CCI tab button also shows active state with green highlight (rgba(34, 197, 94, 0.15)). Interactive behavior works as expected."
+
+  - task: "CCI tab renders line chart with date range and no overflow"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/BusinessEnvironmentPanel.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Testing CCI tab view renders line chart with proper date range label and no horizontal overflow"
+      - working: true
+        agent: "testing"
+        comment: "PASS - CCI tab view (data-testid='business-cci-view') renders correctly. Date range label (data-testid='cci-date-range-label') shows 'Nov 2017 - Feb 2026'. Line chart SVG rendered with dimensions width=569.89px, height=175px. Chart displays 'Headline CCI' line in green (#22C55E). No horizontal overflow detected (scrollWidth=583, clientWidth=583)."
+
+  - task: "Other tabs (Overview/EPU) still work after CCI addition"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/BusinessEnvironmentPanel.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Verifying Overview and EPU tabs still render correctly after adding CCI feature"
+      - working: true
+        agent: "testing"
+        comment: "PASS - Overview tab displays correctly with BCI date range 'Oct 2017 - Feb 2026' and line chart showing Overall, Current, and Expected BCI series. EPU tab displays correctly with EPU date range 'Oct 2017 - Feb 2026' and line chart showing 4 Newspapers and 2 Newspapers series. Both tabs switch smoothly and render without errors. No layout issues or functionality regression detected."
+
+  - task: "CCI data-testid attributes exist for testing"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/BusinessEnvironmentPanel.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Verifying all required data-testid attributes are present for CCI elements"
+      - working: true
+        agent: "testing"
+        comment: "PASS - All required data-testid attributes are present and accessible: 'business-kpi-cci' (line 278), 'business-tab-cci' (line 316), 'business-cci-view' (line 463), and 'cci-date-range-label' (line 465). All elements can be selected and verified in automated tests."
+
 metadata:
   created_by: "testing_agent"
   version: "1.0"
-  test_sequence: 4
+  test_sequence: 5
 
 test_plan:
+  - agent: "testing"
+    message: "Starting comprehensive testing of Consumer Confidence Index (CCI) feature in Business Environment panel. Will verify CCI KPI card rendering with value/change/month, clicking CCI KPI highlights card and switches to CCI tab, CCI tab renders line chart with date range and no overflow, other tabs (Overview/EPU) still work correctly, and all required data-testid attributes exist."
+  - agent: "testing"
+    message: "ALL TESTS PASSED ✓ - Consumer Confidence Index (CCI) feature fully functional in Business Environment panel. CCI KPI card displays correctly with label 'Consumer Confidence Index', value '43.00', MoM change '+3.37%', and month 'February 2026'. Clicking CCI KPI successfully highlights card with green background (rgba(34, 197, 94, 0.12)) and switches to CCI tab. CCI tab view renders line chart with date range label 'Nov 2017 - Feb 2026', chart dimensions 569.89x175px, no horizontal overflow (scrollWidth=clientWidth=583). Overview tab works correctly with BCI data and multi-line chart (Overall/Current/Expected). EPU tab works correctly with EPU data and dual-line chart (4/2 Newspapers). All required data-testid attributes present: business-kpi-cci, business-tab-cci, business-cci-view, cci-date-range-label. No console errors or layout issues detected. Screenshots confirm all visual elements render correctly."
+
   current_focus: []
   stuck_tasks: []
   test_all: false

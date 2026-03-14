@@ -47,6 +47,7 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
 
   const confidenceHistory = useMemo(() => data?.confidence?.history || [], [data]);
   const epuHistory = useMemo(() => data?.epu?.history || [], [data]);
+  const cciHistory = useMemo(() => data?.consumer_confidence?.history || [], [data]);
   const sectorTrendHistory = useMemo(() => data?.confidence?.history || [], [data]);
 
   const formatRange = (history) => {
@@ -170,6 +171,7 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
   const bciOverall = data?.confidence?.headline?.overall || {};
   const bciCurrent = data?.confidence?.headline?.current || {};
   const bciExpected = data?.confidence?.headline?.expected || {};
+  const cciHeadline = data?.consumer_confidence?.headline || {};
   const sectors = data?.confidence?.sectors?.latest || [];
   const drivers = data?.confidence?.drivers || {};
 
@@ -195,11 +197,13 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
 
   const bciDateRange = formatRange(confidenceHistory);
   const epuDateRange = formatRange(epuHistory);
+  const cciDateRange = formatRange(cciHistory);
   const sectorDateRange = formatRange(selectedSectorView === 'all_trends' ? sectorTrendAllData : selectedSectorHistory);
 
   const epuSignal = getSignal(epuHeadline?.mom_change, true);
   const currentSignal = getSignal(bciCurrent?.mom_change, false);
   const expectedSignal = getSignal(bciExpected?.mom_change, false);
+  const cciSignal = getSignal(cciHeadline?.mom_change, false);
 
   const metricCards = [
     {
@@ -209,7 +213,18 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
       change: epuHeadline?.mom_change,
       month: epuHeadline?.latest?.month,
       signal: epuSignal,
-      inverse: true
+      inverse: true,
+      tab: 'epu'
+    },
+    {
+      key: 'cci',
+      label: 'Consumer Confidence Index',
+      value: cciHeadline?.latest?.value,
+      change: cciHeadline?.mom_change,
+      month: cciHeadline?.latest?.month,
+      signal: cciSignal,
+      inverse: false,
+      tab: 'cci'
     },
     {
       key: 'current-bci',
@@ -244,44 +259,56 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
       </div>
 
       <div className="panel-content" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', gap: '0.5rem' }} data-testid="business-kpi-grid">
-          {metricCards.map((metric) => (
-            <div
-              key={metric.key}
-              style={{
-                border: '1px solid var(--color-border)',
-                background: 'rgba(15, 23, 42, 0.5)',
-                padding: '0.5rem',
-                minHeight: '74px'
-              }}
-              data-testid={`business-kpi-${metric.key}`}
-            >
-              <div style={{ fontSize: '0.56rem', color: 'var(--color-muted)', marginBottom: '0.2rem' }}>{metric.label}</div>
-              <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)', fontFamily: 'var(--font-mono)' }}>
-                {metric.value !== null && metric.value !== undefined ? metric.value.toFixed(2) : '--'}
-              </div>
-              {metric.change !== null && metric.change !== undefined && (
-                <div
-                  style={{
-                    marginTop: '0.15rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.2rem',
-                    fontSize: '0.62rem',
-                    color: metric.signal.cls === 'positive' ? '#22C55E' : '#EF4444'
-                  }}
-                  data-testid={`business-kpi-change-${metric.key}`}
-                >
-                  {metric.signal.increase ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-                  {metric.change >= 0 ? '+' : ''}{metric.change.toFixed(2)}%
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px,1fr))', gap: '0.5rem' }} data-testid="business-kpi-grid">
+          {metricCards.map((metric) => {
+            const isClickable = Boolean(metric.tab);
+            const isActive = metric.tab && activeTab === metric.tab;
+            return (
+              <div
+                key={metric.key}
+                onClick={isClickable ? () => setActiveTab(metric.tab) : undefined}
+                style={{
+                  border: '1px solid var(--color-border)',
+                  background: isActive ? 'rgba(34, 197, 94, 0.12)' : 'rgba(15, 23, 42, 0.5)',
+                  padding: '0.5rem',
+                  minHeight: '74px',
+                  cursor: isClickable ? 'pointer' : 'default',
+                  boxShadow: isActive ? '0 0 0 1px rgba(34, 197, 94, 0.4)' : 'none'
+                }}
+                data-testid={`business-kpi-${metric.key}`}
+              >
+                <div style={{ fontSize: '0.56rem', color: 'var(--color-muted)', marginBottom: '0.2rem' }}>{metric.label}</div>
+                <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)', fontFamily: 'var(--font-mono)' }}>
+                  {metric.value !== null && metric.value !== undefined ? metric.value.toFixed(2) : '--'}
                 </div>
-              )}
-            </div>
-          ))}
+                {metric.change !== null && metric.change !== undefined && (
+                  <div
+                    style={{
+                      marginTop: '0.15rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.2rem',
+                      fontSize: '0.62rem',
+                      color: metric.signal.cls === 'positive' ? '#22C55E' : '#EF4444'
+                    }}
+                    data-testid={`business-kpi-change-${metric.key}`}
+                  >
+                    {metric.signal.increase ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+                    {metric.change >= 0 ? '+' : ''}{metric.change.toFixed(2)}%
+                  </div>
+                )}
+                {metric.month && (
+                  <div style={{ marginTop: '0.2rem', fontSize: '0.55rem', color: '#94a3b8' }} data-testid={`business-kpi-month-${metric.key}`}>
+                    {metric.month}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }} data-testid="business-tabs">
-          {['overview', 'sectors', 'drivers', 'epu'].map((tab) => (
+          {['overview', 'sectors', 'drivers', 'cci', 'epu'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -294,7 +321,7 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
                 background: activeTab === tab ? 'rgba(34, 197, 94, 0.15)' : 'transparent'
               }}
             >
-              {tab === 'epu' ? 'EPU' : tab}
+              {tab === 'epu' ? 'EPU' : tab === 'cci' ? 'CCI' : tab}
             </button>
           ))}
         </div>
@@ -429,6 +456,22 @@ const BusinessEnvironmentPanel = ({ loading: parentLoading }) => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {activeTab === 'cci' && (
+          <div style={{ border: '1px solid var(--color-border)', padding: '0.4rem', background: 'rgba(2, 6, 23, 0.45)' }} data-testid="business-cci-view">
+            <div style={{ fontSize: '0.62rem', color: 'var(--color-muted)', marginBottom: '0.35rem' }}>Consumer Confidence Index Trend (Headline)</div>
+            <div style={{ fontSize: '0.55rem', color: '#94a3b8', marginBottom: '0.2rem' }} data-testid="cci-date-range-label">{cciDateRange}</div>
+            <ResponsiveContainer width="100%" height={175}>
+              <LineChart data={cciHistory} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <XAxis dataKey="date" tickFormatter={formatDateTick} tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" minTickGap={35} interval="preserveStartEnd" />
+                <YAxis tick={{ fill: '#64748b', fontSize: 10 }} stroke="#64748b" width={34} domain={[0, 100]} />
+                <Tooltip content={renderCompactTooltip()} />
+                <Line type="monotone" dataKey="cci" name="Headline CCI" stroke="#22C55E" dot={false} strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         )}
 
