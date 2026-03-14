@@ -90,6 +90,7 @@ data_cache = {
     "exports": {"data": {}, "updated": None},
     "fdi": {"data": {}, "updated": None},
     "gov_debt": {"data": {}, "updated": None},
+    "rda_inflows": {"data": {}, "updated": None},
     "business_environment": {"data": {}, "updated": None},
     "road_advisory": {"data": [], "updated": None},
     "pkr_usd": {"data": {}, "updated": None},
@@ -102,6 +103,7 @@ data_cache = {
     "lsm_historical": {"data": {}, "updated": None},
     "auto_vehicles": {"data": {}, "updated": None},
     "fertilizer": {"data": {}, "updated": None},
+    "pol_sales": {"data": {}, "updated": None},
     "spi_weekly": {"data": {}, "updated": None},
     "spi_monthly": {"data": {}, "updated": None},
     "liquid_forex": {"data": {}, "updated": None},
@@ -362,6 +364,19 @@ FERTILIZER_SERIES = {
     "total": "TS_GP_RLS_SALEFERT_M.F_001000",
     "urea": "TS_GP_RLS_SALEFERT_M.U_002000",
     "dap": "TS_GP_RLS_SALEFERT_M.D_003000"
+}
+
+RDA_TOTAL_INFLOWS_SERIES = "TS_GP_ES_KSORDA_M.P00020"
+
+POL_SALES_SERIES = {
+    "total": "TS_GP_RLS_POLSALE_M.P_001000",
+    "agriculture": "TS_GP_RLS_POLSALE_M.P_002000",
+    "domestic": "TS_GP_RLS_POLSALE_M.P_003000",
+    "government": "TS_GP_RLS_POLSALE_M.P_004000",
+    "industry": "TS_GP_RLS_POLSALE_M.P_005000",
+    "overseas": "TS_GP_RLS_POLSALE_M.P_006000",
+    "power": "TS_GP_RLS_POLSALE_M.P_007000",
+    "transport": "TS_GP_RLS_POLSALE_M.P_008000"
 }
 
 # RSS feeds for Pakistan news (expanded per user sources)
@@ -1305,6 +1320,58 @@ async def fetch_fdi_data():
         print(f"Error fetching FDI data: {e}")
 
     return None
+
+
+async def fetch_rda_inflows_data():
+    """Fetch total RDA inflows (cumulative) from SBP EasyData."""
+    try:
+        history = await fetch_sbp_series_data(RDA_TOTAL_INFLOWS_SERIES, "2020-09-01")
+        if len(history) < 2:
+            return None
+
+        history_desc = list(reversed(history))
+        latest = history_desc[0]
+        previous = history_desc[1]
+        latest_date = datetime.strptime(latest["date"], "%Y-%m-%d")
+        month_name = latest_date.strftime("%B %Y")
+
+        mom_change = None
+        if previous and previous.get("value"):
+            mom_change = ((latest["value"] - previous["value"]) / previous["value"]) * 100
+
+        yoy_value = None
+        yoy_change = None
+        for item in history_desc:
+            item_date = datetime.strptime(item["date"], "%Y-%m-%d")
+            months_diff = (latest_date.year - item_date.year) * 12 + (latest_date.month - item_date.month)
+            if months_diff == 12:
+                yoy_value = item["value"]
+                break
+
+        if yoy_value is not None and yoy_value != 0:
+            yoy_change = ((latest["value"] - yoy_value) / yoy_value) * 100
+
+        return {
+            "latest": {
+                "value": round(latest["value"], 2),
+                "month": month_name,
+                "date": latest["date"],
+                "unit": "Million USD"
+            },
+            "previous": {
+                "value": round(previous["value"], 2),
+                "date": previous["date"]
+            },
+            "mom_change": round(mom_change, 2) if mom_change is not None else None,
+            "yoy_change": round(yoy_change, 2) if yoy_change is not None else None,
+            "history": history_desc,
+            "source": "State Bank of Pakistan",
+            "name": "RDA Inflows (Total Funds Received)",
+            "updated": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        print(f"Error fetching RDA inflows data: {e}")
+        return None
 
 
 async def fetch_gov_debt_data():
@@ -2433,6 +2500,89 @@ async def fetch_fertilizer_data():
         return None
 
 
+async def fetch_pol_sales_data():
+    """Fetch POL sales by sector with stacked categories and total."""
+    try:
+        series_tasks = [fetch_sbp_series_data(code, "2013-07-01") for code in POL_SALES_SERIES.values()]
+        results = await asyncio.gather(*series_tasks)
+
+        total_history = results[0]
+        category_histories = {
+            key: results[idx + 1]
+            for idx, key in enumerate(list(POL_SALES_SERIES.keys())[1:])
+        }
+
+        total_by_date = {item["date"]: item["value"] for item in total_history}
+        category_by_date = {
+            key: {item["date"]: item["value"] for item in history}
+            for key, history in category_histories.items()
+        }
+
+        all_dates = sorted(set(total_by_date.keys()) | set().union(*[set(h.keys()) for h in category_by_date.values()]))
+        if not all_dates:
+            return None
+
+        history = []
+        for date in all_dates:
+            entry = {"date": date}
+            total_val = total_by_date.get(date, 0)
+            for key in category_by_date:
+                entry[key] = round(category_by_date[key].get(date, 0), 2)
+            if total_val == 0:
+                total_val = sum(entry[key] for key in category_by_date)
+            entry["total"] = round(total_val, 2)
+            history.append(entry)
+
+        for idx, item in enumerate(history):
+            if idx == 0:
+                item["pct_change"] = 0
+            else:
+                prev = history[idx - 1]["total"]
+                item["pct_change"] = round(((item["total"] - prev) / prev) * 100, 2) if prev else 0
+
+        latest = history[-1]
+        previous = history[-2] if len(history) > 1 else None
+        latest_date = datetime.strptime(latest["date"], "%Y-%m-%d")
+
+        mom_change_pct = (((latest["total"] - previous["total"]) / previous["total"]) * 100) if previous and previous["total"] else None
+
+        category_labels = {
+            "agriculture": "Agriculture",
+            "domestic": "Domestic",
+            "government": "Government",
+            "industry": "Industry",
+            "overseas": "Overseas",
+            "power": "Power",
+            "transport": "Transport"
+        }
+
+        return {
+            "latest": {
+                "total": latest["total"],
+                "month": latest_date.strftime("%B %Y"),
+                "date": latest["date"],
+                "unit": "Metric Ton"
+            },
+            "previous": {
+                "total": previous["total"],
+                "date": previous["date"]
+            } if previous else None,
+            "mom_change_pct": round(mom_change_pct, 2) if mom_change_pct is not None else None,
+            "history": history,
+            "categories": [
+                {"key": key, "label": category_labels.get(key, key.title())}
+                for key in category_labels
+            ],
+            "date_range": f"{history[0]['date']} to {history[-1]['date']}",
+            "source": "State Bank of Pakistan / PBS",
+            "name": "POL Sales by Sector",
+            "updated": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        print(f"Error fetching POL sales data: {e}")
+        return None
+
+
 def _safe_float(value):
     if value is None:
         return None
@@ -3410,6 +3560,17 @@ async def get_fdi():
     }
 
 
+@app.get("/api/rda-inflows")
+async def get_rda_inflows():
+    """Get total RDA inflows (cumulative)"""
+    await refresh_cache_with_persistence("rda_inflows", 21600, fetch_rda_inflows_data)
+
+    return {
+        "data": data_cache["rda_inflows"]["data"],
+        "updated": data_cache["rda_inflows"]["updated"].isoformat() if data_cache["rda_inflows"]["updated"] else None
+    }
+
+
 @app.get("/api/gov-debt")
 async def get_gov_debt():
     """Get Central Government Debt data (total + internal + external)"""
@@ -3669,6 +3830,17 @@ async def get_fertilizer():
     return {
         "data": data_cache["fertilizer"]["data"],
         "updated": data_cache["fertilizer"]["updated"].isoformat() if data_cache["fertilizer"]["updated"] else None
+    }
+
+
+@app.get("/api/pol-sales")
+async def get_pol_sales():
+    """Get POL sales by sector data"""
+    await refresh_cache_with_persistence("pol_sales", 21600, fetch_pol_sales_data)
+
+    return {
+        "data": data_cache["pol_sales"]["data"],
+        "updated": data_cache["pol_sales"]["updated"].isoformat() if data_cache["pol_sales"]["updated"] else None
     }
 
 

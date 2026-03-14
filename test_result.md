@@ -165,10 +165,85 @@ frontend:
         agent: "testing"
         comment: "PASS - Layout integrity maintained. Map section (data-testid='map-section') is present on the left. Side-panels container contains 2 children: DailyBriefingPanel and NewsPanel. Both panels render correctly side-by-side. Bento grid layout structure is intact with map section, side-panels (Daily Briefing + News), and bottom panels all visible."
 
+  - task: "RDA Inflows card displays in Economic Indicators panel"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/EconomicPanel.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Testing if RDA Inflows card appears at economic-item-8 with value, change percentage, and month sublabel"
+      - working: true
+        agent: "testing"
+        comment: "PASS - RDA Inflows card displays correctly at economic-item-8. Card shows label 'RDA INFLOWS', value '$12.17B' with correct B$ formatting, change '+2.03%', and month 'February 2026'. Card is visible and clickable with proper formatting."
+
+  - task: "RDA Inflows modal opens with B$ formatting"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/SBPDataModal.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Verifying clicking RDA Inflows card opens modal with title 'RDA Inflows', chart, and B$ currency formatting"
+      - working: true
+        agent: "testing"
+        comment: "PASS - Clicking RDA Inflows card successfully opens SBP modal with title 'RDA INFLOWS'. Modal displays summary value '$12.17B' with correct B$ formatting (billions). MoM change shows '+2.03%', YoY change shows '+24.54%'. Chart container renders correctly with area chart showing historical data. Modal closes properly without errors."
+
+  - task: "POL Sales card displays in Real Sector panel"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/RealSectorPanel.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Testing if POL Sales card appears in Real Sector panel with value, change percentage, month, and proper labels"
+      - working: true
+        agent: "testing"
+        comment: "PASS - POL Sales card displays correctly in Real Sector panel at data-testid='real-sector-item-pol'. Card shows label 'POL SALES', value '1.49M' (formatted), change '-11.01%', and month 'December 2025'. Additional labels show 'Total POL Sales' and unit 'Metric Ton'. Card is visible and clickable."
+
+  - task: "POL Sales modal with stacked bars and category toggles"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/PolSalesModal.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Verifying POL Sales modal opens with stacked bar chart, total line (yellow), and functional category toggle buttons"
+      - working: true
+        agent: "testing"
+        comment: "PASS - Clicking POL Sales card opens modal with title 'POL SALES'. Modal displays summary value '1,491,804' with unit 'Metric Ton' and MoM change '-11.01%'. Chart container renders stacked bar chart with multiple colored category bars and yellow total line overlay. Time range buttons (1Y, 2Y, 5Y, ALL) are present. Found 8 series toggle buttons including 'Total' and categories (Agriculture, Domestic, Government, etc.). Toggle functionality tested successfully - clicking 'Total' and 'Agriculture' toggles properly show/hide respective chart elements. Chart updates correctly when toggling categories. Modal closes without errors."
+
+  - task: "Layout integrity after adding RDA Inflows and POL Sales"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/EconomicPanel.js, /app/frontend/src/components/RealSectorPanel.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Checking for layout overflow or missing labels after adding new RDA Inflows and POL Sales cards"
+      - working: true
+        agent: "testing"
+        comment: "PASS - No layout overflow detected. Economic panel width: 619px, Real Sector panel width: 619px. No horizontal scrolling on page (body scrollWidth equals clientWidth). All cards render properly with correct spacing and labels. Full page layout maintains integrity with no visual issues or text cutoff."
+
 metadata:
   created_by: "testing_agent"
   version: "1.0"
-  test_sequence: 2
+  test_sequence: 3
 
 test_plan:
   current_focus: []
@@ -185,4 +260,8 @@ agent_communication:
     message: "Starting comprehensive testing of Daily Briefing panel feature. Will verify panel loading, all sections (Executive Summary, Key Takeaways, Economic Watch, Risks, Watchlist), manual refresh functionality, stale badge logic, responsive layout at multiple viewports, and side-panels layout integrity."
   - agent: "testing"
     message: "ALL TESTS PASSED ✓ - Daily Briefing panel fully functional. Panel loads with Executive Summary (867 chars) and all 4 required sections with 6 items each. Manual refresh button successfully triggers POST /api/daily-briefing/refresh, changes button state from 'Refresh' → 'Refreshing' → 'Refresh', and updates timestamp (04:31→04:34 PKT). Stale badge logic correctly implemented (not visible when stale=false). Panel renders without horizontal overflow at both 1920x800 and 1280x800 viewports. Layout integrity maintained with Map section, Daily Briefing, and News panel all rendering correctly. No console errors detected (only WebGL map performance warnings unrelated to Daily Briefing)."
+  - agent: "testing"
+    message: "Starting comprehensive testing of RDA Inflows and POL Sales features. Will verify RDA Inflows card in Economic Indicators panel, RDA Inflows modal with B$ formatting, POL Sales card in Real Sector panel, POL Sales modal with stacked bars and total line, category toggles functionality, and layout integrity."
+  - agent: "testing"
+    message: "ALL TESTS PASSED ✓ - RDA Inflows and POL Sales features fully functional. RDA Inflows card displays at economic-item-8 with value '$12.17B' (B$ formatting), change '+2.03%', and month 'February 2026'. Modal opens correctly with title 'RDA INFLOWS', shows summary value '$12.17B' with MoM '+2.03%' and YoY '+24.54%' changes, and renders area chart. POL Sales card displays in Real Sector panel with value '1.49M', change '-11.01%', month 'December 2025', and unit 'Metric Ton'. POL Sales modal opens with title 'POL SALES', shows summary value '1,491,804 Metric Ton', MoM change '-11.01%', and renders stacked bar chart with colored categories and yellow total line overlay. Found 8 series toggle buttons (Total + 7 categories). Toggle functionality works correctly - tested Total and Agriculture toggles, chart updates properly when toggling categories on/off. No layout overflow detected - Economic panel: 619px, Real Sector panel: 619px. No horizontal scrolling. All labels and values display correctly without cutoff. Only console warnings are WebGL GPU performance from map component (unrelated). No critical errors."
 ---

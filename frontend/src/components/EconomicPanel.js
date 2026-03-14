@@ -18,6 +18,7 @@ const EconomicPanel = ({ data, loading }) => {
   const [liquidForexData, setLiquidForexData] = useState(null);
   const [govDebtData, setGovDebtData] = useState(null);
   const [fdiData, setFdiData] = useState(null);
+  const [rdaInflowsData, setRdaInflowsData] = useState(null);
   const [dataLoading, setDataLoading] = useState(true);
   
   const [activeModal, setActiveModal] = useState(null);
@@ -25,7 +26,7 @@ const EconomicPanel = ({ data, loading }) => {
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const [remittancesRes, goldRes, forexRes, currentAccountRes, importsRes, exportsRes, pkrUsdRes, psxRes, liquidForexRes, govDebtRes, fdiRes] = await Promise.allSettled([
+        const [remittancesRes, goldRes, forexRes, currentAccountRes, importsRes, exportsRes, pkrUsdRes, psxRes, liquidForexRes, govDebtRes, fdiRes, rdaRes] = await Promise.allSettled([
           axios.get(`${API_BASE}/api/remittances`),
           axios.get(`${API_BASE}/api/gold-reserves`),
           axios.get(`${API_BASE}/api/forex-reserves`),
@@ -36,7 +37,8 @@ const EconomicPanel = ({ data, loading }) => {
           axios.get(`${API_BASE}/api/psx-data`),
           axios.get(`${API_BASE}/api/liquid-forex`),
           axios.get(`${API_BASE}/api/gov-debt`),
-          axios.get(`${API_BASE}/api/fdi`)
+          axios.get(`${API_BASE}/api/fdi`),
+          axios.get(`${API_BASE}/api/rda-inflows`)
         ]);
 
         if (remittancesRes.status === 'fulfilled') {
@@ -71,6 +73,9 @@ const EconomicPanel = ({ data, loading }) => {
         }
         if (fdiRes.status === 'fulfilled') {
           setFdiData(fdiRes.value.data.data);
+        }
+        if (rdaRes.status === 'fulfilled') {
+          setRdaInflowsData(rdaRes.value.data.data);
         }
       } catch (error) {
         console.error('Error fetching economic data:', error);
@@ -215,6 +220,16 @@ const EconomicPanel = ({ data, loading }) => {
       isLive: !dataLoading && remittancesData
     },
     { 
+      label: 'RDA Inflows', 
+      value: formatBillions(rdaInflowsData?.latest?.value),
+      subLabel: rdaInflowsData?.latest?.month || '',
+      change: rdaInflowsData?.mom_change,
+      prefix: '',
+      clickable: true,
+      modalKey: 'rdaInflows',
+      isLive: !dataLoading && rdaInflowsData
+    },
+    { 
       label: 'Gov. Debt',
       value: formatDebtBillions(govDebtData?.latest?.value),
       subLabel: govDebtData?.latest?.month || '',
@@ -278,6 +293,8 @@ const EconomicPanel = ({ data, loading }) => {
         return { data: govDebtData, title: "Central Government Debt", icon: Landmark, isGovDebt: true };
       case 'fdi':
         return { data: fdiData, title: "Foreign Direct Investment", icon: DollarSign, isFDI: true };
+      case 'rdaInflows':
+        return { data: rdaInflowsData, title: "RDA Inflows", icon: DollarSign };
       default:
         return null;
     }

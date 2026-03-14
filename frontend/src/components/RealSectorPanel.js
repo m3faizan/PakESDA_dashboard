@@ -5,6 +5,7 @@ import LSMDataModal from './LSMDataModal';
 import AutoVehiclesModal from './AutoVehiclesModal';
 import TwoThreeWheelersModal from './TwoThreeWheelersModal';
 import FertilizerModal from './FertilizerModal';
+import PolSalesModal from './PolSalesModal';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -12,20 +13,23 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
   const [lsmData, setLsmData] = useState(null);
   const [autoVehiclesData, setAutoVehiclesData] = useState(null);
   const [fertilizerData, setFertilizerData] = useState(null);
+  const [polSalesData, setPolSalesData] = useState(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAutoModalOpen, setIsAutoModalOpen] = useState(false);
   const [isTwoThreeModalOpen, setIsTwoThreeModalOpen] = useState(false);
   const [isFertilizerModalOpen, setIsFertilizerModalOpen] = useState(false);
+  const [isPolModalOpen, setIsPolModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [lsmRes, lsmHistRes, autoVehiclesRes, fertilizerRes] = await Promise.allSettled([
+        const [lsmRes, lsmHistRes, autoVehiclesRes, fertilizerRes, polSalesRes] = await Promise.allSettled([
           axios.get(`${API_BASE}/api/lsm`),
           axios.get(`${API_BASE}/api/lsm-historical`),
           axios.get(`${API_BASE}/api/auto-vehicles`),
-          axios.get(`${API_BASE}/api/fertilizer`)
+          axios.get(`${API_BASE}/api/fertilizer`),
+          axios.get(`${API_BASE}/api/pol-sales`)
         ]);
 
         if (lsmRes.status === 'fulfilled') {
@@ -46,6 +50,10 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
 
         if (fertilizerRes.status === 'fulfilled') {
           setFertilizerData(fertilizerRes.value.data.data);
+        }
+
+        if (polSalesRes.status === 'fulfilled') {
+          setPolSalesData(polSalesRes.value.data.data);
         }
       } catch (error) {
         console.error('Error fetching LSM data:', error);
@@ -126,6 +134,10 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
   const fertilizerLatest = fertilizerData?.latest?.total;
   const fertilizerChange = fertilizerData?.mom_change_pct;
   const fertilizerMonth = fertilizerData?.latest?.month || '';
+
+  const polLatest = polSalesData?.latest?.total;
+  const polChange = polSalesData?.mom_change_pct;
+  const polMonth = polSalesData?.latest?.month || '';
 
   const formatCount = (val) => {
     if (val === null || val === undefined) return '--';
@@ -310,6 +322,37 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
               Thousand Metric Ton
             </div>
           </div>
+
+          <div
+            className="economic-item clickable"
+            data-testid="real-sector-item-pol"
+            onClick={() => setIsPolModalOpen(true)}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="economic-label" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              <span>POL Sales</span>
+              <ExternalLink size={10} style={{ opacity: 0.6 }} />
+            </div>
+
+            <div className="economic-value" data-testid="real-sector-pol-value">
+              {formatCount(polLatest)}
+            </div>
+
+            {polChange !== null && polChange !== undefined && (
+              <div className={`economic-change ${polChange >= 0 ? 'positive' : 'negative'}`} data-testid="real-sector-pol-change">
+                {polChange >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                {polChange >= 0 ? '+' : ''}{polChange.toFixed(2)}%
+              </div>
+            )}
+
+            <div className="economic-sublabel" data-testid="real-sector-pol-month">{polMonth}</div>
+            <div className="economic-label" style={{ marginTop: '0.15rem' }}>
+              Total POL Sales
+            </div>
+            <div className="economic-sublabel" data-testid="real-sector-pol-unit" style={{ marginTop: '0.12rem' }}>
+              Metric Ton
+            </div>
+          </div>
         </div>
       </div>
 
@@ -339,6 +382,13 @@ const RealSectorPanel = ({ loading: parentLoading }) => {
         onClose={() => setIsFertilizerModalOpen(false)}
         data={fertilizerData}
         title="Fertilizer Sales/Offtake"
+      />
+
+      <PolSalesModal
+        isOpen={isPolModalOpen}
+        onClose={() => setIsPolModalOpen(false)}
+        data={polSalesData}
+        title="POL Sales"
       />
     </div>
   );
