@@ -219,7 +219,7 @@ async def refresh_cache_with_persistence_status(cache_key: str, ttl_seconds: int
 NHMP_ADVISORY_URL = "http://cpo.nhmp.gov.pk:6788/api/TravelAdvisory/FilteredAdvisory"
 
 # SBP API endpoints
-SBP_API_KEY = "69C3217DDBE2E78290E66D79E07CCFE19EFB1134"
+SBP_API_KEY = "DF75BE2F4485CDFC98F6935C0EA5BF8AFFC252C3"
 SBP_REMITTANCES_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BOP_WR_M.WR0340/data"
 SBP_GOLD_RESERVES_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_EXT_PAKRES_M.Z00010/data"
 SBP_FOREX_RESERVES_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_EXT_PAKRES_M.Z00020/data"

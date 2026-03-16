@@ -47,6 +47,7 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] Added Energy sidebar feed with collapsible list; tabs renamed to Pakistan/Daily Energy Report and popups show full scrollable lists.
 - [x] Added emoji flags and continent-colored chips in the Energy sidebar.
 - [x] Energy sidebar height now fixed to map viewport with internal scrolling.
+- [x] Updated SBP API key to restore live CPI/indicator data.
 - [x] Replaced stale text badges with green/orange status dots across panels; CPI now uses cached fallback when SBP API fails (if last-good exists).
 
 ### Latest Updates (Mar 10, 2026)
