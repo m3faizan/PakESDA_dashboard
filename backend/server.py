@@ -9,11 +9,13 @@ import io
 import re
 import json
 import html as html_lib
+import time
 from datetime import datetime, timezone, timedelta
 from contextlib import asynccontextmanager
 from typing import Optional
 import httpx
 import feedparser
+import websockets
 from openpyxl import load_workbook
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -110,6 +112,7 @@ data_cache = {
     "liquid_forex": {"data": {}, "updated": None},
     "daily_energy_report": {"data": [], "updated": None},
     "energy_geo_cache": {"data": {}, "updated": None},
+    "pakistan_vessels": {"data": {}, "updated": None},
     "daily_briefing": {"data": None, "updated": None}
 }
 
@@ -278,6 +281,66 @@ ENERGY_REGION_COORDS = {
     "latin america": [-60.0, -15.0],
     "global": [0.0, 20.0]
 }
+
+AISSTREAM_WS_URL = "wss://stream.aisstream.io/v0/stream"
+AISSTREAM_MESSAGE_TYPES = ["PositionReport", "StandardClassBPositionReport", "ExtendedClassBPositionReport"]
+PAKISTAN_VESSELS = [
+    {
+        "name": "CHITRAL",
+        "segment": "Dry bulk / Supramax",
+        "deadweight": "46,710 MT",
+        "built": "2003",
+        "draft": "11.8 m",
+        "beam": "31.0 m",
+        "loa": "186.0 m",
+        "imo": None,
+        "mmsi": None
+    },
+    {
+        "name": "HYDERABAD",
+        "segment": "Dry bulk / Supramax",
+        "deadweight": "52,951 MT",
+        "built": "2004",
+        "draft": "12.1 m",
+        "beam": "32.0 m",
+        "loa": "188.0 m",
+        "imo": "9304198",
+        "mmsi": "463041101"
+    },
+    {
+        "name": "MALAKAND",
+        "segment": "Dry bulk / Panamax",
+        "deadweight": "76,830 MT",
+        "built": "2004",
+        "draft": "14.2 m",
+        "beam": "32.0 m",
+        "loa": "225.0 m",
+        "imo": None,
+        "mmsi": None
+    },
+    {
+        "name": "MULTAN",
+        "segment": "Dry bulk / Supramax",
+        "deadweight": "50,244 MT",
+        "built": "2002",
+        "draft": "11.9 m",
+        "beam": "32.0 m",
+        "loa": "190.0 m",
+        "imo": None,
+        "mmsi": None
+    },
+    {
+        "name": "SIBI",
+        "segment": "Dry bulk / Handysize",
+        "deadweight": "28,442 MT",
+        "built": "2009",
+        "draft": "9.8 m",
+        "beam": "28.0 m",
+        "loa": "169.0 m",
+        "imo": None,
+        "mmsi": None
+    }
+]
 
 # Historical CPI API endpoints by base year period
 CPI_HISTORICAL_APIS = [
@@ -3165,6 +3228,118 @@ async def fetch_daily_energy_report_data():
     }
 
 
+def _normalize_ais_metadata(meta: dict) -> dict:
+    if not isinstance(meta, dict):
+        return {}
+    normalized = {}
+    for key, value in meta.items():
+        normalized[key.lower()] = value
+    return normalized
+
+
+async def fetch_aisstream_positions(mmsi_list, listen_seconds: int = 6) -> dict:
+    api_key = os.environ.get("AISSTREAM_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="AISSTREAM_API_KEY is not configured")
+
+    if not mmsi_list:
+        return {}
+
+    positions = {}
+    subscription_message = {
+        "APIKey": api_key,
+        "BoundingBoxes": [[[-90, -180], [90, 180]]],
+        "FiltersShipMMSI": [str(mmsi) for mmsi in mmsi_list],
+        "FilterMessageTypes": AISSTREAM_MESSAGE_TYPES
+    }
+
+    start_time = time.monotonic()
+    try:
+        async with websockets.connect(AISSTREAM_WS_URL, ping_interval=None, close_timeout=2) as websocket:
+            await websocket.send(json.dumps(subscription_message))
+
+            while time.monotonic() - start_time < listen_seconds:
+                timeout = max(0.1, listen_seconds - (time.monotonic() - start_time))
+                try:
+                    message_json = await asyncio.wait_for(websocket.recv(), timeout=timeout)
+                except asyncio.TimeoutError:
+                    break
+
+                try:
+                    message = json.loads(message_json)
+                except json.JSONDecodeError:
+                    continue
+
+                if "error" in message:
+                    print(f"AISstream error: {message.get('error')}")
+                    continue
+
+                message_type = message.get("MessageType")
+                if message_type not in AISSTREAM_MESSAGE_TYPES:
+                    continue
+
+                metadata = message.get("MetaData") or message.get("Metadata") or {}
+                normalized_meta = _normalize_ais_metadata(metadata)
+                message_payload = message.get("Message", {}).get(message_type, {})
+
+                mmsi = normalized_meta.get("mmsi") or message_payload.get("UserID") or message_payload.get("user_id")
+                if not mmsi:
+                    continue
+
+                mmsi_str = str(mmsi)
+                if mmsi_str not in [str(value) for value in mmsi_list]:
+                    continue
+
+                lat = normalized_meta.get("latitude") or message_payload.get("Latitude")
+                lon = normalized_meta.get("longitude") or message_payload.get("Longitude")
+                if lat is None or lon is None:
+                    continue
+
+                positions[mmsi_str] = {
+                    "mmsi": mmsi_str,
+                    "latitude": float(lat),
+                    "longitude": float(lon),
+                    "timestamp": normalized_meta.get("time_utc") or datetime.now(timezone.utc).isoformat(),
+                    "speed": message_payload.get("Sog"),
+                    "course": message_payload.get("Cog"),
+                    "heading": message_payload.get("TrueHeading"),
+                    "ship_name": normalized_meta.get("shipname") or message_payload.get("Name")
+                }
+
+                if len(positions) >= len(mmsi_list):
+                    break
+    except Exception as e:
+        print(f"AISstream connection error: {e}")
+
+    return positions
+
+
+async def fetch_pakistan_vessels_data():
+    mmsi_list = [vessel.get("mmsi") for vessel in PAKISTAN_VESSELS if vessel.get("mmsi")]
+    positions = await fetch_aisstream_positions(mmsi_list)
+
+    vessels_payload = []
+    for vessel in PAKISTAN_VESSELS:
+        mmsi = vessel.get("mmsi")
+        position = positions.get(str(mmsi)) if mmsi else None
+        vessels_payload.append({
+            **vessel,
+            "position": position,
+            "status": "active" if position else ("missing_identifier" if not mmsi else "no_position")
+        })
+
+    missing_identifiers = [vessel["name"] for vessel in PAKISTAN_VESSELS if not vessel.get("mmsi")]
+
+    return {
+        "vessels": vessels_payload,
+        "missing_identifiers": missing_identifiers,
+        "total_vessels": len(PAKISTAN_VESSELS),
+        "tracked_vessels": len(mmsi_list),
+        "report_time": datetime.now(timezone.utc).isoformat(),
+        "source": "AISstream"
+    }
+
+
 async def fetch_road_advisory():
     """Fetch road advisory data from NHMP"""
     try:
@@ -4419,6 +4594,39 @@ async def get_daily_energy_report():
     return {
         "data": data_cache[ENERGY_REPORT_CACHE_KEY]["data"],
         "updated": data_cache[ENERGY_REPORT_CACHE_KEY]["updated"].isoformat() if data_cache[ENERGY_REPORT_CACHE_KEY]["updated"] else None
+    }
+
+
+@app.get("/api/pakistan-vessels")
+async def get_pakistan_vessels():
+    """Get cached Pakistan-flagged vessel positions."""
+    if not data_cache["pakistan_vessels"]["data"]:
+        fetched = await fetch_pakistan_vessels_data()
+        if fetched:
+            data_cache["pakistan_vessels"]["data"] = fetched
+            data_cache["pakistan_vessels"]["updated"] = datetime.now(timezone.utc)
+            persist_cache_entry("pakistan_vessels", fetched)
+
+    return {
+        "data": data_cache["pakistan_vessels"]["data"],
+        "updated": data_cache["pakistan_vessels"]["updated"].isoformat() if data_cache["pakistan_vessels"]["updated"] else None
+    }
+
+
+@app.post("/api/pakistan-vessels/refresh")
+async def refresh_pakistan_vessels():
+    """Manually refresh Pakistan-flagged vessel positions."""
+    fetched = await fetch_pakistan_vessels_data()
+    if not fetched:
+        raise HTTPException(status_code=502, detail="Unable to refresh vessel positions")
+
+    data_cache["pakistan_vessels"]["data"] = fetched
+    data_cache["pakistan_vessels"]["updated"] = datetime.now(timezone.utc)
+    persist_cache_entry("pakistan_vessels", fetched)
+
+    return {
+        "data": fetched,
+        "updated": data_cache["pakistan_vessels"]["updated"].isoformat()
     }
 
 

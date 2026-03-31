@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Bell, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
+import axios from 'axios';
 
 const ALERT_COORDS = {
   islamabad: [73.0479, 33.6844],
@@ -110,6 +111,8 @@ const getCountryFlag = (country = '') => {
   return COUNTRY_FLAG_MAP[normalized] || '🌐';
 };
 
+const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
+
 const resolveAlertCoords = (alert) => {
   const text = `${alert?.title || ''} ${alert?.description || ''} ${alert?.region || ''}`.toLowerCase();
   const keys = Object.keys(ALERT_COORDS);
@@ -121,7 +124,7 @@ const resolveAlertCoords = (alert) => {
   return null;
 };
 
-const MapSection = ({ mapData, alerts = [], energyReport, loading }) => {
+const MapSection = ({ mapData, alerts = [], energyReport, pakistanVessels, loading }) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const maplibreRef = useRef(null);
@@ -130,6 +133,9 @@ const MapSection = ({ mapData, alerts = [], energyReport, loading }) => {
   const [showAlertsLayer, setShowAlertsLayer] = useState(true);
   const [activeLayer, setActiveLayer] = useState('overview');
   const [energySidebarOpen, setEnergySidebarOpen] = useState(true);
+  const [showVesselLayer, setShowVesselLayer] = useState(false);
+  const [vesselData, setVesselData] = useState(pakistanVessels || null);
+  const [vesselRefreshing, setVesselRefreshing] = useState(false);
 
   const topAlerts = useMemo(() => {
     const sorted = [...(alerts || [])].sort((a, b) => {
@@ -155,6 +161,22 @@ const MapSection = ({ mapData, alerts = [], energyReport, loading }) => {
       }))
     );
   }, [energyEntries]);
+
+  useEffect(() => {
+    setVesselData(pakistanVessels || null);
+  }, [pakistanVessels]);
+
+  const handleVesselRefresh = async () => {
+    try {
+      setVesselRefreshing(true);
+      const response = await axios.post(`${API_BASE}/api/pakistan-vessels/refresh`);
+      setVesselData(response.data.data);
+    } catch (error) {
+      console.error('Unable to refresh vessel positions', error);
+    } finally {
+      setVesselRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     const loadMap = async () => {
@@ -300,6 +322,44 @@ const MapSection = ({ mapData, alerts = [], energyReport, loading }) => {
         markerRefs.current.push(marker);
       });
 
+      if (showVesselLayer) {
+        (vesselData?.vessels || []).forEach((vessel, index) => {
+          const position = vessel.position;
+          if (!position) return;
+
+          const el = document.createElement('div');
+          el.className = 'map-marker vessel-marker';
+          el.setAttribute('data-testid', `pakistan-vessel-marker-${index}`);
+          el.style.cssText = `
+            width: 14px;
+            height: 14px;
+            background: #22C55E;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.7);
+            cursor: pointer;
+            box-shadow: 0 0 10px #22C55E;
+          `;
+
+          const popup = new maplibregl.Popup({ offset: 15 }).setHTML(`
+            <div style="background: #0F172A; color: #F8FAFC; padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; border: 1px solid #22C55E; max-width: 260px;">
+              <div style="color: #22C55E; text-transform: uppercase; font-size: 11px;">${vessel.name}</div>
+              <div style="color: #94A3B8; font-size: 10px; margin-bottom: 6px;">IMO: ${vessel.imo || 'n/a'} • MMSI: ${vessel.mmsi || 'n/a'}</div>
+              <div style="color: #E2E8F0;">Segment: ${vessel.segment}</div>
+              <div style="color: #94A3B8; margin-top: 4px;">DWT: ${vessel.deadweight}</div>
+              <div style="color: #94A3B8;">Built: ${vessel.built}</div>
+              <div style="color: #94A3B8;">Draft: ${vessel.draft} • Beam: ${vessel.beam}</div>
+              <div style="color: #94A3B8;">LOA: ${vessel.loa}</div>
+              <div style="color: #E2E8F0; margin-top: 6px;">Lat: ${position.latitude.toFixed(3)}, Lon: ${position.longitude.toFixed(3)}</div>
+              <div style="color: #94A3B8;">Speed: ${position.speed ?? 'n/a'} kn • Course: ${position.course ?? 'n/a'}°</div>
+              <div style="color: #94A3B8; font-size: 10px; margin-top: 4px;">Updated: ${position.timestamp || 'n/a'}</div>
+            </div>
+          `);
+
+          const marker = new maplibregl.Marker({ element: el }).setLngLat([position.longitude, position.latitude]).setPopup(popup).addTo(mapRef.current);
+          markerRefs.current.push(marker);
+        });
+      }
+
       if (showAlertsLayer) {
         topAlerts.forEach((alert) => {
           const coords = resolveAlertCoords(alert);
@@ -335,7 +395,7 @@ const MapSection = ({ mapData, alerts = [], energyReport, loading }) => {
     };
 
     renderMarkers();
-  }, [mapData, topAlerts, mapLoaded, showAlertsLayer, activeLayer, energyEntries]);
+  }, [mapData, topAlerts, mapLoaded, showAlertsLayer, showVesselLayer, activeLayer, energyEntries, vesselData]);
 
   return (
     <div className="map-container" data-testid="map-container">
@@ -432,6 +492,10 @@ const MapSection = ({ mapData, alerts = [], energyReport, loading }) => {
                   <span className="legend-dot" style={{ background: '#EF4444' }}></span>
                   <span>Alerts</span>
                 </div>
+                <div className="legend-item">
+                  <span className="legend-dot" style={{ background: '#22C55E' }}></span>
+                  <span>Pakistan Vessels</span>
+                </div>
                 <button
                   onClick={() => setShowAlertsLayer((prev) => !prev)}
                   className="range-btn"
@@ -441,6 +505,32 @@ const MapSection = ({ mapData, alerts = [], energyReport, loading }) => {
                   <Bell size={12} style={{ marginRight: '0.3rem', display: 'inline' }} />
                   Alerts Layer: {showAlertsLayer ? 'On' : 'Off'}
                 </button>
+                <button
+                  onClick={() => setShowVesselLayer((prev) => !prev)}
+                  className="range-btn"
+                  style={{ marginTop: '0.35rem', fontSize: '0.62rem', padding: '0.2rem 0.45rem', width: '100%' }}
+                  data-testid="map-vessel-layer-toggle"
+                >
+                  Pakistan Vessels: {showVesselLayer ? 'On' : 'Off'}
+                </button>
+                <button
+                  onClick={handleVesselRefresh}
+                  className="range-btn"
+                  style={{ marginTop: '0.35rem', fontSize: '0.62rem', padding: '0.2rem 0.45rem', width: '100%' }}
+                  data-testid="map-vessel-refresh"
+                >
+                  {vesselRefreshing ? 'Refreshing…' : 'Refresh Vessels'}
+                </button>
+                {vesselData?.missing_identifiers?.length > 0 && (
+                  <div className="legend-meta" data-testid="vessel-missing-identifiers">
+                    Missing IDs: {vesselData.missing_identifiers.join(', ')}
+                  </div>
+                )}
+                {vesselData?.report_time && (
+                  <div className="legend-meta" data-testid="vessel-last-refresh">
+                    Last refresh: {new Date(vesselData.report_time).toLocaleString()}
+                  </div>
+                )}
               </>
             ) : (
               <>
