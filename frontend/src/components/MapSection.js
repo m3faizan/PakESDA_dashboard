@@ -499,24 +499,24 @@ const MapSection = ({ mapData, alerts = [], energyReport, pakistanVessels, loadi
                 <button
                   onClick={() => setShowAlertsLayer((prev) => !prev)}
                   className="range-btn"
-                  style={{ marginTop: '0.35rem', fontSize: '0.62rem', padding: '0.2rem 0.45rem', width: '100%' }}
+                  style={{ marginTop: '0.3rem', fontSize: '0.55rem', padding: '0.18rem 0.4rem', width: '100%' }}
                   data-testid="map-alert-layer-toggle"
                 >
-                  <Bell size={12} style={{ marginRight: '0.3rem', display: 'inline' }} />
-                  Alerts Layer: {showAlertsLayer ? 'On' : 'Off'}
+                  <Bell size={11} style={{ marginRight: '0.3rem', display: 'inline' }} />
+                  Alerts: {showAlertsLayer ? 'On' : 'Off'}
                 </button>
                 <button
                   onClick={() => setShowVesselLayer((prev) => !prev)}
                   className="range-btn"
-                  style={{ marginTop: '0.35rem', fontSize: '0.62rem', padding: '0.2rem 0.45rem', width: '100%' }}
+                  style={{ marginTop: '0.3rem', fontSize: '0.55rem', padding: '0.18rem 0.4rem', width: '100%' }}
                   data-testid="map-vessel-layer-toggle"
                 >
-                  Pakistan Vessels: {showVesselLayer ? 'On' : 'Off'}
+                  Vessels: {showVesselLayer ? 'On' : 'Off'}
                 </button>
                 <button
                   onClick={handleVesselRefresh}
                   className="range-btn"
-                  style={{ marginTop: '0.35rem', fontSize: '0.62rem', padding: '0.2rem 0.45rem', width: '100%' }}
+                  style={{ marginTop: '0.3rem', fontSize: '0.55rem', padding: '0.18rem 0.4rem', width: '100%' }}
                   data-testid="map-vessel-refresh"
                 >
                   {vesselRefreshing ? 'Refreshing…' : 'Refresh Vessels'}
@@ -528,7 +528,7 @@ const MapSection = ({ mapData, alerts = [], energyReport, pakistanVessels, loadi
                 )}
                 {vesselData?.report_time && (
                   <div className="legend-meta" data-testid="vessel-last-refresh">
-                    Last refresh: {new Date(vesselData.report_time).toLocaleString()}
+                    Last: {new Date(vesselData.report_time).toLocaleString()}
                   </div>
                 )}
               </>

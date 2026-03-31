@@ -284,6 +284,7 @@ ENERGY_REGION_COORDS = {
 
 AISSTREAM_WS_URL = "wss://stream.aisstream.io/v0/stream"
 AISSTREAM_MESSAGE_TYPES = ["PositionReport", "StandardClassBPositionReport", "ExtendedClassBPositionReport"]
+DATADOCKED_BASE_URL = "https://datadocked.com/api/vessels_operations"
 PAKISTAN_VESSELS = [
     {
         "name": "CHITRAL",
@@ -294,7 +295,7 @@ PAKISTAN_VESSELS = [
         "beam": "31.0 m",
         "loa": "186.0 m",
         "imo": None,
-        "mmsi": None
+        "mmsi": "463037101"
     },
     {
         "name": "HYDERABAD",
@@ -305,7 +306,7 @@ PAKISTAN_VESSELS = [
         "beam": "32.0 m",
         "loa": "188.0 m",
         "imo": "9304198",
-        "mmsi": "463041101"
+        "mmsi": "463042101"
     },
     {
         "name": "MALAKAND",
@@ -316,7 +317,7 @@ PAKISTAN_VESSELS = [
         "beam": "32.0 m",
         "loa": "225.0 m",
         "imo": None,
-        "mmsi": None
+        "mmsi": "463041101"
     },
     {
         "name": "MULTAN",
@@ -327,7 +328,7 @@ PAKISTAN_VESSELS = [
         "beam": "32.0 m",
         "loa": "190.0 m",
         "imo": None,
-        "mmsi": None
+        "mmsi": "463046101"
     },
     {
         "name": "SIBI",
@@ -338,7 +339,7 @@ PAKISTAN_VESSELS = [
         "beam": "28.0 m",
         "loa": "169.0 m",
         "imo": None,
-        "mmsi": None
+        "mmsi": "463043101"
     }
 ]
 
@@ -3303,7 +3304,8 @@ async def fetch_aisstream_positions(mmsi_list, listen_seconds: int = 6) -> dict:
                     "speed": message_payload.get("Sog"),
                     "course": message_payload.get("Cog"),
                     "heading": message_payload.get("TrueHeading"),
-                    "ship_name": normalized_meta.get("shipname") or message_payload.get("Name")
+                    "ship_name": normalized_meta.get("shipname") or message_payload.get("Name"),
+                    "source": "aisstream"
                 }
 
                 if len(positions) >= len(mmsi_list):
@@ -3314,9 +3316,72 @@ async def fetch_aisstream_positions(mmsi_list, listen_seconds: int = 6) -> dict:
     return positions
 
 
+async def fetch_datadocked_positions(identifiers: list) -> dict:
+    api_key = os.environ.get("DATADOCKED_API_KEY")
+    if not api_key or not identifiers:
+        return {}
+
+    headers = {"accept": "application/json", "x-api-key": api_key}
+    positions = {}
+
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        tasks = []
+        for identifier in identifiers:
+            tasks.append(
+                client.get(
+                    f"{DATADOCKED_BASE_URL}/get-vessel-location",
+                    headers=headers,
+                    params={"imo_or_mmsi": identifier}
+                )
+            )
+        responses = await asyncio.gather(*tasks, return_exceptions=True)
+
+    for identifier, response in zip(identifiers, responses):
+        if isinstance(response, Exception):
+            print(f"DataDocked request error for {identifier}: {response}")
+            continue
+        if response.status_code != 200:
+            print(f"DataDocked response {response.status_code} for {identifier}")
+            continue
+
+        try:
+            payload = response.json()
+        except Exception:
+            continue
+
+        detail = payload.get("detail") or payload.get("data") or payload
+        if isinstance(detail, list) and detail:
+            detail = detail[0]
+
+        lat = detail.get("latitude") or detail.get("lat")
+        lon = detail.get("longitude") or detail.get("lon")
+        if lat is None or lon is None:
+            continue
+
+        positions[str(identifier)] = {
+            "mmsi": detail.get("mmsi") or str(identifier),
+            "imo": detail.get("imo"),
+            "latitude": float(lat),
+            "longitude": float(lon),
+            "timestamp": detail.get("updateTime") or detail.get("updated_at") or datetime.now(timezone.utc).isoformat(),
+            "speed": detail.get("speed"),
+            "course": detail.get("course"),
+            "heading": detail.get("heading"),
+            "ship_name": detail.get("name"),
+            "source": "datadocked"
+        }
+
+    return positions
+
+
 async def fetch_pakistan_vessels_data():
     mmsi_list = [vessel.get("mmsi") for vessel in PAKISTAN_VESSELS if vessel.get("mmsi")]
     positions = await fetch_aisstream_positions(mmsi_list)
+
+    missing_for_fallback = [mmsi for mmsi in mmsi_list if str(mmsi) not in positions]
+    if missing_for_fallback:
+        fallback_positions = await fetch_datadocked_positions(missing_for_fallback)
+        positions.update(fallback_positions)
 
     vessels_payload = []
     for vessel in PAKISTAN_VESSELS:
@@ -3325,7 +3390,7 @@ async def fetch_pakistan_vessels_data():
         vessels_payload.append({
             **vessel,
             "position": position,
-            "status": "active" if position else ("missing_identifier" if not mmsi else "no_position")
+            "status": "active" if position else "no_position"
         })
 
     missing_identifiers = [vessel["name"] for vessel in PAKISTAN_VESSELS if not vessel.get("mmsi")]
@@ -3336,7 +3401,7 @@ async def fetch_pakistan_vessels_data():
         "total_vessels": len(PAKISTAN_VESSELS),
         "tracked_vessels": len(mmsi_list),
         "report_time": datetime.now(timezone.utc).isoformat(),
-        "source": "AISstream"
+        "source": "AISstream + DataDocked"
     }
 
 
