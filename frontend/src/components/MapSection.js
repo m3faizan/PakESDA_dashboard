@@ -297,6 +297,8 @@ const MapSection = ({ mapData, alerts = [], energyReport, pakistanVessels, loadi
         return;
       }
 
+      let vesselBoundsApplied = false;
+
       (mapData?.cities || []).forEach((city) => {
         const el = document.createElement('div');
         el.className = 'map-marker city-marker';
@@ -323,9 +325,15 @@ const MapSection = ({ mapData, alerts = [], energyReport, pakistanVessels, loadi
       });
 
       if (showVesselLayer) {
+        const vesselBounds = new maplibregl.LngLatBounds();
+        let vesselCount = 0;
+
         (vesselData?.vessels || []).forEach((vessel, index) => {
           const position = vessel.position;
           if (!position) return;
+
+          vesselCount += 1;
+          vesselBounds.extend([position.longitude, position.latitude]);
 
           const el = document.createElement('div');
           el.className = 'map-marker vessel-marker';
@@ -358,6 +366,11 @@ const MapSection = ({ mapData, alerts = [], energyReport, pakistanVessels, loadi
           const marker = new maplibregl.Marker({ element: el }).setLngLat([position.longitude, position.latitude]).setPopup(popup).addTo(mapRef.current);
           markerRefs.current.push(marker);
         });
+
+        if (vesselCount > 0) {
+          mapRef.current.fitBounds(vesselBounds, { padding: 120, maxZoom: 4 });
+          vesselBoundsApplied = true;
+        }
       }
 
       if (showAlertsLayer) {
@@ -391,7 +404,9 @@ const MapSection = ({ mapData, alerts = [], energyReport, pakistanVessels, loadi
         });
       }
 
-      mapRef.current.easeTo({ center: [69.3451, 30.3753], zoom: 5 });
+      if (!vesselBoundsApplied) {
+        mapRef.current.easeTo({ center: [69.3451, 30.3753], zoom: 5 });
+      }
     };
 
     renderMarkers();
