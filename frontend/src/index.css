@@ -1160,6 +1160,13 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--color-text);
 }
 
+.spi-series-toggle-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem 1rem;
+}
+
 .range-btn.active {
   background: var(--color-primary);
   border-color: var(--color-primary);

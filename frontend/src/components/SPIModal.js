@@ -182,7 +182,7 @@ const SPIModal = ({ isOpen, onClose, data, title, frequency = 'Weekly' }) => {
 
         {canToggleSeries && !showPctChange && (
           <div
-            style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}
+            className="spi-series-toggle-group"
             data-testid="spi-series-toggle-group"
           >
             {availableSeries.map((seriesKey) => {
