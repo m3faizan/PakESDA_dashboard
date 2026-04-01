@@ -4665,7 +4665,16 @@ async def get_daily_energy_report():
 @app.get("/api/pakistan-vessels")
 async def get_pakistan_vessels():
     """Get cached Pakistan-flagged vessel positions."""
-    if not data_cache["pakistan_vessels"]["data"]:
+    cached = data_cache["pakistan_vessels"]["data"]
+    needs_refresh = not cached
+
+    if cached:
+        vessels = cached.get("vessels", []) if isinstance(cached, dict) else []
+        has_positions = any(vessel.get("position") for vessel in vessels)
+        if not has_positions:
+            needs_refresh = True
+
+    if needs_refresh:
         fetched = await fetch_pakistan_vessels_data()
         if fetched:
             data_cache["pakistan_vessels"]["data"] = fetched
