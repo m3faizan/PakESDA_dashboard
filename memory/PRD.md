@@ -36,18 +36,20 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 
 ### Latest Updates (Apr 4, 2026)
 - [x] Completed **Regional Relations Panel** with full redesign:
-  - Accordion-style layout: countries collapsed by default, expand on click
+  - Accordion-style layout: 24 countries collapsed by default, expand on click
   - No emoji flags - clean text-only country names in JetBrains Mono font
-  - Embassy links for all 20 countries (Pakistan MoFA websites)
-  - Fixed panel height (400px) so neighboring panels aren't disrupted
+  - 5 groups: Neighbor(4), GCC(7), Major(3), Central Asia(3), EU(7)
+  - Added Central Asian countries: Azerbaijan, Tajikistan, Kazakhstan, Russia (moved to Major)
+  - Embassy links (mofa.gov.pk/{city} format) for all 24 countries
+  - "Most Recent Visit" field for every country with visit details
   - Red color for negative relationships (suspended, tense, disruption, border security)
-  - Green color for positive/active relationships
-  - Trade & Remittance cards hidden when no data available
-  - Trade Balance indicator (SURPLUS/DEFICIT) when data present
-  - Visa & Travel section with status and notes
+  - Green for positive/active relationships
+  - Fixed panel height (400px) - no disruption to neighboring panels
+  - Right-aligned status labels with consistent alignment
+  - Trade & Remittance cards hidden when SBP data unavailable
   - Disk persistence for SBP series mappings and full regional response
-  - Optimized SBP API calls: pre-fetch 3 global mappings once instead of 60 per-country calls
-  - Fixed Business Environment persistence to prevent overwriting good data with null from rate-limited API
+  - Optimized SBP API calls: pre-fetch 3 global mappings once
+  - Fixed Business Environment persistence to prevent overwriting good data with null
 - **Known Issue**: SBP EasyData API key daily call limit exhausted - affects Regional trade data AND Business Environment panel. Data auto-restores on daily reset.
 
 ### Latest Updates (Mar 14, 2026)
