@@ -3238,7 +3238,7 @@ def _normalize_ais_metadata(meta: dict) -> dict:
     return normalized
 
 
-async def fetch_aisstream_positions(mmsi_list, listen_seconds: int = 6) -> dict:
+async def fetch_aisstream_positions(mmsi_list, listen_seconds: int = 20) -> dict:
     api_key = os.environ.get("AISSTREAM_API_KEY")
     if not api_key:
         raise HTTPException(status_code=500, detail="AISSTREAM_API_KEY is not configured")
@@ -3378,30 +3378,43 @@ async def fetch_pakistan_vessels_data():
     mmsi_list = [vessel.get("mmsi") for vessel in PAKISTAN_VESSELS if vessel.get("mmsi")]
     positions = await fetch_aisstream_positions(mmsi_list)
 
-    missing_for_fallback = [mmsi for mmsi in mmsi_list if str(mmsi) not in positions]
-    if missing_for_fallback:
-        fallback_positions = await fetch_datadocked_positions(missing_for_fallback)
+    fallback_identifiers = []
+    for vessel in PAKISTAN_VESSELS:
+        if vessel.get("mmsi") and str(vessel.get("mmsi")) not in positions:
+            fallback_identifiers.append(str(vessel.get("mmsi")))
+        if vessel.get("imo"):
+            fallback_identifiers.append(str(vessel.get("imo")))
+
+    if fallback_identifiers:
+        fallback_positions = await fetch_datadocked_positions(list(dict.fromkeys(fallback_identifiers)))
         positions.update(fallback_positions)
 
     vessels_payload = []
     for vessel in PAKISTAN_VESSELS:
         mmsi = vessel.get("mmsi")
         position = positions.get(str(mmsi)) if mmsi else None
+        if not position and vessel.get("imo"):
+            position = positions.get(str(vessel.get("imo")))
         vessels_payload.append({
             **vessel,
             "position": position,
             "status": "active" if position else "no_position"
         })
 
-    missing_identifiers = [vessel["name"] for vessel in PAKISTAN_VESSELS if not vessel.get("mmsi")]
+    total_positions = sum(1 for vessel in vessels_payload if vessel.get("position"))
+    status_message = None
+    if total_positions == 0:
+        status_message = "No live positions returned from AISstream/DataDocked. Check API credits or refresh again."
 
     return {
         "vessels": vessels_payload,
-        "missing_identifiers": missing_identifiers,
+        "missing_identifiers": [vessel["name"] for vessel in PAKISTAN_VESSELS if not vessel.get("mmsi")],
         "total_vessels": len(PAKISTAN_VESSELS),
         "tracked_vessels": len(mmsi_list),
+        "positioned_vessels": total_positions,
         "report_time": datetime.now(timezone.utc).isoformat(),
-        "source": "AISstream + DataDocked"
+        "source": "AISstream + DataDocked",
+        "status_message": status_message
     }
 
 

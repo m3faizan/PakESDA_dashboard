@@ -546,6 +546,11 @@ const MapSection = ({ mapData, alerts = [], energyReport, pakistanVessels, loadi
                     Last: {new Date(vesselData.report_time).toLocaleString()}
                   </div>
                 )}
+                {vesselData?.status_message && (
+                  <div className="legend-meta" data-testid="vessel-status-message">
+                    {vesselData.status_message}
+                  </div>
+                )}
               </>
             ) : (
               <>
