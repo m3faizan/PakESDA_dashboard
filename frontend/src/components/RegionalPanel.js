@@ -19,7 +19,7 @@ const formatUsdThousands = (value) => {
 const scaleHistory = (history = []) =>
   history.map((item) => ({ ...item, value: item.value * 1000 }));
 
-const GROUP_ORDER = ['Neighbor', 'GCC', 'Major', 'EU'];
+const GROUP_ORDER = ['Neighbor', 'GCC', 'Major', 'Central Asia', 'EU'];
 
 const BAD_STATUSES = [
   'suspended', 'tense', 'hostile', 'restricted', 'conflict', 'strained',
@@ -174,6 +174,13 @@ const RegionalPanel = ({ relations, loading }) => {
                                   <li key={`${activeCountry.code}-h-${idx}`} data-testid={`regional-highlight-${idx}`}>{item}</li>
                                 ))}
                               </ul>
+                            </div>
+                          )}
+
+                          {activeCountry.recent_visit && (
+                            <div className="regional-recent-visit" data-testid="regional-recent-visit">
+                              <div className="regional-section-title">Most Recent Visit</div>
+                              <div className="regional-recent-visit-text">{activeCountry.recent_visit}</div>
                             </div>
                           )}
 

@@ -349,26 +349,30 @@ PAKISTAN_VESSELS = [
 ]
 
 REGIONAL_RELATIONSHIP_COUNTRIES = [
-    {"code": "india", "name": "India", "flag": "🇮🇳", "group": "Neighbor", "embassy_url": "https://hfrind.mofa.gov.pk/"},
-    {"code": "afghanistan", "name": "Afghanistan", "flag": "🇦🇫", "group": "Neighbor", "embassy_url": "https://www.pakembassykabul.org/"},
-    {"code": "iran", "name": "Iran", "flag": "🇮🇷", "group": "Neighbor", "embassy_url": "https://pakembiran.mofa.gov.pk/"},
-    {"code": "china", "name": "China", "flag": "🇨🇳", "group": "Neighbor", "embassy_url": "https://pakembbeijing.mofa.gov.pk/"},
-    {"code": "saudi_arabia", "name": "Saudi Arabia", "flag": "🇸🇦", "group": "GCC", "embassy_url": "https://pakemb-riyadh.mofa.gov.pk/"},
-    {"code": "uae_abu_dhabi", "name": "UAE - Abu Dhabi", "flag": "🇦🇪", "group": "GCC", "embassy_url": "https://pakembabudhabi.mofa.gov.pk/"},
-    {"code": "uae_dubai", "name": "UAE - Dubai", "flag": "🇦🇪", "group": "GCC", "embassy_url": "https://pakcgdubai.mofa.gov.pk/"},
-    {"code": "qatar", "name": "Qatar", "flag": "🇶🇦", "group": "GCC", "embassy_url": "https://pakembqatar.mofa.gov.pk/"},
-    {"code": "kuwait", "name": "Kuwait", "flag": "🇰🇼", "group": "GCC", "embassy_url": "https://pakembkwt.mofa.gov.pk/"},
-    {"code": "bahrain", "name": "Bahrain", "flag": "🇧🇭", "group": "GCC", "embassy_url": "https://pakembbahrain.mofa.gov.pk/"},
-    {"code": "oman", "name": "Oman", "flag": "🇴🇲", "group": "GCC", "embassy_url": "https://pakemboman.mofa.gov.pk/"},
-    {"code": "united_states", "name": "United States", "flag": "🇺🇸", "group": "Major", "embassy_url": "https://embassyofpakistanusa.org/"},
-    {"code": "united_kingdom", "name": "United Kingdom", "flag": "🇬🇧", "group": "Major", "embassy_url": "https://phclondon.mofa.gov.pk/"},
-    {"code": "european_union", "name": "European Union", "flag": "🇪🇺", "group": "EU", "embassy_url": "https://pakembbrussels.mofa.gov.pk/"},
-    {"code": "germany", "name": "Germany", "flag": "🇩🇪", "group": "EU", "embassy_url": "https://pakembberlin.mofa.gov.pk/"},
-    {"code": "netherlands", "name": "Netherlands", "flag": "🇳🇱", "group": "EU", "embassy_url": "https://pakembhague.mofa.gov.pk/"},
-    {"code": "france", "name": "France", "flag": "🇫🇷", "group": "EU", "embassy_url": "https://pakembparis.mofa.gov.pk/"},
-    {"code": "spain", "name": "Spain", "flag": "🇪🇸", "group": "EU", "embassy_url": "https://pakembmadrid.mofa.gov.pk/"},
-    {"code": "italy", "name": "Italy", "flag": "🇮🇹", "group": "EU", "embassy_url": "https://pakembrome.mofa.gov.pk/"},
-    {"code": "belgium", "name": "Belgium", "flag": "🇧🇪", "group": "EU", "embassy_url": "https://pakembbrussels.mofa.gov.pk/"}
+    {"code": "india", "name": "India", "group": "Neighbor", "embassy_url": "https://mofa.gov.pk/new-delhi"},
+    {"code": "afghanistan", "name": "Afghanistan", "group": "Neighbor", "embassy_url": "https://mofa.gov.pk/kabul"},
+    {"code": "iran", "name": "Iran", "group": "Neighbor", "embassy_url": "https://mofa.gov.pk/tehran"},
+    {"code": "china", "name": "China", "group": "Neighbor", "embassy_url": "https://mofa.gov.pk/beijing"},
+    {"code": "saudi_arabia", "name": "Saudi Arabia", "group": "GCC", "embassy_url": "https://pakistaninksa.com"},
+    {"code": "uae_abu_dhabi", "name": "UAE - Abu Dhabi", "group": "GCC", "embassy_url": "https://mofa.gov.pk/abu-dhabi"},
+    {"code": "uae_dubai", "name": "UAE - Dubai", "group": "GCC", "embassy_url": "https://mofa.gov.pk/dubai"},
+    {"code": "qatar", "name": "Qatar", "group": "GCC", "embassy_url": "https://mofa.gov.pk/doha"},
+    {"code": "kuwait", "name": "Kuwait", "group": "GCC", "embassy_url": "https://mofa.gov.pk/kuwait"},
+    {"code": "bahrain", "name": "Bahrain", "group": "GCC", "embassy_url": "https://mofa.gov.pk/manama"},
+    {"code": "oman", "name": "Oman", "group": "GCC", "embassy_url": "https://mofa.gov.pk/muscat"},
+    {"code": "united_states", "name": "United States", "group": "Major", "embassy_url": "https://embassyofpakistanusa.org"},
+    {"code": "united_kingdom", "name": "United Kingdom", "group": "Major", "embassy_url": "https://www.phclondon.org"},
+    {"code": "russia", "name": "Russia", "group": "Major", "embassy_url": "https://mofa.gov.pk/moscow"},
+    {"code": "azerbaijan", "name": "Azerbaijan", "group": "Central Asia", "embassy_url": "https://mofa.gov.pk/baku"},
+    {"code": "tajikistan", "name": "Tajikistan", "group": "Central Asia", "embassy_url": "https://mofa.gov.pk/dushanbe"},
+    {"code": "kazakhstan", "name": "Kazakhstan", "group": "Central Asia", "embassy_url": "https://mofa.gov.pk/astana"},
+    {"code": "european_union", "name": "European Union", "group": "EU", "embassy_url": "https://mofa.gov.pk/brussels"},
+    {"code": "germany", "name": "Germany", "group": "EU", "embassy_url": "https://mofa.gov.pk/berlin"},
+    {"code": "netherlands", "name": "Netherlands", "group": "EU", "embassy_url": "https://mofa.gov.pk/the-hague"},
+    {"code": "france", "name": "France", "group": "EU", "embassy_url": "https://mofa.gov.pk/paris"},
+    {"code": "spain", "name": "Spain", "group": "EU", "embassy_url": "https://mofa.gov.pk/madrid"},
+    {"code": "italy", "name": "Italy", "group": "EU", "embassy_url": "https://mofa.gov.pk/rome"},
+    {"code": "belgium", "name": "Belgium", "group": "EU", "embassy_url": "https://mofa.gov.pk/brussels"}
 ]
 
 COUNTRY_ALIASES = {
@@ -398,6 +402,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "india": {
         "status": "TENSE / SUSPENDED",
         "tag": "SUSPENDED",
+        "recent_visit": "No high-level visits since May 2025 escalation",
         "highlights": [
             "Bilateral trade and transit suspended after May 2025 escalation; shipping bans imposed by both sides.",
             "Airspace restrictions and port access bans remain in place amid security tensions.",
@@ -418,6 +423,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "china": {
         "status": "STRATEGIC PARTNERSHIP",
         "tag": "STRATEGIC",
+        "recent_visit": "FM Dar visited Beijing, Mar/Apr 2026; PM at SCO Summit 2025",
         "highlights": [
             "CPEC Phase II focused on high-quality, people-centric projects and industrial cooperation.",
             "Pakistan reaffirmed security assurances for Chinese personnel and projects.",
@@ -438,6 +444,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "saudi_arabia": {
         "status": "DEFENSE PACT",
         "tag": "MILITARY COOPERATION",
+        "recent_visit": "PM Sharif visited Riyadh, Oct 2025; Crown Prince MBS visit to Islamabad expected",
         "highlights": [
             "Strategic Mutual Defense Agreement signed Sept 2025 deepening security cooperation.",
             "Defense coordination expanded alongside investment and economic support channels.",
@@ -458,6 +465,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "uae_abu_dhabi": {
         "status": "INVESTMENT PARTNER",
         "tag": "INVESTMENT",
+        "recent_visit": "PM Sharif visited UAE, Nov 2025; regular high-level exchanges",
         "highlights": [
             "Abu Dhabi-led investment channels continue to expand across energy and infrastructure.",
             "High-level visits in late 2025 reaffirmed investment cooperation.",
@@ -478,6 +486,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "uae_dubai": {
         "status": "TRADE / LOGISTICS HUB",
         "tag": "TRADE HUB",
+        "recent_visit": "PM Sharif visited UAE, Nov 2025",
         "highlights": [
             "Dubai remains a key logistics and re-export hub for Pakistan’s Gulf trade.",
             "Pakistan-UAE commercial ties emphasize ports, aviation, and services.",
@@ -498,6 +507,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "united_states": {
         "status": "COUNTERTERRORISM COOPERATION",
         "tag": "SECURITY",
+        "recent_visit": "FM Dar met US officials, Apr 2025; engagement at UNGA 2025",
         "highlights": [
             "Joint counterterrorism operations and intelligence exchanges expanded in 2025.",
             "Military engagement and security dialogue revived after Afghanistan drawdown.",
@@ -518,6 +528,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "afghanistan": {
         "status": "BORDER SECURITY / TRADE DISRUPTION",
         "tag": "BORDER",
+        "recent_visit": "Taliban Acting FM met Pakistan FM, Jan 2026",
         "highlights": [
             "Border closures in 2025 reduced bilateral trade by ~40%.",
             "Transit routes remain volatile with periodic restrictions and exemptions.",
@@ -538,6 +549,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "iran": {
         "status": "BORDER SECURITY / ENERGY",
         "tag": "SECURITY",
+        "recent_visit": "Iranian President Pezeshkian visited Islamabad, Apr 2025",
         "highlights": [
             "Joint statements emphasize border markets and economic connectivity.",
             "Pakistan expressed solidarity with Iran during regional conflict escalation and called for restraint.",
@@ -558,6 +570,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "qatar": {
         "status": "ENERGY / LNG",
         "tag": "ENERGY",
+        "recent_visit": "Qatari Emir Sheikh Tamim visited Islamabad, Jun 2025",
         "highlights": [
             "Pakistan approved diversion of surplus LNG cargoes under Qatar contracts for FY26.",
             "Long-term LNG agreements remain the backbone of energy ties.",
@@ -578,6 +591,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "kuwait": {
         "status": "INVESTMENT / INFRASTRUCTURE",
         "tag": "INVESTMENT",
+        "recent_visit": "PM Sharif met Kuwaiti leadership at Arab-Islamic Summit, Nov 2025",
         "highlights": [
             "Kuwait Fund financing continues for the Mohmand Dam hydropower project.",
             "Kuwait Investment Authority exploring expanded portfolio in Pakistan.",
@@ -598,6 +612,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "bahrain": {
         "status": "TRADE / DEFENSE",
         "tag": "DEFENSE",
+        "recent_visit": "PM Sharif visited Bahrain, Nov 2025",
         "highlights": [
             "High-level visits in late 2025 and early 2026 aimed to lift trade to $1B.",
             "Defense cooperation and training ties were reaffirmed.",
@@ -618,6 +633,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "oman": {
         "status": "ENERGY / MARITIME",
         "tag": "MARITIME",
+        "recent_visit": "Naval chief visited Oman, Dec 2025; MoU signed",
         "highlights": [
             "Energy cooperation includes regular petroleum cargo imports from Oman.",
             "Naval MoU signed for maritime information sharing and cooperation.",
@@ -638,6 +654,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "united_kingdom": {
         "status": "TRADE DIALOGUE",
         "tag": "TRADE",
+        "recent_visit": "PM Sharif met UK PM Starmer, Apr 2026",
         "highlights": [
             "Pakistan-UK Trade Dialogue Mechanism launched in 2025 with sectoral working groups.",
             "Both sides exploring a future FTA and services cooperation.",
@@ -658,6 +675,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "european_union": {
         "status": "GSP+ ACCESS",
         "tag": "PREFERENTIAL",
+        "recent_visit": "EU-Pakistan Joint Commission, Brussels, 2025",
         "highlights": [
             "EU GSP+ preferences extended through 2027; monitoring continues on reforms.",
             "Textiles remain the largest beneficiary of preferential access.",
@@ -678,6 +696,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "germany": {
         "status": "EU TRADE",
         "tag": "TRADE",
+        "recent_visit": "FM Dar met German counterpart at UNGA sidelines, Sep 2025",
         "highlights": [
             "Germany remains a key EU destination for Pakistani textiles and industrial exports.",
             "Business chambers continue sectoral engagements in energy and manufacturing.",
@@ -697,6 +716,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "netherlands": {
         "status": "EU TRADE",
         "tag": "TRADE",
+        "recent_visit": "Trade delegation exchange, 2025",
         "highlights": [
             "Rotterdam remains a key logistics node for Pakistan-EU trade.",
             "Port and logistics cooperation discussions continue.",
@@ -716,6 +736,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "france": {
         "status": "EU TRADE",
         "tag": "TRADE",
+        "recent_visit": "French FM visited Islamabad, Feb 2025",
         "highlights": [
             "France remains a stable import market for Pakistan’s textiles and leather.",
             "Bilateral cultural and education ties continue alongside trade.",
@@ -735,6 +756,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "spain": {
         "status": "EU TRADE",
         "tag": "TRADE",
+        "recent_visit": "Trade delegations, 2025",
         "highlights": [
             "Spain remains a top EU buyer of Pakistan’s textiles and apparel.",
             "Trade delegations focus on footwear and agro-products.",
@@ -754,6 +776,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "italy": {
         "status": "EU TRADE",
         "tag": "TRADE",
+        "recent_visit": "Consular engagement, 2025",
         "highlights": [
             "Italy remains a key EU buyer for Pakistan’s textiles and leather.",
             "Industrial machinery trade continues through Italian suppliers.",
@@ -773,6 +796,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "belgium": {
         "status": "EU TRADE",
         "tag": "TRADE",
+        "recent_visit": "Pakistan-EU Joint Commission, Brussels, 2025",
         "highlights": [
             "Belgium (Antwerp) remains a key logistics and diamond trade hub.",
             "Port-led trade facilitation supports Pakistan-EU shipments.",
@@ -787,6 +811,90 @@ REGIONAL_RELATIONSHIP_INTEL = {
         },
         "sources": [
             {"title": "EU Trade Policy: Pakistan", "url": "https://policy.trade.ec.europa.eu/eu-trade-relationships-country-and-region/countries-and-regions/pakistan_en"}
+        ]
+    },
+    "russia": {
+        "status": "STRATEGIC ENGAGEMENT",
+        "tag": "ENERGY",
+        "highlights": [
+            "Pakistan Stream gas pipeline project discussions continue.",
+            "PM Sharif met President Putin on SCO sidelines in Jul 2025.",
+            "Bilateral trade remains modest but energy cooperation is expanding."
+        ],
+        "recent_visit": "PM Sharif met President Putin at SCO Summit, Astana, Jul 2025",
+        "visa": {
+            "status": "VISA REQUIRED",
+            "notes": [
+                "Visa required; processing through Moscow embassy.",
+                "Business and diplomatic visas require invitation letters."
+            ]
+        },
+        "sources": [
+            {"title": "Pakistan-Russia relations", "url": "https://en.wikipedia.org/wiki/Pakistan%E2%80%93Russia_relations"},
+            {"title": "MOFA Moscow", "url": "https://mofa.gov.pk/moscow"}
+        ]
+    },
+    "azerbaijan": {
+        "status": "STRATEGIC ALLY",
+        "tag": "DEFENSE",
+        "highlights": [
+            "Five PM visits in 2025 underscore deep strategic alignment.",
+            "Trade agreements and business forums expanded bilateral commerce.",
+            "Defense cooperation and mutual political support remain strong."
+        ],
+        "recent_visit": "PM Sharif state visit, Baku, May 2025 (5th visit in 2025)",
+        "visa": {
+            "status": "E-VISA AVAILABLE",
+            "notes": [
+                "E-visa available for Pakistani nationals via ASAN Visa.",
+                "Business and tourist visas processed within days."
+            ]
+        },
+        "sources": [
+            {"title": "MOFA: PM visit to Azerbaijan Feb 2025", "url": "https://mofa.gov.pk/press-releases/visit-of-prime-minister-muhammad-shehbaz-sharif-to-the-republic-of-azerbaijan-24-25-february-2025"},
+            {"title": "Azerbaijan-Pakistan relations", "url": "https://en.wikipedia.org/wiki/Azerbaijan%E2%80%93Pakistan_relations"}
+        ]
+    },
+    "tajikistan": {
+        "status": "REGIONAL PARTNER",
+        "tag": "CONNECTIVITY",
+        "highlights": [
+            "PM Sharif visited Dushanbe Jul 2025 to strengthen trade and connectivity.",
+            "CASA-1000 power transmission project links both countries.",
+            "Transit trade and cross-border connectivity remain key agenda items."
+        ],
+        "recent_visit": "PM Sharif visited Dushanbe, met President Rahmon, Jul 2025",
+        "visa": {
+            "status": "VISA REQUIRED",
+            "notes": [
+                "Visa required; processing through Dushanbe embassy.",
+                "Facilitated visas for business and official travel."
+            ]
+        },
+        "sources": [
+            {"title": "Pakistan-Tajikistan relations", "url": "https://en.wikipedia.org/wiki/Pakistan%E2%80%93Tajikistan_relations"},
+            {"title": "MOFA Dushanbe", "url": "https://mofa.gov.pk/dushanbe"}
+        ]
+    },
+    "kazakhstan": {
+        "status": "SCO PARTNER",
+        "tag": "TRADE",
+        "highlights": [
+            "PM Sharif attended SCO Summit in Astana Jul 2025.",
+            "Energy and transit trade cooperation discussed bilaterally.",
+            "Kazakhstan is a key partner in Central Asian connectivity."
+        ],
+        "recent_visit": "PM Sharif attended SCO Summit, Astana, Jul 2025",
+        "visa": {
+            "status": "VISA REQUIRED",
+            "notes": [
+                "Visa required; processing through Astana embassy.",
+                "Business visas available with invitation letters."
+            ]
+        },
+        "sources": [
+            {"title": "Kazakhstan-Pakistan relations", "url": "https://en.wikipedia.org/wiki/Kazakhstan%E2%80%93Pakistan_relations"},
+            {"title": "MOFA Astana", "url": "https://mofa.gov.pk/astana"}
         ]
     }
 }
@@ -4060,6 +4168,7 @@ async def fetch_regional_relations_data():
             **country,
             "status": intel.get("status"),
             "tag": intel.get("tag"),
+            "recent_visit": intel.get("recent_visit"),
             "highlights": intel.get("highlights", []),
             "visa": intel.get("visa", {}),
             "sources": intel.get("sources", []),
