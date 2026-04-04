@@ -662,6 +662,82 @@ frontend:
         agent: "testing"
         comment: "ALL ALIGNMENT TESTS PASSED ✅ - SPI Weekly modal alignment is PERFECT. Test Results: HORIZONTAL ALIGNMENT: PASS ✓ Both time-range selector (data-testid='spi-time-range-selector') and series toggle group (data-testid='spi-series-toggle-group') have identical x-position of 611px (0px difference). Both elements have same paddingLeft: 20px, paddingRight: 20px, marginLeft: 0px. Both elements have identical width: 698px. VERTICAL SPACING: PASS ✓ No overlap detected - vertical spacing between elements is 0.0px (elements touch perfectly with no gap or overlap). Time-range selector ends at y: 434.5px (367.5 + 67 height), series toggle group starts at y: 434.5px. VISUAL VERIFICATION: Screenshots captured showing perfect alignment - spi_modal_alignment.png shows normal view, spi_modal_alignment_highlighted.png shows red outline on time-range selector and blue outline on series toggle group demonstrating perfect horizontal alignment. Implementation at SPIModal.js lines 161-181 (time-range selector) and lines 183-208 (series toggle group with Combined/Q1-Q5 buttons). Both elements use same CSS class 'time-range-selector' and 'spi-series-toggle-group' with consistent padding. Modal opens correctly when clicking SPI (Weekly) card in Inflation panel. All 6 series buttons render: Combined (green #22C55E), Q1 (cyan #22d3ee), Q2 (indigo #6366f1), Q3 (amber #f59e0b), Q4 (pink #ec4899), Q5 (red #ef4444). No console errors detected. Alignment is production-ready and meets all design requirements."
 
+
+  - task: "Regional Relations panel - Country grid shows flags + uppercase names"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/RegionalPanel.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Testing if country grid displays emoji flags and uppercase country names"
+      - working: true
+        agent: "testing"
+        comment: "PASS - Country grid displays correctly with emoji flags (🇮🇳, 🇦🇫, 🇨🇳, 🇸🇦, 🇦🇪, 🇶🇦, 🇰🇼, 🇧🇭, 🇴🇲, 🇺🇸, 🇬🇧, 🇪🇺) and uppercase country names (INDIA, AFGHANISTAN, CHINA, SAUDI ARABIA, etc.). API endpoint /api/regional-relations returns 13 countries with proper flag emoji and name data. Visual verification from screenshots confirms all country cards render with flags prominently displayed and names in uppercase format. Implementation at RegionalPanel.js lines 67-76 correctly uses country.flag for emoji display and country.name.toUpperCase() for uppercase names."
+
+  - task: "Regional Relations panel - Clicking country updates detail panel and status"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/RegionalPanel.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Testing if clicking a country card updates the detail panel with country-specific information and status badge"
+      - working: true
+        agent: "testing"
+        comment: "PASS - Clicking country cards successfully updates detail panel. Test verified: Initial state shows India with status 'TENSE / SUSPENDED', clicking second country card activates it (active class applied correctly), detail panel updates with country-specific data including flag, name, status badge, relationship highlights, and trade information. Implementation at RegionalPanel.js lines 61-64 handles onClick event to setSelectedCountry and setShowSources(false). Active country computed at lines 28-30 using useMemo. Detail panel at lines 80-179 renders activeCountry data including title (lines 84-87), status badge (lines 88-90), highlights (lines 118-127), and trade cards (lines 129-178). Active state styling applied via className at line 60."
+
+  - task: "Regional Relations panel - Info icon opens sources list with links"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/RegionalPanel.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Testing if clicking info icon opens sources panel with clickable links to external sources"
+      - working: true
+        agent: "testing"
+        comment: "PASS - Info icon successfully opens sources panel with clickable links. Test verified: Info button found at data-testid='regional-sources-button', sources panel initially hidden, clicking info button reveals sources panel (data-testid='regional-sources-panel'), found 2 source links for India: 'Pakistan Today (May 2025 trade suspension)' -> https://profit.pakistantoday.com.pk/..., 'Kuehne+Nagel advisory' -> https://mykn.kuehne-nagel.com/.... Implementation at RegionalPanel.js lines 92-98 renders info button with onClick toggle, lines 99-115 render sources panel conditionally when showSources is true, lines 102-113 map through activeCountry.sources array to render links with data-testid='regional-source-link-{index}', target='_blank', and rel='noreferrer'. Sources panel positioned absolutely at top: 2.5rem, right: 0 with dark background and border (index.css lines 1277-1289)."
+
+  - task: "Regional Relations panel - Trade cards show latest value or 'No data' safely"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/RegionalPanel.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Testing if trade cards (exports, imports, remittances) handle null/missing data gracefully without crashes, showing either formatted values or '--' placeholder"
+      - working: true
+        agent: "testing"
+        comment: "PASS - All trade cards render safely without crashes and handle missing data correctly. Test verified: EXPORTS card shows value '--' (no data), IMPORTS card shows value '--' (no data), REMITTANCES card shows value '--' (no data). All cards display 'Latest' for month when no data available. Chart sections show 'No data' text when history array is empty. Implementation at RegionalPanel.js lines 32-39 creates tradeCards array with safe data access using optional chaining (activeCountry.trade?.exports, etc.). Lines 133-142 safely check for data: 'const latest = card.data?.latest?.value', 'const hasData = latest !== null && latest !== undefined', value display at lines 140-142 uses ternary: 'hasData ? formatUsd(latest) : --'. Chart rendering at lines 157-173 checks 'card.data?.history?.length' before rendering chart, shows 'No data' div when history is empty (lines 171-172). formatUsd function at lines 9-15 handles null/undefined by returning '--'. No crashes or console errors detected. API returns null for all trade data fields when data is unavailable, which is handled gracefully by the component."
+
+  - task: "Regional Relations panel - Responsive layout (side-by-side desktop, stacked narrow)"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/RegionalPanel.js, /app/frontend/src/index.css"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Testing if layout is responsive: country grid and detail panel side-by-side on desktop (1920x1080), stacked vertically on narrow width (800x1080)"
+      - working: true
+        agent: "testing"
+        comment: "PASS - Responsive layout works correctly across viewport sizes. Test verified at 1920x1080 (Desktop): Regional layout dimensions 584.67px x 712.31px, Country grid at x=1302.33, Detail panel at x=1598.33 (detail x > grid x + 50), confirming side-by-side layout. Test verified at 800x1080 (Narrow): Regional layout dimensions 342px x 1212.31px, Country grid at y=796, Detail panel at y=1341 (detail y > grid y + 50), confirming stacked layout. Implementation at index.css lines 1176-1180: .regional-layout uses 'grid-template-columns: minmax(220px, 280px) 1fr' for desktop side-by-side layout. Lines 1378-1381: @media (max-width: 1024px) changes to 'grid-template-columns: 1fr' for single-column stacked layout on narrow screens. Country grid at lines 1182-1186 uses 'grid-template-columns: repeat(auto-fit, minmax(110px, 1fr))' for responsive card wrapping. Layout structure at RegionalPanel.js lines 55-78 (country grid) and lines 80-179 (detail panel) renders correctly in both layouts. No horizontal overflow detected in either viewport size."
+
 metadata:
   created_by: "testing_agent"
   version: "1.0"
@@ -675,9 +751,15 @@ test_plan:
   - agent: "testing"
     message: "Starting comprehensive testing of Daily Energy Report map tab feature. Testing 5 requirements: 1) Map tab visibility and layer switching, 2) Energy markers (cyan #38BDF8) appear and city/alert markers hidden in energy tab, 3) Overlay shows report date and legend shows energy counts, 4) Switch back to Overview restores alerts/cities, 5) All data-testid attributes exist."
   - agent: "testing"
+    message: "Starting comprehensive testing of Regional Relations panel feature. Testing 5 requirements from review request: 1) Country grid shows flags + uppercase names, 2) Clicking a country updates detail panel and status, 3) Info icon opens sources list with links, 4) Trade cards show latest value or 'No data' safely without crashes, 5) Layout responsive: grid + detail side-by-side on desktop, stacked on narrow width."
+  - agent: "testing"
+    message: "ALL TESTS PASSED ✅ - Regional Relations panel feature fully functional. All 5 review requirements verified successfully: (1) Country grid displays correctly with emoji flags (🇮🇳, 🇦🇫, 🇨🇳, 🇸🇦, 🇦🇪, 🇶🇦, 🇰🇼, 🇧🇭, 🇴🇲, 🇺🇸, 🇬🇧, 🇪🇺) and uppercase country names (INDIA, AFGHANISTAN, CHINA, SAUDI ARABIA, UNITED ARAB EMIRATES, QATAR, KUWAIT, BAHRAIN, OMAN, UNITED STATES, UNITED KINGDOM, EUROPEAN UNION). API endpoint /api/regional-relations returns 13 countries with proper data structure. (2) Clicking country cards successfully updates detail panel with country-specific information including flag, name, status badge (e.g., 'TENSE / SUSPENDED' for India, 'STRATEGIC PARTNERSHIP' for China), relationship highlights, and trade data. Active state styling applied correctly with green border. (3) Info icon opens sources panel with clickable external links. Tested with India showing 2 sources: Pakistan Today article and Kuehne+Nagel advisory, both with proper URLs and target='_blank'. (4) All three trade cards (EXPORT RECEIPTS, IMPORT PAYMENTS, WORKER REMITTANCE) handle missing data gracefully by displaying '--' placeholder and 'No data' in chart sections. No crashes or console errors detected. formatUsd function correctly returns '--' for null/undefined values. (5) Responsive layout verified: Desktop (1920x1080) shows country grid and detail panel side-by-side with proper spacing, Narrow (800x1080) shows stacked layout with detail panel below country grid. CSS media query at max-width: 1024px correctly switches from 2-column to 1-column layout. Implementation quality excellent with proper data-testid attributes, safe data access using optional chaining, and graceful error handling. Screenshots captured: regional_sources_panel.png (showing sources panel open), regional_desktop_layout.png (side-by-side layout), regional_narrow_layout.png (stacked layout). No console errors or layout issues detected. Feature is production-ready and meets all requirements."
+
+  - agent: "testing"
     message: "ALL TESTS PASSED ✓ - Daily Energy Report map tab feature fully functional. Tab switching works perfectly: Overview tab (default active) ↔ Energy tab (data-testid='map-tab-energy'). Energy mode displays 51 energy markers with correct cyan color #38BDF8 (rgb(56, 189, 248)), all with data-testid='energy-marker-{index}'. City markers (10) and alert markers (8) completely hidden when Energy tab active. Overlay correctly shows 'Daily Energy Report' title and report date 'Report: March 13, 2026' (data-testid='map-energy-report-date'). Legend displays energy metadata '51 locations • 378 items' (data-testid='energy-report-meta'). Switching back to Overview tab successfully restores 10 city markers + 8 alert markers, hides energy markers, reverts overlay to 'Pakistan Overview', and restores Overview legend. All required data-testid attributes present and functional. No console errors. Screenshots captured for both energy_mode.png and overview_mode.png."
 
-  current_focus: []
+  current_focus:
+    - "Regional Relations panel testing"
   stuck_tasks: []
   test_all: false
   test_priority: "sequential"

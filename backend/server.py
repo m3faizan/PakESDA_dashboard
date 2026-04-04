@@ -113,6 +113,7 @@ data_cache = {
     "daily_energy_report": {"data": [], "updated": None},
     "energy_geo_cache": {"data": {}, "updated": None},
     "pakistan_vessels": {"data": {}, "updated": None},
+    "regional_relations": {"data": {}, "updated": None},
     "daily_briefing": {"data": None, "updated": None}
 }
 
@@ -223,6 +224,10 @@ NHMP_ADVISORY_URL = "http://cpo.nhmp.gov.pk:6788/api/TravelAdvisory/FilteredAdvi
 
 # SBP API endpoints
 SBP_API_KEY = "DF75BE2F4485CDFC98F6935C0EA5BF8AFFC252C3"
+SBP_BASE_URL = "https://easydata.sbp.org.pk/api/v1"
+EXPORT_RECEIPTS_DATASET = "TS_GP_BOP_XRECCOU_M"
+IMPORT_PAYMENTS_DATASET = "TS_GP_BOP_MRECCOU_M"
+REMITTANCES_DATASET = "TS_GP_BOP_WR_M"
 SBP_REMITTANCES_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BOP_WR_M.WR0340/data"
 SBP_GOLD_RESERVES_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_EXT_PAKRES_M.Z00010/data"
 SBP_FOREX_RESERVES_URL = "https://easydata.sbp.org.pk/api/v1/series/TS_GP_EXT_PAKRES_M.Z00020/data"
@@ -342,6 +347,203 @@ PAKISTAN_VESSELS = [
         "mmsi": "463043101"
     }
 ]
+
+REGIONAL_RELATIONSHIP_COUNTRIES = [
+    {"code": "india", "name": "India", "flag": "🇮🇳", "group": "Neighbor"},
+    {"code": "afghanistan", "name": "Afghanistan", "flag": "🇦🇫", "group": "Neighbor"},
+    {"code": "iran", "name": "Iran", "flag": "🇮🇷", "group": "Neighbor"},
+    {"code": "china", "name": "China", "flag": "🇨🇳", "group": "Neighbor"},
+    {"code": "saudi_arabia", "name": "Saudi Arabia", "flag": "🇸🇦", "group": "GCC"},
+    {"code": "united_arab_emirates", "name": "United Arab Emirates", "flag": "🇦🇪", "group": "GCC"},
+    {"code": "qatar", "name": "Qatar", "flag": "🇶🇦", "group": "GCC"},
+    {"code": "kuwait", "name": "Kuwait", "flag": "🇰🇼", "group": "GCC"},
+    {"code": "bahrain", "name": "Bahrain", "flag": "🇧🇭", "group": "GCC"},
+    {"code": "oman", "name": "Oman", "flag": "🇴🇲", "group": "GCC"},
+    {"code": "united_states", "name": "United States", "flag": "🇺🇸", "group": "Major"},
+    {"code": "united_kingdom", "name": "United Kingdom", "flag": "🇬🇧", "group": "Major"},
+    {"code": "european_union", "name": "European Union", "flag": "🇪🇺", "group": "Major"}
+]
+
+COUNTRY_ALIASES = {
+    "india": ["india"],
+    "afghanistan": ["afghanistan"],
+    "iran": ["iran", "islamic republic of iran"],
+    "china": ["china", "peoples republic of china"],
+    "saudi_arabia": ["saudi arabia", "ksa"],
+    "united_arab_emirates": ["united arab emirates", "uae"],
+    "qatar": ["qatar"],
+    "kuwait": ["kuwait"],
+    "bahrain": ["bahrain"],
+    "oman": ["oman"],
+    "united_states": ["united states", "united states of america", "usa", "u.s.a"],
+    "united_kingdom": ["united kingdom", "uk", "u.k"],
+    "european_union": ["european union", "eu"]
+}
+
+REGIONAL_RELATIONSHIP_INTEL = {
+    "india": {
+        "status": "TENSE / SUSPENDED",
+        "highlights": [
+            "Bilateral trade and transit suspended after May 2025 escalation; shipping bans imposed by both sides.",
+            "Airspace restrictions and port access bans remain in place amid security tensions.",
+            "Border trade remains heavily restricted with limited humanitarian exceptions."
+        ],
+        "sources": [
+            {"title": "Pakistan Today (May 2025 trade suspension)", "url": "https://profit.pakistantoday.com.pk/2025/05/08/commerce-ministry-clarifies-sro-on-suspension-of-india-trade-amid-rising-tensions/"},
+            {"title": "Kuehne+Nagel advisory", "url": "https://mykn.kuehne-nagel.com/news/article/india-pakistan-ban-goods-and-ships-amid-escal-05-May-2025"}
+        ]
+    },
+    "china": {
+        "status": "STRATEGIC PARTNERSHIP",
+        "highlights": [
+            "CPEC Phase II focused on high-quality, people-centric projects and industrial cooperation.",
+            "Pakistan reaffirmed security assurances for Chinese personnel and projects.",
+            "Regular JCC meetings and high-level visits keep CPEC pipeline active."
+        ],
+        "sources": [
+            {"title": "CPEC Action Plan 2025-2029", "url": "https://cpec.gov.pk/brain/public/uploads/documents/ActionPlan2025-2029.pdf"},
+            {"title": "Tribune: CPEC next phase", "url": "https://tribune.com.pk/story/2586375/cpec-entering-next-phase-says-fm"}
+        ]
+    },
+    "saudi_arabia": {
+        "status": "DEFENSE PACT",
+        "highlights": [
+            "Strategic Mutual Defense Agreement signed Sept 2025 deepening security cooperation.",
+            "Defense coordination expanded alongside investment and economic support channels.",
+            "Saudi security partnership remains a core pillar of Pakistan’s Gulf policy."
+        ],
+        "sources": [
+            {"title": "MEI analysis of defense pact", "url": "https://mei.edu/publication/pakistans-strategic-defense-pact-saudi-arabia-new-security-architecture-wider-middle/"},
+            {"title": "CSIS analysis", "url": "https://www.csis.org/analysis/could-pakistani-saudi-defense-pact-be-first-step-toward-nato-style-alliance"}
+        ]
+    },
+    "united_arab_emirates": {
+        "status": "INVESTMENT PARTNER",
+        "highlights": [
+            "High-level visits in late 2025 reaffirmed investment cooperation.",
+            "UAE engagement centered on energy, infrastructure, tech, and ports.",
+            "Bilateral ties remain on a strong economic trajectory."
+        ],
+        "sources": [
+            {"title": "Tribune: Pakistan-UAE ties", "url": "https://tribune.com.pk/story/2584166/pakistan-uae-hail-positive-trajectory-in-ties"},
+            {"title": "Arab News: UAE investment", "url": "https://www.arabnews.com/node/2625502/pakistan"}
+        ]
+    },
+    "united_states": {
+        "status": "COUNTERTERRORISM COOPERATION",
+        "highlights": [
+            "Joint counterterrorism operations and intelligence exchanges expanded in 2025.",
+            "Military engagement and security dialogue revived after Afghanistan drawdown.",
+            "Defense cooperation includes F-16 sustainment and strategic minerals discussions."
+        ],
+        "sources": [
+            {"title": "Dawn: US-Pakistan security ties", "url": "https://www.dawn.com/news/1967468"},
+            {"title": "US State Dept (Pakistan)", "url": "https://2021-2025.state.gov/countries-areas/pakistan/"}
+        ]
+    },
+    "afghanistan": {
+        "status": "BORDER SECURITY / TRADE DISRUPTION",
+        "highlights": [
+            "Border closures in 2025 reduced bilateral trade by ~40%.",
+            "Transit routes remain volatile with periodic restrictions and exemptions.",
+            "Security concerns and Durand Line disputes continue to strain ties."
+        ],
+        "sources": [
+            {"title": "Khaama: trade down 40%", "url": "https://www.khaama.com/afghanistan-pakistan-trade-falls-40-in-2025-after-border-closures-report/"},
+            {"title": "AfIntl: transit cargo easing", "url": "https://www.afintl.com/en/202601135901"}
+        ]
+    },
+    "iran": {
+        "status": "BORDER SECURITY / ENERGY",
+        "highlights": [
+            "Joint statements emphasize border markets and economic connectivity.",
+            "Security coordination and counter-terror cooperation remain priorities.",
+            "Energy cooperation and pipeline discussions remain active."
+        ],
+        "sources": [
+            {"title": "Pakistan MFA joint statement", "url": "https://mofa.gov.pk/press-releases/joint-statement-between-islamic-republic-of-pakistan-and-islamic-republic-of-iran-at-the-culmination-of-the-visit-by-the-president-of-iran"},
+            {"title": "Arab News: border trade", "url": "https://www.arabnews.pk/node/2620283/pakistan"}
+        ]
+    },
+    "qatar": {
+        "status": "ENERGY / LNG",
+        "highlights": [
+            "Pakistan approved diversion of surplus LNG cargoes under Qatar contracts for FY26.",
+            "Long-term LNG agreements remain the backbone of energy ties.",
+            "A $3B investment protocol was formalized through the Joint Ministerial Commission."
+        ],
+        "sources": [
+            {"title": "Tribune: LNG diversion", "url": "https://tribune.com.pk/story/2580611/govt-claims-rs1tr-savings-by-diverting-lng"},
+            {"title": "Digital Pakistan: Qatar investment protocol", "url": "https://digitalpakistan.pk/pakistan-and-qatar-formalise-3-billion-investment-agreement/"}
+        ]
+    },
+    "kuwait": {
+        "status": "INVESTMENT / INFRASTRUCTURE",
+        "highlights": [
+            "Kuwait Fund financing continues for the Mohmand Dam hydropower project.",
+            "Kuwait Investment Authority exploring expanded portfolio in Pakistan.",
+            "Bilateral business expos and trade consultations remain active."
+        ],
+        "sources": [
+            {"title": "Pakistan EAD: Mohmand Dam financing", "url": "https://www.ead.gov.pk/NewsDetail/ZDcyNzk2MzMtMTI1My00OWE3LWJiYTUtNDRmNTllZTBhZmI0"},
+            {"title": "Arab News: Kuwait-Pakistan expo", "url": "https://www.arabnews.pk/node/2618803/pakistan"}
+        ]
+    },
+    "bahrain": {
+        "status": "TRADE / DEFENSE",
+        "highlights": [
+            "High-level visits in late 2025 and early 2026 aimed to lift trade to $1B.",
+            "Defense cooperation and training ties were reaffirmed.",
+            "Bilateral agenda includes IT, healthcare, energy, and logistics."
+        ],
+        "sources": [
+            {"title": "Dawn: PM visit to Bahrain", "url": "https://www.dawn.com/news/1957645"},
+            {"title": "MoIB Pakistan: Bahrain visit notes", "url": "https://www.moib.gov.pk/News/65924"}
+        ]
+    },
+    "oman": {
+        "status": "ENERGY / MARITIME",
+        "highlights": [
+            "Energy cooperation includes regular petroleum cargo imports from Oman.",
+            "Naval MoU signed for maritime information sharing and cooperation.",
+            "Diplomatic engagement continues across energy and security."
+        ],
+        "sources": [
+            {"title": "Energy Update: Pakistan-Oman energy partnership", "url": "https://www.energyupdate.com.pk/2026/03/26/pakistan-oman-reaffirm-commitment-to-expand-energy-partnership-amid-evolving-regional-situation/"},
+            {"title": "Nation: Naval MoU", "url": "https://www.nation.com.pk/24-Dec-2025/pakistan-oman-navies-strengthen-maritime-cooperation-new-information-sharing-mou"}
+        ]
+    },
+    "united_kingdom": {
+        "status": "TRADE DIALOGUE",
+        "highlights": [
+            "Pakistan-UK Trade Dialogue Mechanism launched in 2025 with sectoral working groups.",
+            "Both sides exploring a future FTA and services cooperation.",
+            "Trade volumes exceed £5.5B with emphasis on IT, agriculture, education."
+        ],
+        "sources": [
+            {"title": "Planning Commission: UK trade talks", "url": "https://pc.gov.pk/web/press/get_press/1645"},
+            {"title": "Nation: high-level meeting", "url": "https://www.nation.com.pk/02-Apr-2026/pakistan-uk-high-level-meeting-focuses-trade-regional-stability"}
+        ]
+    },
+    "european_union": {
+        "status": "GSP+ ACCESS",
+        "highlights": [
+            "EU GSP+ preferences extended through 2027; monitoring continues on reforms.",
+            "Textiles remain the largest beneficiary of preferential access.",
+            "EU-Pakistan Joint Commission in 2025 reaffirmed the partnership."
+        ],
+        "sources": [
+            {"title": "EU Trade Policy: Pakistan", "url": "https://policy.trade.ec.europa.eu/eu-trade-relationships-country-and-region/countries-and-regions/pakistan_en"},
+            {"title": "Dawn: GSP+ status", "url": "https://www.dawn.com/news/1962447"}
+        ]
+    }
+}
+
+SBP_COUNTRY_SERIES_CACHE = {
+    "exports": {"mapping": {}, "updated": None},
+    "imports": {"mapping": {}, "updated": None},
+    "remittances": {"mapping": {}, "updated": None}
+}
 
 # Historical CPI API endpoints by base year period
 CPI_HISTORICAL_APIS = [
@@ -3418,6 +3620,180 @@ async def fetch_pakistan_vessels_data():
     }
 
 
+async def _fetch_country_series_mapping(dataset_key: str, dataset_code: str, extractor):
+    cache_entry = SBP_COUNTRY_SERIES_CACHE.get(dataset_key)
+    now = datetime.now(timezone.utc)
+
+    if cache_entry and cache_entry["mapping"] and cache_entry["updated"]:
+        age = (now - cache_entry["updated"]).total_seconds()
+        if age < 86400:
+            return cache_entry["mapping"]
+
+    url = f"{SBP_BASE_URL}/dataset/{dataset_code}/meta"
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(url, params={"api_key": SBP_API_KEY})
+            response.raise_for_status()
+            raw_text = response.text
+    except Exception as e:
+        print(f"SBP meta fetch error for {dataset_key}: {e}")
+        return cache_entry["mapping"] if cache_entry else {}
+
+    clean_text = re.sub(r"[\x00-\x1f\x7f]", "", raw_text)
+    try:
+        payload = json.loads(clean_text)
+    except Exception as e:
+        print(f"SBP meta parse error for {dataset_key}: {e}")
+        return cache_entry["mapping"] if cache_entry else {}
+
+    rows = payload.get("rows", [])
+    mapping = {}
+    for row in rows:
+        if len(row) < 3:
+            continue
+        series_code = row[1]
+        series_name = row[2]
+        country_name = extractor(series_name)
+        if not country_name:
+            continue
+        normalized = _normalize_country_key(country_name)
+        if normalized:
+            mapping[normalized] = series_code
+
+    if cache_entry is not None:
+        cache_entry["mapping"] = mapping
+        cache_entry["updated"] = now
+
+    return mapping
+
+
+def _normalize_country_key(name: str) -> str:
+    cleaned = re.sub(r"[^a-zA-Z\s]", " ", name or "")
+    cleaned = re.sub(r"\s+", " ", cleaned).strip().lower()
+    return cleaned
+
+
+def _extract_export_country(series_name: str) -> str:
+    if not series_name:
+        return ""
+    match = re.search(r"from\s+(.*)$", series_name, flags=re.I)
+    return match.group(1) if match else series_name
+
+
+def _extract_import_country(series_name: str) -> str:
+    if not series_name:
+        return ""
+    match = re.search(r"by\s+(.*)$", series_name, flags=re.I)
+    return match.group(1) if match else series_name
+
+
+def _extract_remittance_country(series_name: str) -> str:
+    if not series_name:
+        return ""
+    match = re.search(r"from\s+(.*)$", series_name, flags=re.I)
+    return match.group(1) if match else series_name
+
+
+def _resolve_country_series_code(mapping: dict, country_code: str) -> str | None:
+    aliases = COUNTRY_ALIASES.get(country_code, [])
+    for alias in aliases:
+        normalized = _normalize_country_key(alias)
+        if normalized in mapping:
+            return mapping[normalized]
+    # fallback fuzzy match
+    for key, value in mapping.items():
+        for alias in aliases:
+            if _normalize_country_key(alias) in key:
+                return value
+    return None
+
+
+def _format_month_label(date_str: str) -> str:
+    try:
+        dt = datetime.strptime(date_str, "%Y-%m-%d")
+        return dt.strftime("%b %Y")
+    except Exception:
+        return date_str
+
+
+def _summarize_trade_series(history: list) -> dict | None:
+    if not history:
+        return None
+
+    sorted_history = sorted(history, key=lambda x: x["date"])
+    latest = sorted_history[-1]
+    previous = sorted_history[-2] if len(sorted_history) > 1 else None
+
+    mom_change = None
+    if previous and previous.get("value") is not None and previous.get("value") != 0:
+        mom_change = ((latest["value"] - previous["value"]) / previous["value"]) * 100
+
+    latest_date = datetime.strptime(latest["date"], "%Y-%m-%d")
+    cutoff = latest_date - timedelta(days=365)
+    sparkline = [item for item in sorted_history if datetime.strptime(item["date"], "%Y-%m-%d") >= cutoff]
+
+    return {
+        "latest": {
+            "value": latest.get("value"),
+            "month": _format_month_label(latest.get("date")),
+            "date": latest.get("date")
+        },
+        "mom_change": round(mom_change, 2) if mom_change is not None else None,
+        "history": sparkline[-12:] if len(sparkline) > 12 else sparkline
+    }
+
+
+async def _fetch_country_trade_bundle(country_code: str) -> dict:
+    export_map = await _fetch_country_series_mapping("exports", EXPORT_RECEIPTS_DATASET, _extract_export_country)
+    import_map = await _fetch_country_series_mapping("imports", IMPORT_PAYMENTS_DATASET, _extract_import_country)
+    remittance_map = await _fetch_country_series_mapping("remittances", REMITTANCES_DATASET, _extract_remittance_country)
+
+    export_code = _resolve_country_series_code(export_map, country_code)
+    import_code = _resolve_country_series_code(import_map, country_code)
+    remittance_code = _resolve_country_series_code(remittance_map, country_code)
+
+    start_date = (datetime.now(timezone.utc) - timedelta(days=730)).strftime("%Y-%m-%d")
+
+    export_task = fetch_sbp_series_data(export_code, start_date) if export_code else None
+    import_task = fetch_sbp_series_data(import_code, start_date) if import_code else None
+    remittance_task = fetch_sbp_series_data(remittance_code, start_date) if remittance_code else None
+
+    export_history = await export_task if export_task else []
+    import_history = await import_task if import_task else []
+    remittance_history = await remittance_task if remittance_task else []
+
+    return {
+        "exports": _summarize_trade_series(export_history),
+        "imports": _summarize_trade_series(import_history),
+        "remittances": _summarize_trade_series(remittance_history),
+        "series_codes": {
+            "exports": export_code,
+            "imports": import_code,
+            "remittances": remittance_code
+        }
+    }
+
+
+async def fetch_regional_relations_data():
+    countries_payload = []
+    for country in REGIONAL_RELATIONSHIP_COUNTRIES:
+        intel = REGIONAL_RELATIONSHIP_INTEL.get(country["code"], {})
+        trade_bundle = await _fetch_country_trade_bundle(country["code"])
+        countries_payload.append({
+            **country,
+            "status": intel.get("status"),
+            "highlights": intel.get("highlights", []),
+            "sources": intel.get("sources", []),
+            "trade": trade_bundle
+        })
+
+    return {
+        "countries": countries_payload,
+        "updated": datetime.now(timezone.utc).isoformat(),
+        "source": "SBP EasyData + curated relationship intel"
+    }
+
+
 async def fetch_road_advisory():
     """Fetch road advisory data from NHMP"""
     try:
@@ -4513,69 +4889,30 @@ async def get_psx_data():
     }
 
 
-@app.get("/api/regional")
+@app.get("/api/regional-relations")
 async def get_regional_relations():
-    """Get regional relations data"""
-    relations = {
-        "india": {
-            "status": "Tense",
-            "trade_status": "Limited",
-            "recent_events": [
-                "Border security talks scheduled",
-                "Trade discussions on hold"
-            ],
-            "sentiment": -0.3
-        },
-        "china": {
-            "status": "Strategic Partnership",
-            "trade_status": "Active",
-            "recent_events": [
-                "CPEC Phase 2 projects advancing",
-                "Military cooperation exercises planned"
-            ],
-            "sentiment": 0.8
-        },
-        "afghanistan": {
-            "status": "Complex",
-            "trade_status": "Limited",
-            "recent_events": [
-                "Border management discussions ongoing",
-                "Humanitarian aid coordination"
-            ],
-            "sentiment": 0.1
-        },
-        "iran": {
-            "status": "Cordial",
-            "trade_status": "Growing",
-            "recent_events": [
-                "Energy cooperation talks",
-                "Border security coordination"
-            ],
-            "sentiment": 0.4
-        },
-        "saudi_arabia": {
-            "status": "Strong Alliance",
-            "trade_status": "Active",
-            "recent_events": [
-                "Investment discussions ongoing",
-                "Worker welfare agreements"
-            ],
-            "sentiment": 0.7
-        },
-        "usa": {
-            "status": "Engagement",
-            "trade_status": "Normal",
-            "recent_events": [
-                "Diplomatic engagements continue",
-                "Trade discussions scheduled"
-            ],
-            "sentiment": 0.3
-        }
-    }
+    """Get regional relations data with trade/remittance trends."""
+    if data_cache["regional_relations"]["updated"] and data_cache["regional_relations"]["data"]:
+        age = (datetime.now(timezone.utc) - data_cache["regional_relations"]["updated"]).total_seconds()
+        if age < 86400:
+            return {
+                "data": data_cache["regional_relations"]["data"],
+                "updated": data_cache["regional_relations"]["updated"].isoformat()
+            }
+
+    data_cache["regional_relations"]["data"] = await fetch_regional_relations_data()
+    data_cache["regional_relations"]["updated"] = datetime.now(timezone.utc)
+
     return {
-        "relations": relations,
-        "updated": datetime.now(timezone.utc).isoformat()
+        "data": data_cache["regional_relations"]["data"],
+        "updated": data_cache["regional_relations"]["updated"].isoformat()
     }
+
+
+@app.get("/api/regional")
+async def get_regional_alias():
+    """Alias for regional relations data."""
+    return await get_regional_relations()
 
 @app.get("/api/infrastructure")
 async def get_infrastructure_status():

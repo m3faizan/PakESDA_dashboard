@@ -52,7 +52,7 @@ function App() {
           axios.get(`${API_BASE}/api/economic`),
           axios.get(`${API_BASE}/api/security`),
           axios.get(`${API_BASE}/api/weather`),
-          axios.get(`${API_BASE}/api/regional`),
+          axios.get(`${API_BASE}/api/regional-relations`),
           axios.get(`${API_BASE}/api/infrastructure`),
           axios.get(`${API_BASE}/api/map-data`),
           axios.get(`${API_BASE}/api/daily-energy-report`),
@@ -63,7 +63,7 @@ function App() {
       if (economicRes.status === 'fulfilled') setEconomic(economicRes.value.data.data);
       if (securityRes.status === 'fulfilled') setSecurity(securityRes.value.data.alerts || []);
       if (weatherRes.status === 'fulfilled') setWeather(weatherRes.value.data.cities || []);
-      if (regionalRes.status === 'fulfilled') setRegional(regionalRes.value.data.relations);
+      if (regionalRes.status === 'fulfilled') setRegional(regionalRes.value.data.data);
       if (infraRes.status === 'fulfilled') setInfrastructure(infraRes.value.data);
       if (mapRes.status === 'fulfilled') setMapData(mapRes.value.data);
       if (energyRes.status === 'fulfilled') setEnergyReport(energyRes.value.data.data);
