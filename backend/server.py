@@ -4796,18 +4796,23 @@ async def get_business_environment():
 
     if should_refresh:
         fetched = await fetch_business_environment_data()
-        if fetched:
+        has_real_data = (
+            fetched
+            and isinstance(fetched, dict)
+            and fetched.get("confidence", {}).get("history")
+        )
+        if has_real_data:
             data_cache["business_environment"]["data"] = fetched
             data_cache["business_environment"]["updated"] = datetime.now(timezone.utc)
             persist_cache_entry("business_environment", fetched)
-        elif not data_cache["business_environment"]["data"]:
+        elif not data_cache["business_environment"]["data"] or not data_cache["business_environment"]["data"].get("confidence", {}).get("history"):
             persisted_data, persisted_updated = restore_cache_entry("business_environment")
-            if persisted_data:
+            if persisted_data and persisted_data.get("confidence", {}).get("history"):
                 data_cache["business_environment"]["data"] = persisted_data
                 data_cache["business_environment"]["updated"] = datetime.fromisoformat(persisted_updated) if persisted_updated else datetime.now(timezone.utc)
-    elif not data_cache["business_environment"]["data"]:
+    elif not data_cache["business_environment"]["data"] or not data_cache["business_environment"]["data"].get("confidence", {}).get("history"):
         persisted_data, persisted_updated = restore_cache_entry("business_environment")
-        if persisted_data:
+        if persisted_data and persisted_data.get("confidence", {}).get("history"):
             data_cache["business_environment"]["data"] = persisted_data
             data_cache["business_environment"]["updated"] = datetime.fromisoformat(persisted_updated) if persisted_updated else datetime.now(timezone.utc)
 

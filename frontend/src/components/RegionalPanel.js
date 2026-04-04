@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Info, TrendingUp, TrendingDown } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Info, TrendingUp, TrendingDown, ChevronDown, ChevronRight } from 'lucide-react';
 import {
   ResponsiveContainer,
   LineChart,
@@ -21,16 +21,21 @@ const scaleHistory = (history = []) =>
 
 const GROUP_ORDER = ['Neighbor', 'GCC', 'Major', 'EU'];
 
+const BAD_STATUSES = [
+  'suspended', 'tense', 'hostile', 'restricted', 'conflict', 'strained',
+  'frozen', 'severed', 'disruption', 'border security'
+];
+
+const isNegativeRelationship = (status) => {
+  if (!status) return false;
+  const lower = status.toLowerCase();
+  return BAD_STATUSES.some((word) => lower.includes(word));
+};
+
 const RegionalPanel = ({ relations, loading }) => {
   const countries = relations?.countries || [];
-  const [selectedCountry, setSelectedCountry] = useState(countries[0]?.code || '');
+  const [expandedCountry, setExpandedCountry] = useState(null);
   const [showSources, setShowSources] = useState(false);
-
-  useEffect(() => {
-    if (countries.length && !countries.find((c) => c.code === selectedCountry)) {
-      setSelectedCountry(countries[0].code);
-    }
-  }, [countries, selectedCountry]);
 
   const grouped = useMemo(() => {
     const map = {};
@@ -46,17 +51,18 @@ const RegionalPanel = ({ relations, loading }) => {
   }, [countries]);
 
   const activeCountry = useMemo(
-    () => countries.find((c) => c.code === selectedCountry) || countries[0],
-    [countries, selectedCountry]
+    () => countries.find((c) => c.code === expandedCountry) || null,
+    [countries, expandedCountry]
   );
 
   const tradeCards = useMemo(() => {
-    if (!activeCountry) return [];
-    return [
-      { key: 'exports', label: 'Exports', data: activeCountry.trade?.exports },
-      { key: 'imports', label: 'Imports', data: activeCountry.trade?.imports },
-      { key: 'remittances', label: 'Remittances', data: activeCountry.trade?.remittances }
-    ];
+    if (!activeCountry?.trade) return [];
+    const cards = [];
+    const t = activeCountry.trade;
+    if (t.exports?.latest?.value != null) cards.push({ key: 'exports', label: 'Exports', data: t.exports });
+    if (t.imports?.latest?.value != null) cards.push({ key: 'imports', label: 'Imports', data: t.imports });
+    if (t.remittances?.latest?.value != null) cards.push({ key: 'remittances', label: 'Remittances', data: t.remittances });
+    return cards;
   }, [activeCountry]);
 
   const tradeBalance = useMemo(() => {
@@ -66,6 +72,11 @@ const RegionalPanel = ({ relations, loading }) => {
     if (exp == null || imp == null) return null;
     return (exp - imp) * 1000;
   }, [activeCountry]);
+
+  const handleCountryClick = (code) => {
+    setExpandedCountry((prev) => prev === code ? null : code);
+    setShowSources(false);
+  };
 
   return (
     <div className="panel regional-panel" data-testid="regional-panel">
@@ -81,157 +92,160 @@ const RegionalPanel = ({ relations, loading }) => {
             <div className="spinner"></div>
           </div>
         ) : (
-          <div className="regional-layout" data-testid="regional-layout">
-            {/* Left: grouped country sidebar */}
-            <div className="regional-country-sidebar" data-testid="regional-country-sidebar">
-              {grouped.map((grp) => (
-                <React.Fragment key={grp.group}>
-                  <div className="regional-group-label">{grp.group}</div>
-                  {grp.items.map((country) => (
-                    <button
-                      key={country.code}
-                      className={`regional-country-btn ${selectedCountry === country.code ? 'active' : ''}`}
-                      onClick={() => { setSelectedCountry(country.code); setShowSources(false); }}
-                      data-testid={`regional-country-${country.code}`}
-                    >
-                      <span className="regional-country-btn-flag">{country.flag}</span>
-                      <span className="regional-country-btn-info">
-                        <span className="regional-country-btn-name">{country.name.toUpperCase()}</span>
-                        {country.tag && <span className="regional-country-btn-tag">{country.tag}</span>}
-                      </span>
-                    </button>
-                  ))}
-                </React.Fragment>
-              ))}
-            </div>
-
-            {/* Right: detail panel */}
-            {activeCountry ? (
-              <div className="regional-detail" data-testid="regional-detail">
-                {/* Header */}
-                <div className="regional-detail-header">
-                  <div>
-                    <div className="regional-detail-title" data-testid="regional-detail-title">
-                      <span className="regional-detail-flag">{activeCountry.flag}</span>
-                      {activeCountry.name.toUpperCase()}
-                    </div>
-                    <div className="regional-status-row">
-                      <span className="regional-status-badge" data-testid="regional-status-badge">
-                        {activeCountry.status || 'ACTIVE'}
-                      </span>
-                      {activeCountry.tag && (
-                        <span className="regional-tag-chip" data-testid="regional-tag-chip">
-                          {activeCountry.tag.toUpperCase()}
+          <div className="regional-list" data-testid="regional-list">
+            {grouped.map((grp) => (
+              <React.Fragment key={grp.group}>
+                <div className="regional-group-label">{grp.group}</div>
+                {grp.items.map((country) => {
+                  const isExpanded = expandedCountry === country.code;
+                  const isNeg = isNegativeRelationship(country.status);
+                  return (
+                    <div key={country.code} className="regional-country-block" data-testid={`regional-block-${country.code}`}>
+                      <button
+                        className={`regional-country-row ${isExpanded ? 'active' : ''}`}
+                        onClick={() => handleCountryClick(country.code)}
+                        data-testid={`regional-country-${country.code}`}
+                      >
+                        <span className="regional-country-expand">
+                          {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                         </span>
+                        <span className="regional-country-row-name">{country.name.toUpperCase()}</span>
+                        <span className={`regional-country-row-status ${isNeg ? 'negative' : 'positive'}`}>
+                          {country.status || 'ACTIVE'}
+                        </span>
+                        {country.tag && (
+                          <span className={`regional-country-row-tag ${isNeg ? 'negative' : ''}`}>
+                            {country.tag.toUpperCase()}
+                          </span>
+                        )}
+                      </button>
+
+                      {isExpanded && activeCountry && (
+                        <div className="regional-detail" data-testid="regional-detail">
+                          <div className="regional-detail-header">
+                            <div>
+                              <div className="regional-detail-title" data-testid="regional-detail-title">
+                                {activeCountry.name.toUpperCase()}
+                              </div>
+                              <div className="regional-status-row">
+                                <span className={`regional-status-badge ${isNeg ? 'negative' : ''}`} data-testid="regional-status-badge">
+                                  {activeCountry.status || 'ACTIVE'}
+                                </span>
+                              </div>
+                            </div>
+                            <button
+                              className="regional-info-button"
+                              onClick={() => setShowSources((prev) => !prev)}
+                              data-testid="regional-sources-button"
+                            >
+                              <Info size={14} />
+                            </button>
+                            {showSources && (
+                              <div className="regional-sources-panel" data-testid="regional-sources-panel">
+                                <div className="regional-sources-title">Sources</div>
+                                {(activeCountry.sources || []).map((source, idx) => (
+                                  <a key={source.url} href={source.url} target="_blank" rel="noreferrer"
+                                    className="regional-source-link" data-testid={`regional-source-link-${idx}`}>
+                                    {source.title}
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Relationship highlights */}
+                          {(activeCountry.highlights || []).length > 0 && (
+                            <div className="regional-highlights" data-testid="regional-highlights">
+                              <div className="regional-section-title">Relationship Status</div>
+                              <ul>
+                                {activeCountry.highlights.map((item, idx) => (
+                                  <li key={`${activeCountry.code}-h-${idx}`} data-testid={`regional-highlight-${idx}`}>{item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* Trade & Remittance - only if data exists */}
+                          {tradeCards.length > 0 && (
+                            <div className="regional-trade" data-testid="regional-trade">
+                              <div className="regional-section-title">Trade & Remittance (Last 12 Months)</div>
+                              <div className="regional-trade-grid" style={{ gridTemplateColumns: `repeat(${Math.min(tradeCards.length, 3)}, 1fr)` }}>
+                                {tradeCards.map((card) => {
+                                  const latest = card.data?.latest?.value;
+                                  const change = card.data?.mom_change;
+                                  const hasData = latest !== null && latest !== undefined;
+                                  const trendUp = change != null && change >= 0;
+                                  const chartData = scaleHistory(card.data?.history || []);
+                                  return (
+                                    <div key={card.key} className="regional-trade-card" data-testid={`regional-trade-${card.key}`}>
+                                      <div className="regional-trade-label">{card.label}</div>
+                                      <div className="regional-trade-value" data-testid={`regional-trade-value-${card.key}`}>
+                                        {hasData ? formatUsdThousands(latest) : '--'}
+                                      </div>
+                                      <div className="regional-trade-meta">
+                                        <span data-testid={`regional-trade-month-${card.key}`}>
+                                          {card.data?.latest?.month || ''}
+                                        </span>
+                                        {change != null && (
+                                          <span className={`regional-trade-change ${trendUp ? 'positive' : 'negative'}`}
+                                            data-testid={`regional-trade-change-${card.key}`}>
+                                            {trendUp ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                                            {trendUp ? '+' : ''}{change.toFixed(1)}%
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="regional-trade-chart" data-testid={`regional-trade-chart-${card.key}`}>
+                                        {chartData.length > 1 ? (
+                                          <ResponsiveContainer width="100%" height={50}>
+                                            <LineChart data={chartData}>
+                                              <Line type="monotone" dataKey="value"
+                                                stroke={trendUp ? '#22C55E' : '#F97316'} strokeWidth={1.5} dot={false} />
+                                            </LineChart>
+                                          </ResponsiveContainer>
+                                        ) : (
+                                          <div className="regional-trade-empty">No trend data</div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              {tradeBalance !== null && (
+                                <div className="regional-trade-balance" data-testid="regional-trade-balance">
+                                  <span className="regional-trade-balance-label">Trade Balance</span>
+                                  <span className={`regional-trade-balance-value ${tradeBalance >= 0 ? 'surplus' : 'deficit'}`}
+                                    data-testid="regional-trade-balance-value">
+                                    {tradeBalance >= 0 ? '+' : ''}{formatUsdThousands(tradeBalance / 1000)}
+                                    <span style={{ fontSize: '0.5rem', marginLeft: '0.3rem', opacity: 0.7 }}>
+                                      {tradeBalance >= 0 ? 'SURPLUS' : 'DEFICIT'}
+                                    </span>
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Visa & Travel */}
+                          {(activeCountry.visa?.status || (activeCountry.visa?.notes || []).length > 0) && (
+                            <div className="regional-visa" data-testid="regional-visa">
+                              <div className="regional-section-title">Visa & Travel</div>
+                              <div className="regional-visa-status" data-testid="regional-visa-status">
+                                {activeCountry.visa?.status || 'Visa required'}
+                              </div>
+                              <ul>
+                                {(activeCountry.visa?.notes || []).map((note, idx) => (
+                                  <li key={`${activeCountry.code}-v-${idx}`} data-testid={`regional-visa-note-${idx}`}>{note}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
-                  </div>
-                  <button
-                    className="regional-info-button"
-                    onClick={() => setShowSources((prev) => !prev)}
-                    data-testid="regional-sources-button"
-                  >
-                    <Info size={14} />
-                  </button>
-                  {showSources && (
-                    <div className="regional-sources-panel" data-testid="regional-sources-panel">
-                      <div className="regional-sources-title">Sources</div>
-                      {(activeCountry.sources || []).map((source, idx) => (
-                        <a key={source.url} href={source.url} target="_blank" rel="noreferrer"
-                          className="regional-source-link" data-testid={`regional-source-link-${idx}`}>
-                          {source.title}
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Relationship highlights */}
-                <div className="regional-highlights" data-testid="regional-highlights">
-                  <div className="regional-section-title">Relationship Status</div>
-                  <ul>
-                    {(activeCountry.highlights || []).map((item, idx) => (
-                      <li key={`${activeCountry.code}-h-${idx}`} data-testid={`regional-highlight-${idx}`}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Trade & Remittance */}
-                <div className="regional-trade" data-testid="regional-trade">
-                  <div className="regional-section-title">Trade & Remittance (Last 12 Months)</div>
-                  <div className="regional-trade-grid">
-                    {tradeCards.map((card) => {
-                      const latest = card.data?.latest?.value;
-                      const change = card.data?.mom_change;
-                      const hasData = latest !== null && latest !== undefined;
-                      const trendUp = change != null && change >= 0;
-                      const chartData = scaleHistory(card.data?.history || []);
-                      return (
-                        <div key={card.key} className="regional-trade-card" data-testid={`regional-trade-${card.key}`}>
-                          <div className="regional-trade-label">{card.label}</div>
-                          <div className="regional-trade-value" data-testid={`regional-trade-value-${card.key}`}>
-                            {hasData ? formatUsdThousands(latest) : '--'}
-                          </div>
-                          <div className="regional-trade-meta">
-                            <span data-testid={`regional-trade-month-${card.key}`}>
-                              {card.data?.latest?.month || ''}
-                            </span>
-                            {change != null && (
-                              <span className={`regional-trade-change ${trendUp ? 'positive' : 'negative'}`}
-                                data-testid={`regional-trade-change-${card.key}`}>
-                                {trendUp ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-                                {trendUp ? '+' : ''}{change.toFixed(1)}%
-                              </span>
-                            )}
-                          </div>
-                          <div className="regional-trade-chart" data-testid={`regional-trade-chart-${card.key}`}>
-                            {chartData.length > 1 ? (
-                              <ResponsiveContainer width="100%" height={50}>
-                                <LineChart data={chartData}>
-                                  <Line type="monotone" dataKey="value"
-                                    stroke={trendUp ? '#22C55E' : '#F97316'} strokeWidth={1.5} dot={false} />
-                                </LineChart>
-                              </ResponsiveContainer>
-                            ) : (
-                              <div className="regional-trade-empty">No trend data</div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {tradeBalance !== null && (
-                    <div className="regional-trade-balance" data-testid="regional-trade-balance">
-                      <span className="regional-trade-balance-label">Trade Balance</span>
-                      <span className={`regional-trade-balance-value ${tradeBalance >= 0 ? 'surplus' : 'deficit'}`}
-                        data-testid="regional-trade-balance-value">
-                        {tradeBalance >= 0 ? '+' : ''}{formatUsdThousands(tradeBalance / 1000)}
-                        <span style={{ fontSize: '0.5rem', marginLeft: '0.3rem', opacity: 0.7 }}>
-                          {tradeBalance >= 0 ? 'SURPLUS' : 'DEFICIT'}
-                        </span>
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Visa & Travel */}
-                <div className="regional-visa" data-testid="regional-visa">
-                  <div className="regional-section-title">Visa & Travel</div>
-                  <div className="regional-visa-status" data-testid="regional-visa-status">
-                    {activeCountry.visa?.status || 'Visa required'}
-                  </div>
-                  <ul>
-                    {(activeCountry.visa?.notes || []).map((note, idx) => (
-                      <li key={`${activeCountry.code}-v-${idx}`} data-testid={`regional-visa-note-${idx}`}>{note}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            ) : (
-              <div className="regional-detail" data-testid="regional-detail-empty">
-                Select a country to view details.
-              </div>
-            )}
+                  );
+                })}
+              </React.Fragment>
+            ))}
           </div>
         )}
       </div>
