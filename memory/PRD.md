@@ -38,19 +38,15 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] Completed **Regional Relations Panel** with full redesign:
   - Accordion-style layout: 24 countries collapsed by default, expand on click
   - No emoji flags - clean text-only country names in JetBrains Mono font
+  - All tags and status labels in JetBrains Mono, full text visible (no truncation)
   - 5 groups: Neighbor(4), GCC(7), Major(3), Central Asia(3), EU(7)
-  - Added Central Asian countries: Azerbaijan, Tajikistan, Kazakhstan, Russia (moved to Major)
-  - Embassy links (mofa.gov.pk/{city} format) for all 24 countries
-  - "Most Recent Visit" field for every country with visit details
-  - Red color for negative relationships (suspended, tense, disruption, border security)
-  - Green for positive/active relationships
-  - Fixed panel height (400px) - no disruption to neighboring panels
-  - Right-aligned status labels with consistent alignment
-  - Trade & Remittance cards hidden when SBP data unavailable
-  - Disk persistence for SBP series mappings and full regional response
-  - Optimized SBP API calls: pre-fetch 3 global mappings once
-  - Fixed Business Environment persistence to prevent overwriting good data with null
-- **Known Issue**: SBP EasyData API key daily call limit exhausted - affects Regional trade data AND Business Environment panel. Data auto-restores on daily reset.
+  - Added: Russia, Azerbaijan, Tajikistan, Kazakhstan
+  - Actual embassy/consulate URLs (pakhcnewdelhi.org.pk, embassyofpakistan.com, pakbj.org, etc.)
+  - Web-researched "Most Recent Visit" for every country (e.g., Army Chief Asim Munir visited US Jun+Aug 2025)
+  - Red color for negative relationships, green for positive
+  - Panel content height 300px (matches Weather and other panels)
+  - Disk persistence for SBP data, optimized API calls
+- **Known Issue**: SBP EasyData API key daily call limit exhausted - affects trade data and Business Environment
 
 ### Latest Updates (Mar 14, 2026)
 - [x] Implemented **Daily Briefing** panel powered by **OpenAI GPT-5.2** with a 6-hour cache window.

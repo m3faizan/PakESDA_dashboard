@@ -349,18 +349,18 @@ PAKISTAN_VESSELS = [
 ]
 
 REGIONAL_RELATIONSHIP_COUNTRIES = [
-    {"code": "india", "name": "India", "group": "Neighbor", "embassy_url": "https://mofa.gov.pk/new-delhi"},
+    {"code": "india", "name": "India", "group": "Neighbor", "embassy_url": "https://pakhcnewdelhi.org.pk"},
     {"code": "afghanistan", "name": "Afghanistan", "group": "Neighbor", "embassy_url": "https://mofa.gov.pk/kabul"},
-    {"code": "iran", "name": "Iran", "group": "Neighbor", "embassy_url": "https://mofa.gov.pk/tehran"},
-    {"code": "china", "name": "China", "group": "Neighbor", "embassy_url": "https://mofa.gov.pk/beijing"},
+    {"code": "iran", "name": "Iran", "group": "Neighbor", "embassy_url": "https://www.pakistanembassytehran.com"},
+    {"code": "china", "name": "China", "group": "Neighbor", "embassy_url": "https://www.pakbj.org"},
     {"code": "saudi_arabia", "name": "Saudi Arabia", "group": "GCC", "embassy_url": "https://pakistaninksa.com"},
-    {"code": "uae_abu_dhabi", "name": "UAE - Abu Dhabi", "group": "GCC", "embassy_url": "https://mofa.gov.pk/abu-dhabi"},
-    {"code": "uae_dubai", "name": "UAE - Dubai", "group": "GCC", "embassy_url": "https://mofa.gov.pk/dubai"},
+    {"code": "uae_abu_dhabi", "name": "UAE - Abu Dhabi", "group": "GCC", "embassy_url": "https://pakistanembassyuae.org"},
+    {"code": "uae_dubai", "name": "UAE - Dubai", "group": "GCC", "embassy_url": "https://pakistanembassyuae.org"},
     {"code": "qatar", "name": "Qatar", "group": "GCC", "embassy_url": "https://mofa.gov.pk/doha"},
     {"code": "kuwait", "name": "Kuwait", "group": "GCC", "embassy_url": "https://mofa.gov.pk/kuwait"},
     {"code": "bahrain", "name": "Bahrain", "group": "GCC", "embassy_url": "https://mofa.gov.pk/manama"},
     {"code": "oman", "name": "Oman", "group": "GCC", "embassy_url": "https://mofa.gov.pk/muscat"},
-    {"code": "united_states", "name": "United States", "group": "Major", "embassy_url": "https://embassyofpakistanusa.org"},
+    {"code": "united_states", "name": "United States", "group": "Major", "embassy_url": "https://www.embassyofpakistan.com"},
     {"code": "united_kingdom", "name": "United Kingdom", "group": "Major", "embassy_url": "https://www.phclondon.org"},
     {"code": "russia", "name": "Russia", "group": "Major", "embassy_url": "https://mofa.gov.pk/moscow"},
     {"code": "azerbaijan", "name": "Azerbaijan", "group": "Central Asia", "embassy_url": "https://mofa.gov.pk/baku"},
@@ -423,7 +423,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "china": {
         "status": "STRATEGIC PARTNERSHIP",
         "tag": "STRATEGIC",
-        "recent_visit": "FM Dar visited Beijing, Mar/Apr 2026; PM at SCO Summit 2025",
+        "recent_visit": "PM Sharif state visit to Beijing, Aug-Sep 2025; met President Xi Jinping at SCO Summit",
         "highlights": [
             "CPEC Phase II focused on high-quality, people-centric projects and industrial cooperation.",
             "Pakistan reaffirmed security assurances for Chinese personnel and projects.",
@@ -444,7 +444,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "saudi_arabia": {
         "status": "DEFENSE PACT",
         "tag": "MILITARY COOPERATION",
-        "recent_visit": "PM Sharif visited Riyadh, Oct 2025; Crown Prince MBS visit to Islamabad expected",
+        "recent_visit": "PM Sharif visited Riyadh, Oct 2025 for FII9 Summit; met Crown Prince MBS",
         "highlights": [
             "Strategic Mutual Defense Agreement signed Sept 2025 deepening security cooperation.",
             "Defense coordination expanded alongside investment and economic support channels.",
@@ -465,7 +465,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "uae_abu_dhabi": {
         "status": "INVESTMENT PARTNER",
         "tag": "INVESTMENT",
-        "recent_visit": "PM Sharif visited UAE, Nov 2025; regular high-level exchanges",
+        "recent_visit": "PM Sharif visited UAE, Jun 2025",
         "highlights": [
             "Abu Dhabi-led investment channels continue to expand across energy and infrastructure.",
             "High-level visits in late 2025 reaffirmed investment cooperation.",
@@ -507,7 +507,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "united_states": {
         "status": "COUNTERTERRORISM COOPERATION",
         "tag": "SECURITY",
-        "recent_visit": "FM Dar met US officials, Apr 2025; engagement at UNGA 2025",
+        "recent_visit": "Army Chief FM Asim Munir visited Washington, Jun 2025; met President Trump. Second visit Aug 2025 at CENTCOM",
         "highlights": [
             "Joint counterterrorism operations and intelligence exchanges expanded in 2025.",
             "Military engagement and security dialogue revived after Afghanistan drawdown.",
@@ -549,7 +549,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "iran": {
         "status": "BORDER SECURITY / ENERGY",
         "tag": "SECURITY",
-        "recent_visit": "Iranian President Pezeshkian visited Islamabad, Apr 2025",
+        "recent_visit": "Iranian President Pezeshkian met PM Sharif in Tehran, May 2025",
         "highlights": [
             "Joint statements emphasize border markets and economic connectivity.",
             "Pakistan expressed solidarity with Iran during regional conflict escalation and called for restraint.",
@@ -591,7 +591,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "kuwait": {
         "status": "INVESTMENT / INFRASTRUCTURE",
         "tag": "INVESTMENT",
-        "recent_visit": "PM Sharif met Kuwaiti leadership at Arab-Islamic Summit, Nov 2025",
+        "recent_visit": "Phone call with Crown Prince Sheikh Sabah, Mar 2026; no PM visit in 2025",
         "highlights": [
             "Kuwait Fund financing continues for the Mohmand Dam hydropower project.",
             "Kuwait Investment Authority exploring expanded portfolio in Pakistan.",
@@ -654,7 +654,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
     "united_kingdom": {
         "status": "TRADE DIALOGUE",
         "tag": "TRADE",
-        "recent_visit": "PM Sharif met UK PM Starmer, Apr 2026",
+        "recent_visit": "PM Sharif visited London, Sep 2025; met UK officials and diaspora",
         "highlights": [
             "Pakistan-UK Trade Dialogue Mechanism launched in 2025 with sectoral working groups.",
             "Both sides exploring a future FTA and services cooperation.",
@@ -821,7 +821,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
             "PM Sharif met President Putin on SCO sidelines in Jul 2025.",
             "Bilateral trade remains modest but energy cooperation is expanding."
         ],
-        "recent_visit": "PM Sharif met President Putin at SCO Summit, Astana, Jul 2025",
+        "recent_visit": "PM Sharif met Putin at SCO sidelines in China, Sep 2025",
         "visa": {
             "status": "VISA REQUIRED",
             "notes": [
@@ -842,7 +842,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
             "Trade agreements and business forums expanded bilateral commerce.",
             "Defense cooperation and mutual political support remain strong."
         ],
-        "recent_visit": "PM Sharif state visit, Baku, May 2025 (5th visit in 2025)",
+        "recent_visit": "PM Sharif visited Baku, Nov 2025 (5+ visits in 2025); $2B investment pledge",
         "visa": {
             "status": "E-VISA AVAILABLE",
             "notes": [
@@ -863,7 +863,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
             "CASA-1000 power transmission project links both countries.",
             "Transit trade and cross-border connectivity remain key agenda items."
         ],
-        "recent_visit": "PM Sharif visited Dushanbe, met President Rahmon, Jul 2025",
+        "recent_visit": "PM Sharif visited Dushanbe, May 2025; met President Rahmon",
         "visa": {
             "status": "VISA REQUIRED",
             "notes": [
@@ -884,7 +884,7 @@ REGIONAL_RELATIONSHIP_INTEL = {
             "Energy and transit trade cooperation discussed bilaterally.",
             "Kazakhstan is a key partner in Central Asian connectivity."
         ],
-        "recent_visit": "PM Sharif attended SCO Summit, Astana, Jul 2025",
+        "recent_visit": "No confirmed PM visit in 2025; SCO Summit was held in China",
         "visa": {
             "status": "VISA REQUIRED",
             "notes": [
@@ -5702,3 +5702,4 @@ async def get_port_history_summary():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
+
