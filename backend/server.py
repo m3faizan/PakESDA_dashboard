@@ -354,14 +354,21 @@ REGIONAL_RELATIONSHIP_COUNTRIES = [
     {"code": "iran", "name": "Iran", "flag": "🇮🇷", "group": "Neighbor"},
     {"code": "china", "name": "China", "flag": "🇨🇳", "group": "Neighbor"},
     {"code": "saudi_arabia", "name": "Saudi Arabia", "flag": "🇸🇦", "group": "GCC"},
-    {"code": "united_arab_emirates", "name": "United Arab Emirates", "flag": "🇦🇪", "group": "GCC"},
+    {"code": "uae_abu_dhabi", "name": "UAE - Abu Dhabi", "flag": "🇦🇪", "group": "GCC"},
+    {"code": "uae_dubai", "name": "UAE - Dubai", "flag": "🇦🇪", "group": "GCC"},
     {"code": "qatar", "name": "Qatar", "flag": "🇶🇦", "group": "GCC"},
     {"code": "kuwait", "name": "Kuwait", "flag": "🇰🇼", "group": "GCC"},
     {"code": "bahrain", "name": "Bahrain", "flag": "🇧🇭", "group": "GCC"},
     {"code": "oman", "name": "Oman", "flag": "🇴🇲", "group": "GCC"},
     {"code": "united_states", "name": "United States", "flag": "🇺🇸", "group": "Major"},
     {"code": "united_kingdom", "name": "United Kingdom", "flag": "🇬🇧", "group": "Major"},
-    {"code": "european_union", "name": "European Union", "flag": "🇪🇺", "group": "Major"}
+    {"code": "european_union", "name": "European Union", "flag": "🇪🇺", "group": "EU"},
+    {"code": "germany", "name": "Germany", "flag": "🇩🇪", "group": "EU"},
+    {"code": "netherlands", "name": "Netherlands", "flag": "🇳🇱", "group": "EU"},
+    {"code": "france", "name": "France", "flag": "🇫🇷", "group": "EU"},
+    {"code": "spain", "name": "Spain", "flag": "🇪🇸", "group": "EU"},
+    {"code": "italy", "name": "Italy", "flag": "🇮🇹", "group": "EU"},
+    {"code": "belgium", "name": "Belgium", "flag": "🇧🇪", "group": "EU"}
 ]
 
 COUNTRY_ALIASES = {
@@ -370,24 +377,39 @@ COUNTRY_ALIASES = {
     "iran": ["iran", "islamic republic of iran"],
     "china": ["china", "peoples republic of china"],
     "saudi_arabia": ["saudi arabia", "ksa"],
-    "united_arab_emirates": ["united arab emirates", "uae"],
+    "uae_abu_dhabi": ["abu dhabi", "united arab emirates - abu dhabi", "u.a.e. - abu dhabi"],
+    "uae_dubai": ["dubai", "united arab emirates - dubai", "u.a.e. - dubai"],
     "qatar": ["qatar"],
     "kuwait": ["kuwait"],
     "bahrain": ["bahrain"],
     "oman": ["oman"],
     "united_states": ["united states", "united states of america", "usa", "u.s.a"],
     "united_kingdom": ["united kingdom", "uk", "u.k"],
-    "european_union": ["european union", "eu"]
+    "european_union": ["european union", "eu"],
+    "germany": ["germany"],
+    "netherlands": ["netherlands"],
+    "france": ["france"],
+    "spain": ["spain"],
+    "italy": ["italy"],
+    "belgium": ["belgium"]
 }
 
 REGIONAL_RELATIONSHIP_INTEL = {
     "india": {
         "status": "TENSE / SUSPENDED",
+        "tag": "SUSPENDED",
         "highlights": [
             "Bilateral trade and transit suspended after May 2025 escalation; shipping bans imposed by both sides.",
             "Airspace restrictions and port access bans remain in place amid security tensions.",
             "Border trade remains heavily restricted with limited humanitarian exceptions."
         ],
+        "visa": {
+            "status": "VISA RESTRICTIONS",
+            "notes": [
+                "Most visas suspended; exceptions limited to medical and humanitarian categories.",
+                "Cross-border travel approvals remain highly restricted."
+            ]
+        },
         "sources": [
             {"title": "Pakistan Today (May 2025 trade suspension)", "url": "https://profit.pakistantoday.com.pk/2025/05/08/commerce-ministry-clarifies-sro-on-suspension-of-india-trade-amid-rising-tensions/"},
             {"title": "Kuehne+Nagel advisory", "url": "https://mykn.kuehne-nagel.com/news/article/india-pakistan-ban-goods-and-ships-amid-escal-05-May-2025"}
@@ -395,11 +417,19 @@ REGIONAL_RELATIONSHIP_INTEL = {
     },
     "china": {
         "status": "STRATEGIC PARTNERSHIP",
+        "tag": "STRATEGIC",
         "highlights": [
             "CPEC Phase II focused on high-quality, people-centric projects and industrial cooperation.",
             "Pakistan reaffirmed security assurances for Chinese personnel and projects.",
             "Regular JCC meetings and high-level visits keep CPEC pipeline active."
         ],
+        "visa": {
+            "status": "BUSINESS / STUDENT VISAS",
+            "notes": [
+                "Business, technical, and CPEC-linked travel prioritized.",
+                "Security vetting and project-linked documentation required."
+            ]
+        },
         "sources": [
             {"title": "CPEC Action Plan 2025-2029", "url": "https://cpec.gov.pk/brain/public/uploads/documents/ActionPlan2025-2029.pdf"},
             {"title": "Tribune: CPEC next phase", "url": "https://tribune.com.pk/story/2586375/cpec-entering-next-phase-says-fm"}
@@ -407,23 +437,59 @@ REGIONAL_RELATIONSHIP_INTEL = {
     },
     "saudi_arabia": {
         "status": "DEFENSE PACT",
+        "tag": "MILITARY COOPERATION",
         "highlights": [
             "Strategic Mutual Defense Agreement signed Sept 2025 deepening security cooperation.",
             "Defense coordination expanded alongside investment and economic support channels.",
             "Saudi security partnership remains a core pillar of Pakistan’s Gulf policy."
         ],
+        "visa": {
+            "status": "WORK / VISIT VISAS",
+            "notes": [
+                "Work visa quotas remain significant for Pakistani labor.",
+                "Visit visas subject to sponsor and compliance checks."
+            ]
+        },
         "sources": [
             {"title": "MEI analysis of defense pact", "url": "https://mei.edu/publication/pakistans-strategic-defense-pact-saudi-arabia-new-security-architecture-wider-middle/"},
             {"title": "CSIS analysis", "url": "https://www.csis.org/analysis/could-pakistani-saudi-defense-pact-be-first-step-toward-nato-style-alliance"}
         ]
     },
-    "united_arab_emirates": {
+    "uae_abu_dhabi": {
         "status": "INVESTMENT PARTNER",
+        "tag": "INVESTMENT",
         "highlights": [
+            "Abu Dhabi-led investment channels continue to expand across energy and infrastructure.",
             "High-level visits in late 2025 reaffirmed investment cooperation.",
-            "UAE engagement centered on energy, infrastructure, tech, and ports.",
-            "Bilateral ties remain on a strong economic trajectory."
+            "UAE engagement centered on ports, logistics, and industrial projects."
         ],
+        "visa": {
+            "status": "ENTRY PERMITS",
+            "notes": [
+                "Visa issuance subject to sponsor and compliance screening.",
+                "Business travel requires pre-approval."
+            ]
+        },
+        "sources": [
+            {"title": "Tribune: Pakistan-UAE ties", "url": "https://tribune.com.pk/story/2584166/pakistan-uae-hail-positive-trajectory-in-ties"},
+            {"title": "Arab News: UAE investment", "url": "https://www.arabnews.com/node/2625502/pakistan"}
+        ]
+    },
+    "uae_dubai": {
+        "status": "TRADE / LOGISTICS HUB",
+        "tag": "TRADE HUB",
+        "highlights": [
+            "Dubai remains a key logistics and re-export hub for Pakistan’s Gulf trade.",
+            "Pakistan-UAE commercial ties emphasize ports, aviation, and services.",
+            "Private sector MoUs continue around fintech and logistics."
+        ],
+        "visa": {
+            "status": "ENTRY PERMITS",
+            "notes": [
+                "Visa issuance subject to sponsor and compliance screening.",
+                "Travel approvals may vary by category."
+            ]
+        },
         "sources": [
             {"title": "Tribune: Pakistan-UAE ties", "url": "https://tribune.com.pk/story/2584166/pakistan-uae-hail-positive-trajectory-in-ties"},
             {"title": "Arab News: UAE investment", "url": "https://www.arabnews.com/node/2625502/pakistan"}
@@ -431,11 +497,19 @@ REGIONAL_RELATIONSHIP_INTEL = {
     },
     "united_states": {
         "status": "COUNTERTERRORISM COOPERATION",
+        "tag": "SECURITY",
         "highlights": [
             "Joint counterterrorism operations and intelligence exchanges expanded in 2025.",
             "Military engagement and security dialogue revived after Afghanistan drawdown.",
             "Defense cooperation includes F-16 sustainment and strategic minerals discussions."
         ],
+        "visa": {
+            "status": "VISA REQUIRED",
+            "notes": [
+                "Nonimmigrant visas require interviews and security vetting.",
+                "Student and work visas remain active with compliance checks."
+            ]
+        },
         "sources": [
             {"title": "Dawn: US-Pakistan security ties", "url": "https://www.dawn.com/news/1967468"},
             {"title": "US State Dept (Pakistan)", "url": "https://2021-2025.state.gov/countries-areas/pakistan/"}
@@ -443,11 +517,19 @@ REGIONAL_RELATIONSHIP_INTEL = {
     },
     "afghanistan": {
         "status": "BORDER SECURITY / TRADE DISRUPTION",
+        "tag": "BORDER",
         "highlights": [
             "Border closures in 2025 reduced bilateral trade by ~40%.",
             "Transit routes remain volatile with periodic restrictions and exemptions.",
             "Security concerns and Durand Line disputes continue to strain ties."
         ],
+        "visa": {
+            "status": "RESTRICTED",
+            "notes": [
+                "Border movement limited to documented travelers and humanitarian channels.",
+                "Travel protocols vary with security conditions."
+            ]
+        },
         "sources": [
             {"title": "Khaama: trade down 40%", "url": "https://www.khaama.com/afghanistan-pakistan-trade-falls-40-in-2025-after-border-closures-report/"},
             {"title": "AfIntl: transit cargo easing", "url": "https://www.afintl.com/en/202601135901"}
@@ -455,23 +537,39 @@ REGIONAL_RELATIONSHIP_INTEL = {
     },
     "iran": {
         "status": "BORDER SECURITY / ENERGY",
+        "tag": "SECURITY",
         "highlights": [
             "Joint statements emphasize border markets and economic connectivity.",
-            "Security coordination and counter-terror cooperation remain priorities.",
+            "Pakistan expressed solidarity with Iran during regional conflict escalation and called for restraint.",
             "Energy cooperation and pipeline discussions remain active."
         ],
+        "visa": {
+            "status": "VISA REQUIRED",
+            "notes": [
+                "Border trade visas and pilgrimage travel continue under security screening.",
+                "Route access subject to border coordination."
+            ]
+        },
         "sources": [
             {"title": "Pakistan MFA joint statement", "url": "https://mofa.gov.pk/press-releases/joint-statement-between-islamic-republic-of-pakistan-and-islamic-republic-of-iran-at-the-culmination-of-the-visit-by-the-president-of-iran"},
-            {"title": "Arab News: border trade", "url": "https://www.arabnews.pk/node/2620283/pakistan"}
+            {"title": "Pakistan condemns strikes on Iran", "url": "https://www.dawn.com/news/1784413"}
         ]
     },
     "qatar": {
         "status": "ENERGY / LNG",
+        "tag": "ENERGY",
         "highlights": [
             "Pakistan approved diversion of surplus LNG cargoes under Qatar contracts for FY26.",
             "Long-term LNG agreements remain the backbone of energy ties.",
             "A $3B investment protocol was formalized through the Joint Ministerial Commission."
         ],
+        "visa": {
+            "status": "WORK / VISIT VISAS",
+            "notes": [
+                "Work visas remain significant for Pakistani expatriates.",
+                "Visit visas require sponsor approvals."
+            ]
+        },
         "sources": [
             {"title": "Tribune: LNG diversion", "url": "https://tribune.com.pk/story/2580611/govt-claims-rs1tr-savings-by-diverting-lng"},
             {"title": "Digital Pakistan: Qatar investment protocol", "url": "https://digitalpakistan.pk/pakistan-and-qatar-formalise-3-billion-investment-agreement/"}
@@ -479,11 +577,19 @@ REGIONAL_RELATIONSHIP_INTEL = {
     },
     "kuwait": {
         "status": "INVESTMENT / INFRASTRUCTURE",
+        "tag": "INVESTMENT",
         "highlights": [
             "Kuwait Fund financing continues for the Mohmand Dam hydropower project.",
             "Kuwait Investment Authority exploring expanded portfolio in Pakistan.",
             "Bilateral business expos and trade consultations remain active."
         ],
+        "visa": {
+            "status": "WORK / VISIT VISAS",
+            "notes": [
+                "Labor migration continues under sponsor-based system.",
+                "Visit visa issuance subject to compliance checks."
+            ]
+        },
         "sources": [
             {"title": "Pakistan EAD: Mohmand Dam financing", "url": "https://www.ead.gov.pk/NewsDetail/ZDcyNzk2MzMtMTI1My00OWE3LWJiYTUtNDRmNTllZTBhZmI0"},
             {"title": "Arab News: Kuwait-Pakistan expo", "url": "https://www.arabnews.pk/node/2618803/pakistan"}
@@ -491,11 +597,19 @@ REGIONAL_RELATIONSHIP_INTEL = {
     },
     "bahrain": {
         "status": "TRADE / DEFENSE",
+        "tag": "DEFENSE",
         "highlights": [
             "High-level visits in late 2025 and early 2026 aimed to lift trade to $1B.",
             "Defense cooperation and training ties were reaffirmed.",
             "Bilateral agenda includes IT, healthcare, energy, and logistics."
         ],
+        "visa": {
+            "status": "WORK / VISIT VISAS",
+            "notes": [
+                "Work visas remain available for skilled labor categories.",
+                "Visit visas require sponsor and compliance checks."
+            ]
+        },
         "sources": [
             {"title": "Dawn: PM visit to Bahrain", "url": "https://www.dawn.com/news/1957645"},
             {"title": "MoIB Pakistan: Bahrain visit notes", "url": "https://www.moib.gov.pk/News/65924"}
@@ -503,11 +617,19 @@ REGIONAL_RELATIONSHIP_INTEL = {
     },
     "oman": {
         "status": "ENERGY / MARITIME",
+        "tag": "MARITIME",
         "highlights": [
             "Energy cooperation includes regular petroleum cargo imports from Oman.",
             "Naval MoU signed for maritime information sharing and cooperation.",
             "Diplomatic engagement continues across energy and security."
         ],
+        "visa": {
+            "status": "WORK / VISIT VISAS",
+            "notes": [
+                "Work visas continue for Pakistani nationals in energy and services.",
+                "Visit visas require sponsor approval."
+            ]
+        },
         "sources": [
             {"title": "Energy Update: Pakistan-Oman energy partnership", "url": "https://www.energyupdate.com.pk/2026/03/26/pakistan-oman-reaffirm-commitment-to-expand-energy-partnership-amid-evolving-regional-situation/"},
             {"title": "Nation: Naval MoU", "url": "https://www.nation.com.pk/24-Dec-2025/pakistan-oman-navies-strengthen-maritime-cooperation-new-information-sharing-mou"}
@@ -515,11 +637,19 @@ REGIONAL_RELATIONSHIP_INTEL = {
     },
     "united_kingdom": {
         "status": "TRADE DIALOGUE",
+        "tag": "TRADE",
         "highlights": [
             "Pakistan-UK Trade Dialogue Mechanism launched in 2025 with sectoral working groups.",
             "Both sides exploring a future FTA and services cooperation.",
             "Trade volumes exceed £5.5B with emphasis on IT, agriculture, education."
         ],
+        "visa": {
+            "status": "VISA REQUIRED",
+            "notes": [
+                "Standard visitor and student visas require biometric checks.",
+                "Seasonal worker routes remain limited."
+            ]
+        },
         "sources": [
             {"title": "Planning Commission: UK trade talks", "url": "https://pc.gov.pk/web/press/get_press/1645"},
             {"title": "Nation: high-level meeting", "url": "https://www.nation.com.pk/02-Apr-2026/pakistan-uk-high-level-meeting-focuses-trade-regional-stability"}
@@ -527,14 +657,136 @@ REGIONAL_RELATIONSHIP_INTEL = {
     },
     "european_union": {
         "status": "GSP+ ACCESS",
+        "tag": "PREFERENTIAL",
         "highlights": [
             "EU GSP+ preferences extended through 2027; monitoring continues on reforms.",
             "Textiles remain the largest beneficiary of preferential access.",
             "EU-Pakistan Joint Commission in 2025 reaffirmed the partnership."
         ],
+        "visa": {
+            "status": "SCHENGEN VISAS",
+            "notes": [
+                "Schengen visas required for most EU destinations.",
+                "Processing times vary by consulate."
+            ]
+        },
         "sources": [
             {"title": "EU Trade Policy: Pakistan", "url": "https://policy.trade.ec.europa.eu/eu-trade-relationships-country-and-region/countries-and-regions/pakistan_en"},
             {"title": "Dawn: GSP+ status", "url": "https://www.dawn.com/news/1962447"}
+        ]
+    },
+    "germany": {
+        "status": "EU TRADE",
+        "tag": "TRADE",
+        "highlights": [
+            "Germany remains a key EU destination for Pakistani textiles and industrial exports.",
+            "Business chambers continue sectoral engagements in energy and manufacturing.",
+            "Development cooperation focuses on energy transition and skills."
+        ],
+        "visa": {
+            "status": "SCHENGEN VISAS",
+            "notes": [
+                "Schengen visa required; appointments often backlogged.",
+                "Business and study visas require documentation."
+            ]
+        },
+        "sources": [
+            {"title": "EU Trade Policy: Pakistan", "url": "https://policy.trade.ec.europa.eu/eu-trade-relationships-country-and-region/countries-and-regions/pakistan_en"}
+        ]
+    },
+    "netherlands": {
+        "status": "EU TRADE",
+        "tag": "TRADE",
+        "highlights": [
+            "Rotterdam remains a key logistics node for Pakistan-EU trade.",
+            "Port and logistics cooperation discussions continue.",
+            "Dutch import demand remains strong for textiles and agriculture."
+        ],
+        "visa": {
+            "status": "SCHENGEN VISAS",
+            "notes": [
+                "Schengen visa required; processing varies by consulate.",
+                "Business travel requires invitation documentation."
+            ]
+        },
+        "sources": [
+            {"title": "EU Trade Policy: Pakistan", "url": "https://policy.trade.ec.europa.eu/eu-trade-relationships-country-and-region/countries-and-regions/pakistan_en"}
+        ]
+    },
+    "france": {
+        "status": "EU TRADE",
+        "tag": "TRADE",
+        "highlights": [
+            "France remains a stable import market for Pakistan’s textiles and leather.",
+            "Bilateral cultural and education ties continue alongside trade.",
+            "Energy and aviation sectors remain areas of engagement."
+        ],
+        "visa": {
+            "status": "SCHENGEN VISAS",
+            "notes": [
+                "Schengen visa required; documentation standards strict.",
+                "Long-stay visas required for work or study."
+            ]
+        },
+        "sources": [
+            {"title": "EU Trade Policy: Pakistan", "url": "https://policy.trade.ec.europa.eu/eu-trade-relationships-country-and-region/countries-and-regions/pakistan_en"}
+        ]
+    },
+    "spain": {
+        "status": "EU TRADE",
+        "tag": "TRADE",
+        "highlights": [
+            "Spain remains a top EU buyer of Pakistan’s textiles and apparel.",
+            "Trade delegations focus on footwear and agro-products.",
+            "Logistics links through EU ports remain active."
+        ],
+        "visa": {
+            "status": "SCHENGEN VISAS",
+            "notes": [
+                "Schengen visa required; seasonal processing peaks.",
+                "Business visas require local invitation."
+            ]
+        },
+        "sources": [
+            {"title": "EU Trade Policy: Pakistan", "url": "https://policy.trade.ec.europa.eu/eu-trade-relationships-country-and-region/countries-and-regions/pakistan_en"}
+        ]
+    },
+    "italy": {
+        "status": "EU TRADE",
+        "tag": "TRADE",
+        "highlights": [
+            "Italy remains a key EU buyer for Pakistan’s textiles and leather.",
+            "Industrial machinery trade continues through Italian suppliers.",
+            "Consular engagement supports labor and student mobility."
+        ],
+        "visa": {
+            "status": "SCHENGEN VISAS",
+            "notes": [
+                "Schengen visa required; labor mobility programs limited.",
+                "Documentation required for business visits."
+            ]
+        },
+        "sources": [
+            {"title": "EU Trade Policy: Pakistan", "url": "https://policy.trade.ec.europa.eu/eu-trade-relationships-country-and-region/countries-and-regions/pakistan_en"}
+        ]
+    },
+    "belgium": {
+        "status": "EU TRADE",
+        "tag": "TRADE",
+        "highlights": [
+            "Belgium (Antwerp) remains a key logistics and diamond trade hub.",
+            "Port-led trade facilitation supports Pakistan-EU shipments.",
+            "Trade cooperation continues under EU GSP+ framework."
+        ],
+        "visa": {
+            "status": "SCHENGEN VISAS",
+            "notes": [
+                "Schengen visa required; appointment slots limited.",
+                "Business travel requires documentation."
+            ]
+        },
+        "sources": [
+            {"title": "EU Trade Policy: Pakistan", "url": "https://policy.trade.ec.europa.eu/eu-trade-relationships-country-and-region/countries-and-regions/pakistan_en"}
         ]
     }
 }
@@ -3782,7 +4034,9 @@ async def fetch_regional_relations_data():
         countries_payload.append({
             **country,
             "status": intel.get("status"),
+            "tag": intel.get("tag"),
             "highlights": intel.get("highlights", []),
+            "visa": intel.get("visa", {}),
             "sources": intel.get("sources", []),
             "trade": trade_bundle
         })
