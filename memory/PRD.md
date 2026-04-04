@@ -49,6 +49,7 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] Energy sidebar height now fixed to map viewport with internal scrolling.
 - [x] Added Pakistan-flagged vessels map layer toggle with manual refresh (AISstream integration).
 - [x] Aligned SPI series selector row with time range selector.
+- [x] Built **Regional Relations** panel with flags, relationship status, sources, and trade/remittance cards (SBP EasyData).
 - [x] Added DataDocked fallback for vessel positions and compacted map legend.
 - [x] Updated SBP API key to restore live CPI/indicator data.
 - [x] Replaced stale text badges with green/orange status dots across panels; CPI now uses cached fallback when SBP API fails (if last-good exists).
