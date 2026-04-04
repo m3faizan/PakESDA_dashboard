@@ -349,26 +349,26 @@ PAKISTAN_VESSELS = [
 ]
 
 REGIONAL_RELATIONSHIP_COUNTRIES = [
-    {"code": "india", "name": "India", "flag": "🇮🇳", "group": "Neighbor"},
-    {"code": "afghanistan", "name": "Afghanistan", "flag": "🇦🇫", "group": "Neighbor"},
-    {"code": "iran", "name": "Iran", "flag": "🇮🇷", "group": "Neighbor"},
-    {"code": "china", "name": "China", "flag": "🇨🇳", "group": "Neighbor"},
-    {"code": "saudi_arabia", "name": "Saudi Arabia", "flag": "🇸🇦", "group": "GCC"},
-    {"code": "uae_abu_dhabi", "name": "UAE - Abu Dhabi", "flag": "🇦🇪", "group": "GCC"},
-    {"code": "uae_dubai", "name": "UAE - Dubai", "flag": "🇦🇪", "group": "GCC"},
-    {"code": "qatar", "name": "Qatar", "flag": "🇶🇦", "group": "GCC"},
-    {"code": "kuwait", "name": "Kuwait", "flag": "🇰🇼", "group": "GCC"},
-    {"code": "bahrain", "name": "Bahrain", "flag": "🇧🇭", "group": "GCC"},
-    {"code": "oman", "name": "Oman", "flag": "🇴🇲", "group": "GCC"},
-    {"code": "united_states", "name": "United States", "flag": "🇺🇸", "group": "Major"},
-    {"code": "united_kingdom", "name": "United Kingdom", "flag": "🇬🇧", "group": "Major"},
-    {"code": "european_union", "name": "European Union", "flag": "🇪🇺", "group": "EU"},
-    {"code": "germany", "name": "Germany", "flag": "🇩🇪", "group": "EU"},
-    {"code": "netherlands", "name": "Netherlands", "flag": "🇳🇱", "group": "EU"},
-    {"code": "france", "name": "France", "flag": "🇫🇷", "group": "EU"},
-    {"code": "spain", "name": "Spain", "flag": "🇪🇸", "group": "EU"},
-    {"code": "italy", "name": "Italy", "flag": "🇮🇹", "group": "EU"},
-    {"code": "belgium", "name": "Belgium", "flag": "🇧🇪", "group": "EU"}
+    {"code": "india", "name": "India", "flag": "🇮🇳", "group": "Neighbor", "embassy_url": "https://hfrind.mofa.gov.pk/"},
+    {"code": "afghanistan", "name": "Afghanistan", "flag": "🇦🇫", "group": "Neighbor", "embassy_url": "https://www.pakembassykabul.org/"},
+    {"code": "iran", "name": "Iran", "flag": "🇮🇷", "group": "Neighbor", "embassy_url": "https://pakembiran.mofa.gov.pk/"},
+    {"code": "china", "name": "China", "flag": "🇨🇳", "group": "Neighbor", "embassy_url": "https://pakembbeijing.mofa.gov.pk/"},
+    {"code": "saudi_arabia", "name": "Saudi Arabia", "flag": "🇸🇦", "group": "GCC", "embassy_url": "https://pakemb-riyadh.mofa.gov.pk/"},
+    {"code": "uae_abu_dhabi", "name": "UAE - Abu Dhabi", "flag": "🇦🇪", "group": "GCC", "embassy_url": "https://pakembabudhabi.mofa.gov.pk/"},
+    {"code": "uae_dubai", "name": "UAE - Dubai", "flag": "🇦🇪", "group": "GCC", "embassy_url": "https://pakcgdubai.mofa.gov.pk/"},
+    {"code": "qatar", "name": "Qatar", "flag": "🇶🇦", "group": "GCC", "embassy_url": "https://pakembqatar.mofa.gov.pk/"},
+    {"code": "kuwait", "name": "Kuwait", "flag": "🇰🇼", "group": "GCC", "embassy_url": "https://pakembkwt.mofa.gov.pk/"},
+    {"code": "bahrain", "name": "Bahrain", "flag": "🇧🇭", "group": "GCC", "embassy_url": "https://pakembbahrain.mofa.gov.pk/"},
+    {"code": "oman", "name": "Oman", "flag": "🇴🇲", "group": "GCC", "embassy_url": "https://pakemboman.mofa.gov.pk/"},
+    {"code": "united_states", "name": "United States", "flag": "🇺🇸", "group": "Major", "embassy_url": "https://embassyofpakistanusa.org/"},
+    {"code": "united_kingdom", "name": "United Kingdom", "flag": "🇬🇧", "group": "Major", "embassy_url": "https://phclondon.mofa.gov.pk/"},
+    {"code": "european_union", "name": "European Union", "flag": "🇪🇺", "group": "EU", "embassy_url": "https://pakembbrussels.mofa.gov.pk/"},
+    {"code": "germany", "name": "Germany", "flag": "🇩🇪", "group": "EU", "embassy_url": "https://pakembberlin.mofa.gov.pk/"},
+    {"code": "netherlands", "name": "Netherlands", "flag": "🇳🇱", "group": "EU", "embassy_url": "https://pakembhague.mofa.gov.pk/"},
+    {"code": "france", "name": "France", "flag": "🇫🇷", "group": "EU", "embassy_url": "https://pakembparis.mofa.gov.pk/"},
+    {"code": "spain", "name": "Spain", "flag": "🇪🇸", "group": "EU", "embassy_url": "https://pakembmadrid.mofa.gov.pk/"},
+    {"code": "italy", "name": "Italy", "flag": "🇮🇹", "group": "EU", "embassy_url": "https://pakembrome.mofa.gov.pk/"},
+    {"code": "belgium", "name": "Belgium", "flag": "🇧🇪", "group": "EU", "embassy_url": "https://pakembbrussels.mofa.gov.pk/"}
 ]
 
 COUNTRY_ALIASES = {

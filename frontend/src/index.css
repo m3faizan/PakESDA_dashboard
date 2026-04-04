@@ -1129,9 +1129,10 @@ h1, h2, h3, h4, h5, h6 {
   padding: 0.75rem 1.25rem 1rem;
 }
 
-/* Regional Panel override for taller content */
+/* Regional Panel — fixed height, internal scroll */
 .regional-panel .panel-content {
-  max-height: 520px;
+  max-height: 400px;
+  min-height: 400px;
 }
 
 .regional-panel-content {
@@ -1146,6 +1147,10 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   flex-direction: column;
   gap: 0;
+  overflow-y: auto;
+  max-height: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34, 197, 94, 0.3) transparent;
 }
 
 .regional-group-label {
@@ -1279,6 +1284,24 @@ h1, h2, h3, h4, h5, h6 {
 .regional-status-badge.negative {
   border-color: rgba(239, 68, 68, 0.4);
   color: #EF4444;
+}
+
+.regional-embassy-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.12rem 0.3rem;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #38BDF8;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.regional-embassy-link:hover {
+  background: rgba(56, 189, 248, 0.1);
 }
 
 .regional-info-button {

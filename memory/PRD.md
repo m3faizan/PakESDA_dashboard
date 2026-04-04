@@ -38,15 +38,17 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] Completed **Regional Relations Panel** with full redesign:
   - Accordion-style layout: countries collapsed by default, expand on click
   - No emoji flags - clean text-only country names in JetBrains Mono font
-  - 20 countries grouped by Neighbor/GCC/Major/EU
+  - Embassy links for all 20 countries (Pakistan MoFA websites)
+  - Fixed panel height (400px) so neighboring panels aren't disrupted
   - Red color for negative relationships (suspended, tense, disruption, border security)
   - Green color for positive/active relationships
-  - Trade & Remittance cards hidden when no data available (SBP rate-limited)
+  - Trade & Remittance cards hidden when no data available
   - Trade Balance indicator (SURPLUS/DEFICIT) when data present
   - Visa & Travel section with status and notes
   - Disk persistence for SBP series mappings and full regional response
   - Optimized SBP API calls: pre-fetch 3 global mappings once instead of 60 per-country calls
   - Fixed Business Environment persistence to prevent overwriting good data with null from rate-limited API
+- **Known Issue**: SBP EasyData API key daily call limit exhausted - affects Regional trade data AND Business Environment panel. Data auto-restores on daily reset.
 
 ### Latest Updates (Mar 14, 2026)
 - [x] Implemented **Daily Briefing** panel powered by **OpenAI GPT-5.2** with a 6-hour cache window.

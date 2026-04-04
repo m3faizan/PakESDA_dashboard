@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Info, TrendingUp, TrendingDown, ChevronDown, ChevronRight } from 'lucide-react';
+import { Info, TrendingUp, TrendingDown, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
 import {
   ResponsiveContainer,
   LineChart,
@@ -99,6 +99,7 @@ const RegionalPanel = ({ relations, loading }) => {
                 {grp.items.map((country) => {
                   const isExpanded = expandedCountry === country.code;
                   const isNeg = isNegativeRelationship(country.status);
+                  const isActive = isExpanded && activeCountry;
                   return (
                     <div key={country.code} className="regional-country-block" data-testid={`regional-block-${country.code}`}>
                       <button
@@ -120,7 +121,7 @@ const RegionalPanel = ({ relations, loading }) => {
                         )}
                       </button>
 
-                      {isExpanded && activeCountry && (
+                      {isActive && (
                         <div className="regional-detail" data-testid="regional-detail">
                           <div className="regional-detail-header">
                             <div>
@@ -131,6 +132,18 @@ const RegionalPanel = ({ relations, loading }) => {
                                 <span className={`regional-status-badge ${isNeg ? 'negative' : ''}`} data-testid="regional-status-badge">
                                   {activeCountry.status || 'ACTIVE'}
                                 </span>
+                                {activeCountry.embassy_url && (
+                                  <a
+                                    href={activeCountry.embassy_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="regional-embassy-link"
+                                    data-testid="regional-embassy-link"
+                                  >
+                                    <ExternalLink size={10} />
+                                    Embassy
+                                  </a>
+                                )}
                               </div>
                             </div>
                             <button
@@ -153,7 +166,6 @@ const RegionalPanel = ({ relations, loading }) => {
                             )}
                           </div>
 
-                          {/* Relationship highlights */}
                           {(activeCountry.highlights || []).length > 0 && (
                             <div className="regional-highlights" data-testid="regional-highlights">
                               <div className="regional-section-title">Relationship Status</div>
@@ -165,7 +177,6 @@ const RegionalPanel = ({ relations, loading }) => {
                             </div>
                           )}
 
-                          {/* Trade & Remittance - only if data exists */}
                           {tradeCards.length > 0 && (
                             <div className="regional-trade" data-testid="regional-trade">
                               <div className="regional-section-title">Trade & Remittance (Last 12 Months)</div>
@@ -225,7 +236,6 @@ const RegionalPanel = ({ relations, loading }) => {
                             </div>
                           )}
 
-                          {/* Visa & Travel */}
                           {(activeCountry.visa?.status || (activeCountry.visa?.notes || []).length > 0) && (
                             <div className="regional-visa" data-testid="regional-visa">
                               <div className="regional-section-title">Visa & Travel</div>
