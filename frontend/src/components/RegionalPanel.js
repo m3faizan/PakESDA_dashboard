@@ -6,18 +6,25 @@ import {
   Line
 } from 'recharts';
 
-const formatUsdThousands = (value) => {
+const formatTradeValue = (value, unit) => {
   if (value === null || value === undefined) return '--';
-  const scaled = value * 1000;
-  const abs = Math.abs(scaled);
-  if (abs >= 1000000000) return `$${(scaled / 1000000000).toFixed(2)}B`;
-  if (abs >= 1000000) return `$${(scaled / 1000000).toFixed(2)}M`;
-  if (abs >= 1000) return `$${(scaled / 1000).toFixed(1)}K`;
-  return `$${scaled.toFixed(0)}`;
+  let usd;
+  if (unit === 'million_usd') {
+    usd = value * 1000000;
+  } else {
+    usd = value * 1000;
+  }
+  const abs = Math.abs(usd);
+  if (abs >= 1000000000) return `$${(usd / 1000000000).toFixed(2)}B`;
+  if (abs >= 1000000) return `$${(usd / 1000000).toFixed(2)}M`;
+  if (abs >= 1000) return `$${(usd / 1000).toFixed(1)}K`;
+  return `$${usd.toFixed(0)}`;
 };
 
-const scaleHistory = (history = []) =>
-  history.map((item) => ({ ...item, value: item.value * 1000 }));
+const scaleHistory = (history = [], unit) => {
+  const factor = unit === 'million_usd' ? 1000000 : 1000;
+  return history.map((item) => ({ ...item, value: item.value * factor }));
+};
 
 const GROUP_ORDER = ['Neighbor', 'GCC', 'Major', 'Central Asia', 'EU'];
 
@@ -72,6 +79,15 @@ const RegionalPanel = ({ relations, loading }) => {
     if (exp == null || imp == null) return null;
     return (exp - imp) * 1000;
   }, [activeCountry]);
+
+  const formatBalance = (bal) => {
+    const usd = bal;
+    const abs = Math.abs(usd);
+    if (abs >= 1000000000) return `$${(usd / 1000000000).toFixed(2)}B`;
+    if (abs >= 1000000) return `$${(usd / 1000000).toFixed(2)}M`;
+    if (abs >= 1000) return `$${(usd / 1000).toFixed(1)}K`;
+    return `$${usd.toFixed(0)}`;
+  };
 
   const handleCountryClick = (code) => {
     setExpandedCountry((prev) => prev === code ? null : code);
@@ -191,14 +207,15 @@ const RegionalPanel = ({ relations, loading }) => {
                                 {tradeCards.map((card) => {
                                   const latest = card.data?.latest?.value;
                                   const change = card.data?.mom_change;
+                                  const unit = card.data?.unit || 'thousand_usd';
                                   const hasData = latest !== null && latest !== undefined;
                                   const trendUp = change != null && change >= 0;
-                                  const chartData = scaleHistory(card.data?.history || []);
+                                  const chartData = scaleHistory(card.data?.history || [], unit);
                                   return (
                                     <div key={card.key} className="regional-trade-card" data-testid={`regional-trade-${card.key}`}>
                                       <div className="regional-trade-label">{card.label}</div>
                                       <div className="regional-trade-value" data-testid={`regional-trade-value-${card.key}`}>
-                                        {hasData ? formatUsdThousands(latest) : '--'}
+                                        {hasData ? formatTradeValue(latest, unit) : '--'}
                                       </div>
                                       <div className="regional-trade-meta">
                                         <span data-testid={`regional-trade-month-${card.key}`}>
@@ -233,7 +250,7 @@ const RegionalPanel = ({ relations, loading }) => {
                                   <span className="regional-trade-balance-label">Trade Balance</span>
                                   <span className={`regional-trade-balance-value ${tradeBalance >= 0 ? 'surplus' : 'deficit'}`}
                                     data-testid="regional-trade-balance-value">
-                                    {tradeBalance >= 0 ? '+' : ''}{formatUsdThousands(tradeBalance / 1000)}
+                                    {tradeBalance >= 0 ? '+' : ''}{formatBalance(tradeBalance)}
                                     <span style={{ fontSize: '0.5rem', marginLeft: '0.3rem', opacity: 0.7 }}>
                                       {tradeBalance >= 0 ? 'SURPLUS' : 'DEFICIT'}
                                     </span>

@@ -4101,7 +4101,7 @@ def _format_month_label(date_str: str) -> str:
         return date_str
 
 
-def _summarize_trade_series(history: list) -> dict | None:
+def _summarize_trade_series(history: list, unit: str = "thousand_usd") -> dict | None:
     if not history:
         return None
 
@@ -4123,6 +4123,7 @@ def _summarize_trade_series(history: list) -> dict | None:
             "month": _format_month_label(latest.get("date")),
             "date": latest.get("date")
         },
+        "unit": unit,
         "mom_change": round(mom_change, 2) if mom_change is not None else None,
         "history": sparkline[-12:] if len(sparkline) > 12 else sparkline
     }
@@ -4144,9 +4145,9 @@ async def _fetch_country_trade_bundle(country_code: str, export_map: dict, impor
     remittance_history = await remittance_task if remittance_task else []
 
     return {
-        "exports": _summarize_trade_series(export_history),
-        "imports": _summarize_trade_series(import_history),
-        "remittances": _summarize_trade_series(remittance_history),
+        "exports": _summarize_trade_series(export_history, "thousand_usd"),
+        "imports": _summarize_trade_series(import_history, "thousand_usd"),
+        "remittances": _summarize_trade_series(remittance_history, "million_usd"),
         "series_codes": {
             "exports": export_code,
             "imports": import_code,

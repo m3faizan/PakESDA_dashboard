@@ -46,7 +46,8 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
   - Red color for negative relationships, green for positive
   - Panel content height 300px (matches Weather and other panels)
   - Disk persistence for SBP data, optimized API calls
-- **Known Issue**: SBP EasyData API key daily call limit exhausted - affects trade data and Business Environment
+- **Known Issue**: SBP EasyData API has a daily call limit. When exhausted, trade data shows as empty until midnight PKT reset.
+- **Unit handling**: Exports/Imports in Thousand USD, Remittances in Million USD — correctly formatted as $XM/$XB in UI.
 
 ### Latest Updates (Mar 14, 2026)
 - [x] Implemented **Daily Briefing** panel powered by **OpenAI GPT-5.2** with a 6-hour cache window.
