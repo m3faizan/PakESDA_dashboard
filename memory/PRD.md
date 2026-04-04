@@ -34,6 +34,18 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 
 ## What's Been Implemented (Mar 8-10, 2026)
 
+### Latest Updates (Apr 4, 2026)
+- [x] Completed **Regional Relations Panel** with full redesign:
+  - Grouped sidebar layout organizing 20 countries by Neighbor/GCC/Major/EU
+  - Trade & Remittance cards (Exports/Imports/Remittances) with sparkline trend charts
+  - Trade Balance indicator (SURPLUS/DEFICIT) calculated from exports vs imports
+  - Visa & Travel section with status and notes
+  - Relationship Status highlights and diplomatic tags
+  - Sources popup with external links
+  - Disk persistence for SBP series mappings and full regional response (resilient to rate limiting)
+  - Optimized SBP API calls: pre-fetch 3 global mappings once instead of 60 per-country calls
+  - 5-minute cooldown on failed API fetches to prevent retry spam
+
 ### Latest Updates (Mar 14, 2026)
 - [x] Implemented **Daily Briefing** panel powered by **OpenAI GPT-5.2** with a 6-hour cache window.
 - [x] Added manual refresh support with stale fallback to last successful briefing if generation fails.
@@ -242,7 +254,7 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - **Business Environment (EPU + BCI)**: **LIVE** - SBP EasyData (`TS_GP_MFS_EPUI_M`, `TS_GP_RL_BCSIND_M`)
 - **Weather**: MOCKED (ready for OpenWeatherMap integration)
 - **Security**: MOCKED (ready for API integration)
-- **Regional**: MOCKED (ready for API integration)
+- **Regional**: **LIVE** - SBP EasyData trade data (Exports/Imports/Remittances) + curated diplomatic intel for 20 countries
 - **Infrastructure**: **LIVE** - Scraped from FlightStats (airports) and MyShipTracking (ports)
 - **Daily Briefing**: **LIVE** - OpenAI GPT-5.2 generated intelligence summary (cached 6 hours)
 
@@ -259,6 +271,7 @@ Clone the World Monitor GitHub app design, layout and features to create a Pakis
 - [x] **LIVE PKR/USD exchange rate from SBP API**
 - [x] **LIVE KSE-100 Index data from PSX with clickable modal** (Mar 6, 2026)
 - [x] **LIVE CPI Inflation Monitor panel with YoY/MoM data** (Mar 8, 2026)
+- [x] **LIVE Regional Relations Panel** with 20 countries grouped by Neighbor/GCC/Major/EU, trade data, sparklines, trade balance, visa info (Apr 4, 2026)
 
 ### P1 (High Priority)
 - [ ] Make Governance Panel dynamic (scrape from pakistanprojects.pakesda.com)

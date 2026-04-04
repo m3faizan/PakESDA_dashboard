@@ -3875,10 +3875,13 @@ async def fetch_pakistan_vessels_data():
 async def _fetch_country_series_mapping(dataset_key: str, dataset_code: str, extractor):
     cache_entry = SBP_COUNTRY_SERIES_CACHE.get(dataset_key)
     now = datetime.now(timezone.utc)
+    persist_key = f"sbp_series_{dataset_key}"
 
-    if cache_entry and cache_entry["mapping"] and cache_entry["updated"]:
+    if cache_entry and cache_entry["updated"]:
         age = (now - cache_entry["updated"]).total_seconds()
-        if age < 86400:
+        if age < 86400 and cache_entry["mapping"]:
+            return cache_entry["mapping"]
+        if age < 300:
             return cache_entry["mapping"]
 
     url = f"{SBP_BASE_URL}/dataset/{dataset_code}/meta"
@@ -3889,14 +3892,32 @@ async def _fetch_country_series_mapping(dataset_key: str, dataset_code: str, ext
             raw_text = response.text
     except Exception as e:
         print(f"SBP meta fetch error for {dataset_key}: {e}")
-        return cache_entry["mapping"] if cache_entry else {}
+        if cache_entry and cache_entry["mapping"]:
+            cache_entry["updated"] = now
+            return cache_entry["mapping"]
+        persisted, _ = restore_cache_entry(persist_key)
+        if persisted:
+            print(f"Restored {dataset_key} series mapping from disk cache")
+            if cache_entry is not None:
+                cache_entry["mapping"] = persisted
+                cache_entry["updated"] = now
+            return persisted
+        if cache_entry is not None:
+            cache_entry["updated"] = now
+        return {}
 
     clean_text = re.sub(r"[\x00-\x1f\x7f]", "", raw_text)
     try:
         payload = json.loads(clean_text)
     except Exception as e:
         print(f"SBP meta parse error for {dataset_key}: {e}")
-        return cache_entry["mapping"] if cache_entry else {}
+        if cache_entry and cache_entry["mapping"]:
+            cache_entry["updated"] = now
+            return cache_entry["mapping"]
+        persisted, _ = restore_cache_entry(persist_key)
+        if cache_entry is not None:
+            cache_entry["updated"] = now
+        return persisted or {}
 
     rows = payload.get("rows", [])
     mapping = {}
@@ -3912,8 +3933,12 @@ async def _fetch_country_series_mapping(dataset_key: str, dataset_code: str, ext
         if normalized:
             mapping[normalized] = series_code
 
-    if cache_entry is not None:
-        cache_entry["mapping"] = mapping
+    if mapping:
+        if cache_entry is not None:
+            cache_entry["mapping"] = mapping
+            cache_entry["updated"] = now
+        persist_cache_entry(persist_key, mapping)
+    elif cache_entry is not None:
         cache_entry["updated"] = now
 
     return mapping
@@ -3995,11 +4020,7 @@ def _summarize_trade_series(history: list) -> dict | None:
     }
 
 
-async def _fetch_country_trade_bundle(country_code: str) -> dict:
-    export_map = await _fetch_country_series_mapping("exports", EXPORT_RECEIPTS_DATASET, _extract_export_country)
-    import_map = await _fetch_country_series_mapping("imports", IMPORT_PAYMENTS_DATASET, _extract_import_country)
-    remittance_map = await _fetch_country_series_mapping("remittances", REMITTANCES_DATASET, _extract_remittance_country)
-
+async def _fetch_country_trade_bundle(country_code: str, export_map: dict, import_map: dict, remittance_map: dict) -> dict:
     export_code = _resolve_country_series_code(export_map, country_code)
     import_code = _resolve_country_series_code(import_map, country_code)
     remittance_code = _resolve_country_series_code(remittance_map, country_code)
@@ -4027,10 +4048,14 @@ async def _fetch_country_trade_bundle(country_code: str) -> dict:
 
 
 async def fetch_regional_relations_data():
+    export_map = await _fetch_country_series_mapping("exports", EXPORT_RECEIPTS_DATASET, _extract_export_country)
+    import_map = await _fetch_country_series_mapping("imports", IMPORT_PAYMENTS_DATASET, _extract_import_country)
+    remittance_map = await _fetch_country_series_mapping("remittances", REMITTANCES_DATASET, _extract_remittance_country)
+
     countries_payload = []
     for country in REGIONAL_RELATIONSHIP_COUNTRIES:
         intel = REGIONAL_RELATIONSHIP_INTEL.get(country["code"], {})
-        trade_bundle = await _fetch_country_trade_bundle(country["code"])
+        trade_bundle = await _fetch_country_trade_bundle(country["code"], export_map, import_map, remittance_map)
         countries_payload.append({
             **country,
             "status": intel.get("status"),
@@ -5154,8 +5179,28 @@ async def get_regional_relations():
                 "updated": data_cache["regional_relations"]["updated"].isoformat()
             }
 
-    data_cache["regional_relations"]["data"] = await fetch_regional_relations_data()
-    data_cache["regional_relations"]["updated"] = datetime.now(timezone.utc)
+    fetched = await fetch_regional_relations_data()
+    has_trade = any(
+        c.get("trade", {}).get("exports") is not None
+        for c in fetched.get("countries", [])
+    )
+
+    if has_trade:
+        data_cache["regional_relations"]["data"] = fetched
+        data_cache["regional_relations"]["updated"] = datetime.now(timezone.utc)
+        persist_cache_entry("regional_relations", fetched)
+    else:
+        if data_cache["regional_relations"]["data"]:
+            pass
+        else:
+            persisted, persisted_updated = restore_cache_entry("regional_relations")
+            if persisted:
+                print("Restored regional_relations from disk cache (SBP rate-limited)")
+                data_cache["regional_relations"]["data"] = persisted
+                data_cache["regional_relations"]["updated"] = datetime.fromisoformat(persisted_updated) if persisted_updated else datetime.now(timezone.utc)
+            else:
+                data_cache["regional_relations"]["data"] = fetched
+                data_cache["regional_relations"]["updated"] = datetime.now(timezone.utc)
 
     return {
         "data": data_cache["regional_relations"]["data"],
