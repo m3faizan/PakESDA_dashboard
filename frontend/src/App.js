@@ -39,14 +39,13 @@ function App() {
   const [infrastructure, setInfrastructure] = useState(null);
   const [mapData, setMapData] = useState(null);
   const [energyReport, setEnergyReport] = useState(null);
-  const [pakistanVessels, setPakistanVessels] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const fetchData = useCallback(async () => {
     try {
-      const [newsRes, economicRes, securityRes, weatherRes, regionalRes, infraRes, mapRes, energyRes, vesselRes] = 
+      const [newsRes, economicRes, securityRes, weatherRes, regionalRes, infraRes, mapRes, energyRes] = 
         await Promise.allSettled([
           axios.get(`${API_BASE}/api/news`),
           axios.get(`${API_BASE}/api/economic`),
@@ -55,8 +54,7 @@ function App() {
           axios.get(`${API_BASE}/api/regional-relations`),
           axios.get(`${API_BASE}/api/infrastructure`),
           axios.get(`${API_BASE}/api/map-data`),
-          axios.get(`${API_BASE}/api/daily-energy-report`),
-          axios.get(`${API_BASE}/api/pakistan-vessels`)
+          axios.get(`${API_BASE}/api/daily-energy-report`)
         ]);
 
       if (newsRes.status === 'fulfilled') setNews(newsRes.value.data.news || []);
@@ -67,7 +65,6 @@ function App() {
       if (infraRes.status === 'fulfilled') setInfrastructure(infraRes.value.data);
       if (mapRes.status === 'fulfilled') setMapData(mapRes.value.data);
       if (energyRes.status === 'fulfilled') setEnergyReport(energyRes.value.data.data);
-      if (vesselRes.status === 'fulfilled') setPakistanVessels(vesselRes.value.data.data);
 
       setLastUpdate(new Date());
     } catch (error) {
@@ -166,7 +163,7 @@ function App() {
         <div className="bento-grid">
           {/* Map Section */}
           <div className="map-section" data-testid="map-section">
-            <MapSection mapData={mapData} alerts={security} energyReport={energyReport} pakistanVessels={pakistanVessels} loading={loading} />
+            <MapSection mapData={mapData} alerts={security} energyReport={energyReport} loading={loading} />
           </div>
 
           {/* Side Panels */}
