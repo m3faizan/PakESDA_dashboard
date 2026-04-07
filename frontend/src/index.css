@@ -1750,3 +1750,221 @@ h1, h2, h3, h4, h5, h6 {
   height: 2px;
   display: inline-block;
 }
+
+/* ── Minerals & Metals Panel ───────────────────────────────────────────── */
+.minerals-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.mineral-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 6px;
+  padding: 0.5rem 0.55rem 0.45rem;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.mineral-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.mineral-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.mineral-value {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--color-text);
+  font-family: 'Courier New', monospace;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.mineral-unit {
+  font-size: 0.56rem;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+.mineral-change {
+  font-size: 0.62rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.mineral-change.positive { color: #22C55E; }
+.mineral-change.negative { color: #EF4444; }
+
+.mineral-sublabel {
+  font-size: 0.55rem;
+  color: #475569;
+  margin-top: 1px;
+}
+
+/* ── Energy Complex Panel ──────────────────────────────────────────────── */
+.energy-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 6px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.energy-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.energy-row-left {
+  display: flex;
+  flex-direction: column;
+  min-width: 90px;
+}
+
+.energy-row-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+}
+
+.energy-row-date {
+  font-size: 0.55rem;
+  color: #475569;
+  margin-top: 2px;
+}
+
+.energy-row-spark {
+  flex: 1;
+  height: 36px;
+}
+
+.energy-row-right {
+  text-align: right;
+  min-width: 80px;
+}
+
+.energy-row-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  font-family: 'Courier New', monospace;
+  line-height: 1;
+}
+
+.energy-row-unit {
+  font-size: 0.56rem;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+.energy-row-change {
+  font-size: 0.62rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  margin-top: 3px;
+}
+
+.energy-row-change.positive { color: #22C55E; }
+.energy-row-change.negative { color: #EF4444; }
+
+/* Live Tape */
+.energy-live-tape {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.energy-tape-label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.5rem;
+}
+
+.energy-tape-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+}
+
+.energy-tape-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+  padding: 0.45rem 0.5rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.energy-tape-card:hover {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.25);
+}
+
+.energy-tape-card-label {
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.energy-tape-card-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text);
+  font-family: 'Courier New', monospace;
+  margin-top: 2px;
+}
+
+.energy-tape-card-unit {
+  font-size: 0.52rem;
+  color: #475569;
+}
+
+.energy-tape-card-change {
+  font-size: 0.62rem;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.energy-tape-card-change.positive { color: #22C55E; }
+.energy-tape-card-change.negative { color: #EF4444; }
+
+/* Responsive: minerals grid → 2 columns on smaller panels */
+@media (max-width: 900px) {
+  .minerals-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .minerals-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

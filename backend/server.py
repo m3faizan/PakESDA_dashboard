@@ -117,7 +117,7 @@ data_cache = {
     "daily_briefing": {"data": None, "updated": None}
 }
 
-PERSISTED_CACHE_FILE = "/app/backend/persisted_sbp_cache.json"
+PERSISTED_CACHE_FILE = os.path.join(os.path.dirname(__file__), "persisted_sbp_cache.json")
 
 
 def load_persisted_cache():
@@ -5704,7 +5704,111 @@ async def get_port_history_summary():
     }
 
 
+# ─── Minerals & Metals ───────────────────────────────────────────────────────
+minerals_metals_cache = {"data": None, "updated": None}
+
+MINERALS_SHEET_URL = (
+    "https://docs.google.com/spreadsheets/d/"
+    "17t0VxqvCKpJv8Bw-di4zVOEkexMi-IG3EKsv3o3q5J8"
+    "/export?format=csv&gid=773140949"
+)
+
+async def fetch_minerals_metals_data():
+    """Fetch and parse minerals & metals data from Google Sheets CSV."""
+    import io, csv as csv_mod
+    try:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
+            resp = await client.get(MINERALS_SHEET_URL)
+            resp.raise_for_status()
+
+        reader = csv_mod.reader(io.StringIO(resp.text))
+        rows = list(reader)
+        if len(rows) < 3:
+            return None
+
+        headers = rows[0]   # Item, Silica Sand, Gypsum, …
+        units   = rows[1]   # Unit, 000 Tonnes, …
+        data_rows = rows[2:]
+
+        # Build per-column data lists
+        columns = {}
+        for i, hdr in enumerate(headers):
+            if hdr and hdr != "Item":
+                columns[hdr] = {"unit": units[i] if i < len(units) else "", "points": []}
+
+        # Parse data rows ("YYYY Mon" format)
+        for row in data_rows:
+            if not row or not row[0]:
+                continue
+            date_str = row[0].strip()
+            if not date_str or not date_str[0].isdigit():
+                continue
+            try:
+                dt = datetime.strptime(date_str, "%Y %b")
+                date_iso = dt.strftime("%Y-%m-%d")
+            except ValueError:
+                continue
+
+            for i, hdr in enumerate(headers[1:], 1):
+                if hdr not in columns:
+                    continue
+                val_str = row[i].strip() if i < len(row) else ""
+                if val_str:
+                    try:
+                        columns[hdr]["points"].append({"date": date_iso, "value": float(val_str)})
+                    except ValueError:
+                        pass
+
+        # Build result with stats per commodity
+        result = {}
+        for name, info in columns.items():
+            history = sorted(info["points"], key=lambda x: x["date"])
+            if not history:
+                continue
+            latest = history[-1]
+            prev = history[-2] if len(history) >= 2 else None
+            mom_pct = None
+            if prev and prev["value"]:
+                mom_pct = round((latest["value"] - prev["value"]) / abs(prev["value"]) * 100, 2)
+            result[name] = {
+                "unit": info["unit"],
+                "latest": latest,
+                "previous": prev,
+                "mom_change_pct": mom_pct,
+                "history": history,
+            }
+
+        return result
+    except Exception as exc:
+        print(f"[minerals] fetch error: {exc}")
+        return None
+
+
+@app.get("/api/minerals-metals")
+async def get_minerals_metals():
+    global minerals_metals_cache
+    now = datetime.now(timezone.utc)
+    age = (
+        (now - minerals_metals_cache["updated"]).total_seconds()
+        if minerals_metals_cache["updated"]
+        else 9999999
+    )
+    if minerals_metals_cache["data"] is None or age > 86400:  # cache 24 h
+        data = await fetch_minerals_metals_data()
+        if data:
+            minerals_metals_cache["data"] = data
+            minerals_metals_cache["updated"] = now
+
+    if not minerals_metals_cache["data"]:
+        raise HTTPException(status_code=503, detail="Minerals data unavailable")
+
+    return {
+        "data": minerals_metals_cache["data"],
+        "updated": minerals_metals_cache["updated"].isoformat() if minerals_metals_cache["updated"] else None,
+    }
+# ─────────────────────────────────────────────────────────────────────────────
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
 

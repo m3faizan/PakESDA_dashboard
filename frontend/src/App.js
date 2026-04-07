@@ -25,6 +25,8 @@ import RoadAdvisoryPanel from './components/RoadAdvisoryPanel';
 import InflationPanel from './components/InflationPanel';
 import BusinessEnvironmentPanel from './components/BusinessEnvironmentPanel';
 import RealSectorPanel from './components/RealSectorPanel';
+import MineralsMetalsPanel from './components/MineralsMetalsPanel';
+import EnergyComplexPanel from './components/EnergyComplexPanel';
 import MapSection from './components/MapSection';
 import NewsTicker from './components/NewsTicker';
 
@@ -185,6 +187,8 @@ function App() {
             <MarineTrafficPanel data={infrastructure} loading={loading} />
             <GovernancePanel loading={loading} />
             <RoadAdvisoryPanel loading={loading} />
+            <MineralsMetalsPanel loading={loading} />
+            <EnergyComplexPanel loading={loading} />
           </div>
         </div>
       </main>
